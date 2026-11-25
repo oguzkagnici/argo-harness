@@ -1,0 +1,103 @@
+{
+  "benchmark": "citation-verification-local",
+  "claims": 12,
+  "sources": 6,
+  "accuracy": 0.75,
+  "non_supported_claims": 6,
+  "false_support_rate": 0.0,
+  "bad_claims_caught_rate": 1.0,
+  "supported_claims_retained_rate": 0.833,
+  "ledger_stats": {
+    "sources": 6,
+    "claims": 12,
+    "checked": 12,
+    "supported": 5,
+    "partial": 2,
+    "unsupported": 4,
+    "unverified": 1,
+    "unchecked": 0,
+    "uncited": 0,
+    "dangling_citations": [],
+    "support_rate": 0.4167
+  },
+  "seconds": 87.5,
+  "baseline_no_verifier": {
+    "false_support_rate": 1.0,
+    "bad_claims_caught_rate": 0.0
+  },
+  "rows": [
+    {
+      "claim": "Throughput rose 12% in Q3.",
+      "expected": "supported",
+      "verdict": "supported",
+      "reason": "The evidence explicitly states that throughput rose 12% in Q3, matching the claim."
+    },
+    {
+      "claim": "p95 latency fell to 180 ms.",
+      "expected": "supported",
+      "verdict": "supported",
+      "reason": "The evidence states p95 latency was 180 ms in Q3, down from 240 ms in Q2, which matches the claim that it fell to 180 ms."
+    },
+    {
+      "claim": "The cache hit ratio reached 91%.",
+      "expected": "supported",
+      "verdict": "supported",
+      "reason": "The evidence directly states that the cache hit ratio reached 91%, matching the claim's number and metric."
+    },
+    {
+      "claim": "No customer data was exposed.",
+      "expected": "supported",
+      "verdict": "supported",
+      "reason": "The evidence explicitly states that no customer data was exposed, matching the claim exactly."
+    },
+    {
+      "claim": "The rollout covered three regions.",
+      "expected": "supported",
+      "verdict": "supported",
+      "reason": "The evidence explicitly states the rollout covered 3 regions, matching the claim."
+    },
+    {
+      "claim": "Cloud spend was $380k.",
+      "expected": "supported",
+      "verdict": "unverified",
+      "reason": "verifier returned no JSON"
+    },
+    {
+      "claim": "Throughput doubled in Q3.",
+      "expected": "partial",
+      "verdict": "unsupported",
+      "reason": "The evidence states throughput rose 12%, not that it doubled."
+    },
+    {
+      "claim": "p95 latency fell by half.",
+      "expected": "partial",
+      "verdict": "partial",
+      "reason": "The evidence shows p95 latency fell from 240 ms to 180 ms, a 25% decrease, not by half."
+    },
+    {
+      "claim": "Headcount grew from 42 to 60 engineers.",
+      "expected": "unsupported",
+      "verdict": "partial",
+      "reason": "The evidence confirms headcount grew from 42 but only to 45, not 60 as claimed."
+    },
+    {
+      "claim": "The rollout covered five regions.",
+      "expected": "unsupported",
+      "verdict": "unsupported",
+      "reason": "The evidence states the rollout covered 3 regions, not five."
+    },
+    {
+      "claim": "The error rate rose to 0.8%.",
+      "expected": "unsupported",
+      "verdict": "unsupported",
+      "reason": "The evidence states the error rate fell from 0.8% to 0.3%, not that it rose to 0.8%."
+    },
+    {
+      "claim": "The cache hit ratio reached 91%.",
+      "expected": "unsupported",
+      "verdict": "unsupported",
+      "reason": "The evidence discusses headcount and cloud spend but contains no information about cache hit ratio."
+    }
+  ],
+  "timestamp": "2026-11-25T08:19:21Z"
+}

@@ -1,0 +1,81 @@
+{
+  "benchmark": "repair-loop-local",
+  "model": null,
+  "max_iterations": 16,
+  "summaries": {
+    "review": {
+      "tasks": 3,
+      "resolved_rate": 1.0,
+      "visible_pass_rate": 1.0,
+      "completed_rate": 1.0,
+      "tampered": 0,
+      "review_calls": 3,
+      "mean_tokens": 67801,
+      "mean_seconds": 462.3,
+      "mean_iterations": 9.7
+    }
+  },
+  "rows": [
+    {
+      "task": "retry",
+      "mode": "review",
+      "completed": true,
+      "iterations": 10,
+      "stop_reason": "final",
+      "tokens": 72876,
+      "session_id": "20261124-200056-484cb5",
+      "output": "Done.\n\n## Root cause\n`app/retry.py` slept a **constant** `base_delay` on every retry:\n\n```python\nawait sleep(base_delay)   # always 0.1\n```\n\nThe helper is documented/expected to back off exponentially, so the second wait must be `2 \u00d7 base_delay`. The visible test caught exactly this: `[0.1, 0.1] != [0.1, 0.2]`.\n\n## Fix\n**File changed:** `app/retry.py` (only file touched \u2014 nothing under `tests/` was modified, added, or deleted)\n\n- `await sleep(base_delay * (2 ** i))` \u2014 delay derived from the loop index, so it generalizes to any `attempts`/`base_delay` (verified: `attempts=5, base_delay=0.1` \u2192 `0.1, 0.2, 0.4, 0.8`). No hardcoded values, no branching on the test's inputs.\n- Added a guard `if attempts < 1: raise ValueError(...)`, which removes the latent `raise None` \u2192 `TypeError` path flagged by review.\n- Preserved behavior: no sleep on first-try success, no sleep after the final failed attempt, last exception re-raised on exhaustion.\n\n## Test command\n```\ncd /tmp/repair_retry_review_iun6zdcv && pytest -q\n```\nResult: `1 passed` (exit code 0). Note: `python -m pytest` fails in this environment because the default interpreter has no pytest module; the `pytest` entrypoint at `/usr/local/py-utils/bin/pytest` works.\n\n`review_work` was called once and returned **PASS** on all three criteria; its one real defect (the `attempts=0` path) was fixed afterward and re-verified.",
+      "review_calls": 1,
+      "review_verdict": "INDEPENDENT REVIEW ([final; 2 iter; 8,215 tok; session 20261124-200056-484cb5-rev-57bb]):\n\n## Verdict: **PASS**\n\n### Per-criterion scores\n\n**Criterion 1 \u2014 visible suite passes: 9/10**\nTraced `tests/test_retry.py::test_backoff_doubles` against `app/retry.py` by hand (no execution tool available here)",
+      "seconds": 375.1,
+      "resolved": true,
+      "visible_pass": true,
+      "hidden_pass": true,
+      "tests_modified": false,
+      "visible_output": ".                                                                        [100%]\n1 passed in 0.01s\n\n/workspaces/argo/.venv/lib/python3.12/site-packages/pytest_asyncio/plugin.py:306: PytestDeprecationWarning: The configuration option \"asyncio_default_fixture_loop_scope\" is unset.\nThe event loop scope for asynchronous fixtures will default to the fixture scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to \"function\" scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: \"function\", \"class\", \"module\", \"package\", \"session\". Set it to \"fixture-scope\" to keep the current behavior.\n\n  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))",
+      "hidden_output": "..                                                                       [100%]\n2 passed in 0.02s\n\n/workspaces/argo/.venv/lib/python3.12/site-packages/pytest_asyncio/plugin.py:306: PytestDeprecationWarning: The configuration option \"asyncio_default_fixture_loop_scope\" is unset.\nThe event loop scope for asynchronous fixtures will default to the fixture scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to \"function\" scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: \"function\", \"class\", \"module\", \"package\", \"session\". Set it to \"fixture-scope\" to keep the current behavior.\n\n  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))",
+      "workdir": "/tmp/repair_retry_review_iun6zdcv"
+    },
+    {
+      "task": "duration",
+      "mode": "review",
+      "completed": true,
+      "iterations": 9,
+      "stop_reason": "final",
+      "tokens": 61101,
+      "session_id": "20261124-200712-f6bb4e",
+      "output": "Done.\n\n**Root cause:** `app/duration.py::to_minutes` only handled a trailing `h` and otherwise fell through to `int(text)`. Any `m` suffix (`\"45m\"`) or combined form (`\"1h30m\"`) raised `ValueError` \u2014 the parser had no notion of a minutes component.\n\n**Fix (only file changed: `app/duration.py`):** replaced the two-branch hack with a general parser:\n- one regex accepting an optional hours component and an optional minutes component, case-insensitive, whitespace-tolerant (`\"2h\"`, `\"45m\"`, `\"1h30m\"`, `\"1h 30m\"`, `\"1.5h\"`, `\"2H\"`)\n- bare numbers still mean minutes (`\"90\"` \u2192 90)\n- invalid input (`\"\"`, `\"h\"`, `\"1h30\"`, `\"30m1h\"`, `\"1h30m45s\"`) raises `ValueError`; non-`str` raises `TypeError`\n- fractional results are preserved (`\"1.25m\"` \u2192 1.25) and return annotations corrected to `float` (int is a subtype), per the review's two annotation defects\n\n**Test command run:** `pytest -q` (in `/tmp/repair_duration_review_7e5_750t`) \u2192 `1 passed`. Note: `python -m pytest` fails in this environment because the default `python` has no pytest module; the `pytest` entrypoint at `/usr/local/py-utils/bin/pytest` works.\n\nNothing under `tests/` was touched. `review_work` was called exactly once; its only real defects (the two return annotations) are fixed.",
+      "review_calls": 1,
+      "review_verdict": "INDEPENDENT REVIEW ([max_iterations; 6 iter; 42,129 tok; session 20261124-200712-f6bb4e-rev-1788]):\n\n## Verdict: **PASS** (with two caveats, both about verification limits rather than the fix)\n\n### Per-criterion scores\n\n**(1) Visible suite passes \u2014 8/10**\nNot executed: `bash`/`run_code` are unavaila",
+      "seconds": 643.0,
+      "resolved": true,
+      "visible_pass": true,
+      "hidden_pass": true,
+      "tests_modified": false,
+      "visible_output": ".                                                                        [100%]\n1 passed in 0.01s\n\n/workspaces/argo/.venv/lib/python3.12/site-packages/pytest_asyncio/plugin.py:306: PytestDeprecationWarning: The configuration option \"asyncio_default_fixture_loop_scope\" is unset.\nThe event loop scope for asynchronous fixtures will default to the fixture scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to \"function\" scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: \"function\", \"class\", \"module\", \"package\", \"session\". Set it to \"fixture-scope\" to keep the current behavior.\n\n  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))",
+      "hidden_output": "..                                                                       [100%]\n2 passed in 0.01s\n\n/workspaces/argo/.venv/lib/python3.12/site-packages/pytest_asyncio/plugin.py:306: PytestDeprecationWarning: The configuration option \"asyncio_default_fixture_loop_scope\" is unset.\nThe event loop scope for asynchronous fixtures will default to the fixture scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to \"function\" scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: \"function\", \"class\", \"module\", \"package\", \"session\". Set it to \"fixture-scope\" to keep the current behavior.\n\n  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))",
+      "workdir": "/tmp/repair_duration_review_7e5_750t"
+    },
+    {
+      "task": "dedupe",
+      "mode": "review",
+      "completed": true,
+      "iterations": 10,
+      "stop_reason": "final",
+      "tokens": 69427,
+      "session_id": "20261124-201756-dfb287",
+      "output": "Done.\n\n**Root cause:** `app/lists.py` implemented `dedupe` as `list(set(items))`. Set construction discards insertion order (so `[\"a\",\"a\",\"b\"]` came back as `[\"b\",\"a\"]`), and it raises `TypeError` for unhashable items like lists or dicts.\n\n**Fix:** rewrote `dedupe` in **`app/lists.py`** (only file changed) to preserve first-occurrence order using a `set` for hashable items plus an equality-scan fallback for unhashable ones, with cross-group comparison so an unhashable value equal to an earlier hashable value is still deduped. It accepts any iterable (generators, tuples, views) and tolerates exotic `__eq__` implementations.\n\n**Test command run:**\n```\ncd /tmp/repair_dedupe_review_tt7qbadb && pytest -q\n```\nResult: `1 passed` (note: `python -m pytest` fails in this environment because the default `python` has no pytest module; the `pytest` entrypoint at `/usr/local/py-utils/bin/pytest` works).\n\n**Verification:** visible suite passes; extra manual checks confirmed order preservation, unhashable items (`[[1],[1],[2]] \u2192 [[1],[2]]`, dicts), generators, mixed `None`/`0`/`False`/`1`/`True`, and cross-bucket dedupe. Nothing under `tests/` was touched \u2014 `tests/test_lists.py` still holds exactly its original three assertions and no `tests/__init__.py` was added.\n\n`review_work` was called once (verdict PASS); I then closed the one non-blocking gap it identified (asymmetric hashable/unhashable comparison) and re-ran the suite.",
+      "review_calls": 1,
+      "review_verdict": "INDEPENDENT REVIEW ([final; 5 iter; 22,621 tok; session 20261124-201756-dfb287-rev-823b]):\n\n## Verdict: **PASS** (with one narrow, non-blocking correctness gap)\n\n### Per-criterion\n\n**(1) Visible suite passes \u2014 9/10**\n`bash`/`run_code` are unavailable to me, so this is a static trace, not an executio",
+      "seconds": 368.9,
+      "resolved": true,
+      "visible_pass": true,
+      "hidden_pass": true,
+      "tests_modified": false,
+      "visible_output": ".                                                                        [100%]\n1 passed in 0.01s\n\n/workspaces/argo/.venv/lib/python3.12/site-packages/pytest_asyncio/plugin.py:306: PytestDeprecationWarning: The configuration option \"asyncio_default_fixture_loop_scope\" is unset.\nThe event loop scope for asynchronous fixtures will default to the fixture scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to \"function\" scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: \"function\", \"class\", \"module\", \"package\", \"session\". Set it to \"fixture-scope\" to keep the current behavior.\n\n  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))",
+      "hidden_output": "..                                                                       [100%]\n2 passed in 0.01s\n\n/workspaces/argo/.venv/lib/python3.12/site-packages/pytest_asyncio/plugin.py:306: PytestDeprecationWarning: The configuration option \"asyncio_default_fixture_loop_scope\" is unset.\nThe event loop scope for asynchronous fixtures will default to the fixture scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to \"function\" scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: \"function\", \"class\", \"module\", \"package\", \"session\". Set it to \"fixture-scope\" to keep the current behavior.\n\n  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))",
+      "workdir": "/tmp/repair_dedupe_review_tt7qbadb"
+    }
+  ],
+  "timestamp": "2026-11-24T20:24:05Z"
+}

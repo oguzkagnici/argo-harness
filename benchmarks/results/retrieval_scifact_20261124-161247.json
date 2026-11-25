@@ -1,0 +1,30 @@
+{
+  "benchmark": "BEIR-SciFact",
+  "docs": 1000,
+  "queries": 100,
+  "embedding_model": "qwen3-embedding-8b",
+  "seed": 0,
+  "metrics": {
+    "bm25": {
+      "recall@10": 0.8647,
+      "recall@100": 0.9467,
+      "ndcg@10": 0.7791
+    },
+    "dense": {
+      "recall@10": 0.98,
+      "recall@100": 0.99,
+      "ndcg@10": 0.8852
+    },
+    "rrf": {
+      "recall@10": 0.9397,
+      "recall@100": 1.0,
+      "ndcg@10": 0.846
+    },
+    "rrf+rerank": {
+      "recall@10": 0.9767,
+      "recall@100": 1.0,
+      "ndcg@10": 0.9155
+    }
+  },
+  "timestamp": "2026-11-24T16:12:47Z"
+}

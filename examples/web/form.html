@@ -1,0 +1,8 @@
+<!doctype html><html><head><title>Argo Test Form</title></head><body>
+<h1>Demo Login</h1>
+<form onsubmit="event.preventDefault(); document.getElementById('out').innerText='Welcome, '+document.getElementById('name').value+'!';">
+  <label>Name <input id="name" name="name" placeholder="your name"></label>
+  <button id="go" type="submit">Sign in</button>
+</form>
+<div id="out"></div>
+</body></html>

@@ -1,0 +1,46 @@
+{
+  "benchmark": "provider-parity",
+  "model": "deepseek-v4.1-flash",
+  "rows": [
+    {
+      "wire_api": "chat",
+      "tool_call_latency_s": 4.63,
+      "tool_calls": [
+        {
+          "id": "chatcmpl-tool-a8c53cf8aab2af28",
+          "name": "calc",
+          "arguments": "{\"expr\": \"17*23\"}"
+        }
+      ],
+      "final_latency_s": 0.93,
+      "final_text": "17 \u00d7 23 = **391**",
+      "final_has_391": true,
+      "tokens": 713,
+      "stream_latency_s": 4.7,
+      "stream_text": "PARITY-STREAM-OK",
+      "stream_ok": true,
+      "ok": true
+    },
+    {
+      "wire_api": "responses",
+      "tool_call_latency_s": 5.43,
+      "tool_calls": [
+        {
+          "id": "chatcmpl-tool-81fd02810ea37c60",
+          "name": "calc",
+          "arguments": "{\"expr\": \"17*23\"}"
+        }
+      ],
+      "final_latency_s": 3.37,
+      "final_text": "17 \u00d7 23 = **391**",
+      "final_has_391": true,
+      "tokens": 713,
+      "stream_latency_s": 1.6,
+      "stream_text": "PARITY-STREAM-OK",
+      "stream_ok": true,
+      "ok": true
+    }
+  ],
+  "ok": true,
+  "timestamp": "2026-11-24T21:32:00Z"
+}

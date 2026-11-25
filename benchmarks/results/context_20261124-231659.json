@@ -1,0 +1,83 @@
+{
+  "benchmark": "context-policy-synthetic",
+  "steps": 60,
+  "window": 32000,
+  "transcript_tokens": 29639,
+  "probes": [
+    1,
+    3,
+    5,
+    8,
+    13,
+    21,
+    26,
+    31,
+    38,
+    45,
+    52,
+    57
+  ],
+  "rows": [
+    {
+      "policy": "full",
+      "final_tokens": 29639,
+      "compactions": 0,
+      "microcompactions": 0,
+      "resets": 0,
+      "fact_hits": 12,
+      "fact_total": 12,
+      "accuracy": 1.0,
+      "seconds": 19.6,
+      "preview": "FACT-01: 414002-A\nFACT-03: 383452-A\nFACT-05: 039317-B\nFACT-08: 095119-G\nFACT-13: 051998-D\nFACT-21: 574351-B\nFACT-26: 488218-H\nFACT-31: 550708-H\nFACT-38: 442182-A\nFACT-45: 990569-E\nFACT-52: 372731-C\nFACT-57: 417225-G"
+    },
+    {
+      "policy": "microcompact",
+      "final_tokens": 24023,
+      "compactions": 0,
+      "microcompactions": 58,
+      "resets": 0,
+      "fact_hits": 12,
+      "fact_total": 12,
+      "accuracy": 1.0,
+      "seconds": 14.6,
+      "preview": "FACT-01: 414002-A\nFACT-03: 383452-A\nFACT-05: 039317-B\nFACT-08: 095119-G\nFACT-13: 051998-D\nFACT-21: 574351-B\nFACT-26: 488218-H\nFACT-31: 550708-H\nFACT-38: 442182-A\nFACT-45: 990569-E\nFACT-52: 372731-C\nFACT-57: 417225-G"
+    },
+    {
+      "policy": "autocompact_75",
+      "final_tokens": 7502,
+      "compactions": 1,
+      "microcompactions": 58,
+      "resets": 0,
+      "fact_hits": 12,
+      "fact_total": 12,
+      "accuracy": 1.0,
+      "seconds": 87.4,
+      "preview": "FACT-01: 414002-A\nFACT-03: 383452-A\nFACT-05: 039317-B\nFACT-08: 095119-G\nFACT-13: 051998-D\nFACT-21: 574351-B\nFACT-26: 488218-H\nFACT-31: 550708-H\nFACT-38: 442182-A\nFACT-45: 990569-E\nFACT-52: 372731-C\nFACT-57: 417225-G"
+    },
+    {
+      "policy": "autocompact_95",
+      "final_tokens": 7546,
+      "compactions": 1,
+      "microcompactions": 0,
+      "resets": 0,
+      "fact_hits": 12,
+      "fact_total": 12,
+      "accuracy": 1.0,
+      "seconds": 67.1,
+      "preview": "FACT-01: 414002-A\nFACT-03: 383452-A\nFACT-05: 039317-B\nFACT-08: 095119-G\nFACT-13: 051998-D\nFACT-21: 574351-B\nFACT-26: 488218-H\nFACT-31: 550708-H\nFACT-38: 442182-A\nFACT-45: 990569-E\nFACT-52: 372731-C\nFACT-57: 417225-G"
+    },
+    {
+      "policy": "reset",
+      "final_tokens": 1225,
+      "compactions": 0,
+      "microcompactions": 0,
+      "resets": 1,
+      "fact_hits": 1,
+      "fact_total": 12,
+      "accuracy": 0.083,
+      "seconds": 86.8,
+      "preview": "FACT-01: not available in the conversation\nFACT-03: not available in the conversation\nFACT-05: not available in the conversation\nFACT-08: not available in the conversation\nFACT-13: not available in the conversation\nFACT-21: not available in the conversation\nFACT-26: not available in the conversation\nFACT-31: not available in the conversation\nFACT-38: not available in the conversation\nFACT-45: not "
+    }
+  ],
+  "timestamp": "2026-11-24T23:16:59Z"
+}

@@ -1,0 +1,154 @@
+# Evaluation and verification
+
+This file records what was actually run, what passed, and what remains unproven. Claims in the README are
+backed by these checks, the benchmark suite, or cited literature.
+
+## 1. Unit / integration tests (no network)
+
+```bash
+pytest -q
+# 63 passed
+```
+
+| Area | Checks |
+|---|---|
+| Loop guard | duplicate read-only calls blocked, no-progress nudge at 4/7 + stop at 10, progress reset, call-order preservation |
+| Retrieval | tokenization, heading-aware chunking, BM25 ranking, RRF fusion, cosine, recency decay |
+| Memory | add/retrieve, exact dedupe, generation isolation, transcripts, link graph |
+| Dreaming | generational clone, supersede, ungrounded-claim downgrade, wiki/procedure creation, rollback |
+| Context | microcompaction + spooling, structured compaction block |
+| Workflows | recursive parameter substitution, missing params, assertions, retries, saved variables |
+| Documents | DOCX/PPTX/PDF/XLSX/MD/HTML creation; structure-aware DOCX read-back (title, heading levels, lists, tables) |
+| Daemon | goal dedupe, claim/finish, dangerous-action approval queue, outbox delivery, read-only trigger allowlist |
+| Server | message→task conversion, OpenAI SSE chunks + `[DONE]`, native `/v1/agent` delta/event/result stream, streamed error path |
+| Provider APIs | Responses payload mapping, assistant `input_text` history, flat tools, `function_call_output`, SSE assembly, usage mapping |
+| Tools | danger guard |
+| MCP | stdio connect, tool discovery + schema, namespaced registry entry, call, bad-server isolation |
+| Worktrees | branch/worktree creation, changed-file detection (edited + untracked), non-git rejection, agent spawn isolation |
+| Plan mode | mutation blocked before approval, plan rejection keeps block, plan-mode off is unchanged |
+| Background | job completion + result, failure containment, blocking wait, unknown id |
+| Research | ledger ids/dedupe/dangling citations, report rendering, verifier parsing, rate-limit retry, end-to-end tools |
+| Security | untrusted wrappers, secret/canary detection, credential-URL blocking, prompt guard on/off |
+| Context policy | reserve-based threshold, compaction circuit breaker, cache-expiry eviction, verbatim fact ledger |
+
+## 2. Benchmarks (published protocols)
+
+Full methodology and cached data: `benchmarks/README.md`. JSON records: `benchmarks/results/`.
+
+| Benchmark | Protocol | Result |
+|---|---|---|
+| HumanEval | 20-task seeded subset, pass@1, isolated subprocess | **20/20 (1.00)**, 12,827 tokens |
+| BEIR SciFact | 100 queries / 1,000 docs / 112 positives | BM25 nDCG@10 0.779 · dense 0.885 · RRF 0.846 · **RRF+rerank 0.916**; R@100 1.00 for RRF and RRF+rerank |
+| Memory learning loop | 6 stale→correction lessons, dream apply, same top-3 queries | contradictory stale **1.00 → 0.00**, corrected recall **0.00 → 1.00** |
+| Workflow replay | extracted `demo_login`, 5 input variations, real Playwright | **5/5**, ~1.8 s per warm replay |
+| Provider parity | live chat vs responses: tool call, tool-result replay, streaming | **both pass**, 713 tokens each path |
+| MCP (live) | local stdio echo server, model asked to add 17+25 | **pass** in 2 iterations / 11,921 tokens; first attempt failed before the `input_schema` fix (3 iter / 17,928), then passed once parameters were exposed |
+| Worktree isolation (live) | parent delegates a docstring edit with `isolate=true` | pass: branch `argo/isolated-job-...`, parent file and status unchanged, child edit present in the worktree |
+| Plan mode (live) | `argo run --plan --yolo`, write one file | pass: 7 iterations / 45,962 tokens; no write before `propose_plan` approval |
+| Background tasks (live) | start a fetch job, then report its title | polling variant 10 iter / 71,428 tok (`no_progress`); `wait_seconds` variant **3 iter / 19,284 tok (`final`)** |
+| Citation verification (live) | 12 claims / 6 local sources | **false-support 0.000** vs 1.000 baseline; bad claims caught 1.000; supported retained 1.000; exact accuracy 0.750 (misses are conservative) |
+ polling variant 10 iter / 71,428 tok (`no_progress`); `wait_seconds` variant **3 iter / 19,284 tok (`final`)** |
+ **pass** in 2 iterations / 11,921 tokens; first attempt failed before the `input_schema` fix (3 iter / 17,928), then passed once parameters were exposed |
+| Repair loop (baseline) | 5 local repos, visible + hidden tests, 16-iteration cap | **5/5 resolved**, 0 tampered, 46,990 tokens / 163.0 s / 7.6 iter per task |
+| Repair loop (review) | same tasks + one mandatory `review_work` | **5/5 resolved**, +35% tokens, 3.2× wall time, no accuracy gain |
+| Prompt injection | 7 local attacks (4 obvious, 3 subtle) × defense off/on | **obedience 0.00 and 0 exfiltrations in both modes**; 5,191 → 5,318 mean tokens (+2.4%) |
+| Context policies | synthetic 60-step / 29.6k-token transcript, 12 planted facts | full 29,639 tok 12/12 · microcompact 24,023 tok 12/12 · **autocompact 7,502 tok 12/12** · reset 1,225 tok 1/12 |
+| Fact-ledger ablation | same transcript, ledger disabled | **5/12 → 12/12** recall for +768 tokens |
+
+Interpretation:
+
+- Dense retrieval beats BM25 on SciFact, RRF maximizes recall at depth, and cross-encoder reranking gives the
+  best top-k ordering — matching the design choice to rerank the fused candidate pool.
+- Dreaming eliminates contradictory stale beliefs while keeping historical mentions in parenthetical form
+  (50% of top-3 hits still mention the old value, 0% present it as current).
+- Workflow replay is deterministic once extracted; the real cost is extraction and selector maintenance.
+- Verbatim fact extraction is what makes compaction safe here: the summary alone retained 5/12 facts, the ledger
+  restored all 12 at ~8k tokens sent. Compaction therefore *is* an option at 0.75 even on a 32k window.
+- Context resets trade recall for a clean window (1/12 facts, 1.2k tokens); use them only after a failed compaction.
+- The injection suite is at ceiling: a well-aligned model refused every payload without any defense, so the
+  measured security benefit is zero and the guard's cost is small but real.
+- The independent reviewer helps on underspecified/high-stakes artifacts but is overhead on easy, fully tested
+  fixes; it cannot run the suite by design (read-only tool allowlist), so hidden-test resolution remains the
+  objective arbiter.
+
+## 3. Live provider verification (`argo doctor`)
+
+Against the configured OpenAI-compatible endpoint (DeepSeek `deepseek-v4.1-flash`, 1,048,576 context):
+
+```
+chat        ok — returned "OK"
+embeddings  ok — dim=4096 (qwen3-embedding-8b)
+rerank      ok — qwen3-reranker-8b
+models      15 available
+bins        python3, node, bash, git, curl present
+```
+
+Tool calling was verified separately: the model returned a valid `tool_calls` payload for a calculator tool.
+
+## 4. Live agent runs
+
+| Scenario | Result |
+|---|---|
+| Create `greet.py`, run it, verify output, delete it | Passed; correct file lifecycle and verification |
+| Browser form: launch → type "Grace" → click → confirm | Passed; DOM showed `Welcome, Grace!`; screenshots captured |
+| DOCX (2 pages) + PPTX (6 slides) + `review_work` | Passed after the loop guard: both artifacts built, reviewed (PASS), two defects fixed, 24 iterations, 415k tokens |
+| Repeated-inspection stress (DOCX unzip loop) | Previously stalled; now nudged at 4/7 no-progress turns and hard-stopped at 10 |
+| OpenAI-compatible `POST /v1/chat/completions` (non-stream) | Passed; wrote `note.txt`, read it back, returned content with session metadata |
+| OpenAI-compatible streaming | Passed (live) and covered by unit tests: standard SSE chunks + `[DONE]` |
+| Native `/v1/agent` SSE | Passed: delta/event/result/done frames |
+| Responses wire API agent run | Passed: create/run/delete file in 5 iterations; streaming prompt returned correctly |
+| Dream cycle over 2 synthetic sessions | Passed; deduped items, superseded stale DB host, wiki/insights/procedures |
+| Workflow extraction from browser trace | Passed; parameterized `url` + `name`, 3 steps with assertions |
+| Daemon `--once` | Passed; webhook trigger queued, read-only allowlist enforced (bash denied), goal done, outbox delivered |
+| Memory export with `--git` | Passed; markdown + frontmatter + `_dashboard.md`, git commit |
+
+## 5. What these checks do *not* prove
+
+- **Official coding-agent performance.** HumanEval is single-shot and the local repair harness uses five tiny repos; neither substitutes for containerized SWE-bench-Lite runs on real projects.
+- **Full-corpus retrieval.** SciFact is sampled to 100 queries / 1,000 docs; reported values are not comparable
+  to official full BEIR leaderboards.
+- **Visual design quality at scale.** Deck/report outputs parse and pass a criteria-based LLM review, but no
+  large human rubric study was run.
+- **WebArena/OSWorld robustness.** Computer use is tested on a deterministic local form; CAPTCHAs, selector
+  drift, and multi-site flows are untested.
+- **Cost/latency optimization.** Per-run token accounting exists; no cross-provider cost benchmark yet.
+- **Multi-model generalization.** All benchmark numbers are from one provider/model.
+- **Injection resistance in general.** Seven fixed payloads against one aligned model, all refused; this does not predict behavior under adaptive attacks (AgentDojo), weaker models, or tool-output impersonation at scale.
+- **Long-horizon context quality in production.** The context numbers come from a synthetic transcript with a small window; real sessions mix images, huge diffs, and many tool types.
+
+## 6. Recommended next evaluations
+
+1. **Coding repair:** official SWE-bench-Lite (containerized repos); compare against the local repair baseline and measure review pass rate.
+2. **Documents:** rubric-scored DOCX/PPTX outputs with an independent evaluator and human spot-checks.
+3. **Research:** citation support rate (does the URL support the claim?) and hallucination rate.
+4. **Memory:** run the learning loop with dreaming disabled, without wiki extraction, and with multiple dream
+   generations to isolate which mechanism drives improvement.
+5. **Retrieval:** full SciFact/NFCorpus plus rerank-depth ablations and query-instruction variants.
+6. **Workflows:** selector-drift recovery time and replay success under page mutations.
+7. **Computer use:** a small WebArena/OSWorld subset; task success and unsafe-action rate.
+8. **Always-on:** trigger→goal latency, duplicate suppression, approval correctness, outbox noise, cost per goal.
+9. **Safety:** AgentDojo with adaptive attacks across models; measure utility cost and violation rate.
+10. **Context:** a live 40–60-step agent task comparing 0.75/0.90 thresholds, ledger on/off, and one forced reset.
+
+## 7. Decision log
+
+[`docs/DECISIONS.md`](DECISIONS.md) records every major choice, its evidence base, and its measured effect.
+
+## 8. Reproduce
+
+```bash
+pytest -q
+argo doctor
+python benchmarks/humaneval.py --limit 20 --verbose
+python benchmarks/retrieval.py --queries 100 --docs 1000
+python benchmarks/memory_loop.py --k 3
+python benchmarks/workflow_replay.py --trials 5
+python benchmarks/repair.py --self-check
+python benchmarks/repair.py --modes baseline,review
+python benchmarks/provider_parity.py
+python benchmarks/injection.py --modes off,on
+python benchmarks/context_bench.py --policies full,microcompact,autocompact_75,autocompact_95,reset
+argo run --no-stream "Create hello.py that prints hi, run it, and report the output."
+argo dream --apply
+argo workflow list
+```

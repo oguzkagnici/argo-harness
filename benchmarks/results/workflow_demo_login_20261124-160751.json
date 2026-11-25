@@ -1,0 +1,56 @@
+{
+  "benchmark": "workflow-replay",
+  "workflow": "demo_login",
+  "workflow_id": "wf_f5ac2edc",
+  "trials": 5,
+  "success_rate": 1.0,
+  "mean_seconds": 6.9,
+  "rows": [
+    {
+      "name": "Grace",
+      "success": true,
+      "ok": true,
+      "steps": 3,
+      "seconds": 27.17,
+      "error": "",
+      "final": "click ok. URL: http://127.0.0.1:33705/form.html\nScreenshot: /workspaces/argo/.argo/browser/click_1795536463770.png\n\nURL: http://127.0.0.1:33705/form.html\n\nTITLE: Argo Test Form\n\nHEADINGS:\nH1: Demo Login\n\nINTERACTIVE:\ninput[text]#name[name=name] placeholder=your name\nbutton[submit]#go placeholder=Sig"
+    },
+    {
+      "name": "Alan",
+      "success": true,
+      "ok": true,
+      "steps": 3,
+      "seconds": 1.81,
+      "error": "",
+      "final": "click ok. URL: http://127.0.0.1:33705/form.html\nScreenshot: /workspaces/argo/.argo/browser/click_1795536465581.png\n\nURL: http://127.0.0.1:33705/form.html\n\nTITLE: Argo Test Form\n\nHEADINGS:\nH1: Demo Login\n\nINTERACTIVE:\ninput[text]#name[name=name] placeholder=your name\nbutton[submit]#go placeholder=Sig"
+    },
+    {
+      "name": "Ada",
+      "success": true,
+      "ok": true,
+      "steps": 3,
+      "seconds": 1.81,
+      "error": "",
+      "final": "click ok. URL: http://127.0.0.1:33705/form.html\nScreenshot: /workspaces/argo/.argo/browser/click_1795536467400.png\n\nURL: http://127.0.0.1:33705/form.html\n\nTITLE: Argo Test Form\n\nHEADINGS:\nH1: Demo Login\n\nINTERACTIVE:\ninput[text]#name[name=name] placeholder=your name\nbutton[submit]#go placeholder=Sig"
+    },
+    {
+      "name": "Linus",
+      "success": true,
+      "ok": true,
+      "steps": 3,
+      "seconds": 1.85,
+      "error": "",
+      "final": "click ok. URL: http://127.0.0.1:33705/form.html\nScreenshot: /workspaces/argo/.argo/browser/click_1795536469266.png\n\nURL: http://127.0.0.1:33705/form.html\n\nTITLE: Argo Test Form\n\nHEADINGS:\nH1: Demo Login\n\nINTERACTIVE:\ninput[text]#name[name=name] placeholder=your name\nbutton[submit]#go placeholder=Sig"
+    },
+    {
+      "name": "Mira",
+      "success": true,
+      "ok": true,
+      "steps": 3,
+      "seconds": 1.85,
+      "error": "",
+      "final": "click ok. URL: http://127.0.0.1:33705/form.html\nScreenshot: /workspaces/argo/.argo/browser/click_1795536471099.png\n\nURL: http://127.0.0.1:33705/form.html\n\nTITLE: Argo Test Form\n\nHEADINGS:\nH1: Demo Login\n\nINTERACTIVE:\ninput[text]#name[name=name] placeholder=your name\nbutton[submit]#go placeholder=Sig"
+    }
+  ],
+  "timestamp": "2026-11-24T16:07:51Z"
+}

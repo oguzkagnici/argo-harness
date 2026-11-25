@@ -1,0 +1,36 @@
+{
+  "benchmark": "context-policy-synthetic",
+  "steps": 60,
+  "window": 32000,
+  "fact_ledger": false,
+  "transcript_tokens": 29639,
+  "probes": [
+    1,
+    3,
+    5,
+    8,
+    13,
+    21,
+    26,
+    31,
+    38,
+    45,
+    52,
+    57
+  ],
+  "rows": [
+    {
+      "policy": "autocompact_75",
+      "final_tokens": 6734,
+      "compactions": 1,
+      "microcompactions": 58,
+      "resets": 0,
+      "fact_hits": 5,
+      "fact_total": 12,
+      "accuracy": 0.417,
+      "seconds": 80.0,
+      "preview": "FACT-01: not available in the retained conversation (compacted out)\nFACT-03: not available in the retained conversation (compacted out)\nFACT-05: not available in the retained conversation (compacted out)\nFACT-08: not available in the retained conversation (compacted out)\nFACT-13: not available in the retained conversation (compacted out)\nFACT-21: not available in the retained conversation (compact"
+    }
+  ],
+  "timestamp": "2026-11-24T23:19:23Z"
+}

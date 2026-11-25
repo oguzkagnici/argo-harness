@@ -1,0 +1,30 @@
+# Copy to ~/.argo/config.toml
+
+[provider]
+base_url = "https://api.openai.com/v1"
+model = "gpt-4o-mini"
+env_key = "OPENAI_API_KEY"      # key is read from this environment variable
+wire_api = "chat"
+
+[models]
+context_window = 128000
+max_output_tokens = 8192
+temperature = 0.2
+embedding_model = "text-embedding-3-small"
+rerank_model = ""               # e.g. "qwen3-reranker-8b" if your endpoint supports /rerank
+memory_inject_chars = 6000
+
+[search]
+provider = "duckduckgo"         # duckduckgo | tavily | brave | searxng
+max_results = 8
+
+[policy]
+shell = "auto"
+write_outside_workspace = "ask"
+max_shell_timeout = 300
+
+# Optional limits
+# max_iterations = 60
+# daily_token_budget = 2000000
+# compaction_threshold = 0.75
+# reset_threshold = 0.92
