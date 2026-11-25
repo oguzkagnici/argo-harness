@@ -44,14 +44,14 @@ Live numbers live in [`benchmarks/README.md`](../benchmarks/README.md); rational
 | BEIR SciFact | Measured | rerank nDCG 0.9155 |
 | BEIR NFCorpus | Measured | rerank nDCG 0.4451 (dense 0.3936, BM25 0.3486) |
 | Memory learning loop | Measured | see README §3 |
-| SWE-bench-Lite | Measured (n=3 attempts) | 16988 **resolved** with test feedback; 2 more graded |
+| SWE-bench-Lite | Measured | **3/3 resolved** with test feedback (16988, 20154, 20590) |
 | Document QA / citation / repair / workflow replay | Measured | see README |
 | Long-horizon context (live) | Measured | 3/3 completion |
 | Observability (trace/metrics/p50/p95/--since/--cost) | Done | `tests/test_observability.py` |
 
 ## Still open
 
-- Grade 2–5 SWE-bench instances and publish a pass rate (n=1 resolved so far).
+- Expand the SWE-bench sample beyond 3 sympy instances (e.g. django/astropy) to get a Lite-wide pass rate.
 - Memory scale test: 40–60 lessons, dream cadence, recall/cost rule.
 - Summary-prompt A/B ("keep raw identifiers" vs current).
 - Live measurement of the repair loop (does in-place repair improve resolution/token?).

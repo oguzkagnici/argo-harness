@@ -206,6 +206,10 @@ DOCX introspection.
   so the loop becomes edit -> observe failure -> fix instead of reading code. Token use roughly halved despite
   finishing the job. n=1: this proves the mechanism, not a pass rate. Grading used the official
   `swebench.harness.run_evaluation` with the prebuilt image, then `--clean True` removed it.
+  **Update:** two more instances (`sympy__sympy-20154`, `sympy__sympy-20590`) were generated and graded the same way
+  -> **both resolved** (2/2 and 1/1 FAIL_TO_PASS, 40/40 and 21/21 PASS_TO_PASS). Overall **3/3 resolved** on the
+  sympy subset. `20590` used all 40 iterations / 745k tokens, so the guard + test loop is what let it converge. n=3,
+  same repo: establishes the mechanism and a first pass rate, not a Lite-wide number.
 - **NFCorpus retrieval replication.** The production recipe's core holds on a second corpus: dense beats BM25 on
   R@10/R@100/nDCG and rerank-fused-top-20 gives the best nDCG (0.4451 vs 0.3936 dense / 0.3486 BM25). The SciFact
   claim that RRF maximizes Recall@100 did **not** replicate (dense 0.4278 > RRF 0.3780 on NFCorpus), so we will not

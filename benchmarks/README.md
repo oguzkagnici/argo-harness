@@ -375,7 +375,15 @@ python benchmarks/swebench_lite.py --evaluate --limit 2      # docker, prebuilt 
 |---|---|---|---|---|---|---|
 | sympy__sympy-21614 (gold, harness check) | — | — | — | gold | n/a | **1/1 resolved** |
 | sympy__sympy-16988 (Argo, no test feedback) | no_progress | 22 | 464,315 | 1 file / 470 chars | no | not graded |
-| sympy__sympy-16988 (Argo, `--install-deps`) | final | 17 | 228,926 | 1 file / 808 chars | no | **1/1 resolved** |
+| sympy__sympy-16988 (Argo, `--install-deps`) | final | 17 | 228,926 | 1 file / 808 chars | no | **resolved** |
+| sympy__sympy-20154 (Argo, `--install-deps`) | final | 20 | 326,913 | 1 file / 1,773 chars | no | **resolved** |
+| sympy__sympy-20590 (Argo, `--install-deps`) | max_iterations | 40 | 744,832 | 1 file / 646 chars | no | **resolved** |
+
+**Graded pass rate: 3/3 (100%)** on the three sympy instances run with test feedback
+(`benchmarks/results/swebench_lite_graded_20261125.json`). Per-instance FAIL_TO_PASS / PASS_TO_PASS:
+16988 2/2 + 72/72, 20154 2/2 + 40/40, 20590 1/1 + 21/21. `20590` needed all 40 iterations and 745k tokens and
+still passed on the final patch — the test loop lets a slow run converge where the old harness gave up. n=3 is a
+small, same-repo sample; do not read it as a Lite-wide rate.
 
 **Headline:** with the test-feedback loop (`--install-deps`: official test patch applied + editable install + the
 exact `FAIL_TO_PASS` pytest command in the prompt) the same instance that previously produced no patch **resolves**:

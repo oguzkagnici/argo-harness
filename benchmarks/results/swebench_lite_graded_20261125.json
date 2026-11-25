@@ -1,0 +1,45 @@
+{
+  "benchmark": "swebench-lite-test-feedback",
+  "harness": "swebench.harness.run_evaluation",
+  "model": "deepseek-v4.1-flash",
+  "instances": {
+    "sympy__sympy-16988": {
+      "resolved": true,
+      "fail_to_pass": {
+        "ok": 2,
+        "fail": 0
+      },
+      "pass_to_pass": {
+        "ok": 72,
+        "fail": 0
+      },
+      "run": "argo_20261125221307"
+    },
+    "sympy__sympy-20154": {
+      "resolved": true,
+      "fail_to_pass": {
+        "ok": 2,
+        "fail": 0
+      },
+      "pass_to_pass": {
+        "ok": 40,
+        "fail": 0
+      },
+      "run": "argo_20261125230139"
+    },
+    "sympy__sympy-20590": {
+      "resolved": true,
+      "fail_to_pass": {
+        "ok": 1,
+        "fail": 0
+      },
+      "pass_to_pass": {
+        "ok": 21,
+        "fail": 0
+      },
+      "run": "argo_20261125230139"
+    }
+  },
+  "resolved": 3,
+  "total": 3
+}
