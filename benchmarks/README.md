@@ -43,7 +43,8 @@ cross-encoder reranking gives the best ordering (nDCG) and is what memory retrie
 final top-k. Absolute values are not comparable to official full-corpus BEIR numbers because of sampling;
 relative comparisons are.
 
-Data: corpus/queries from `huggingface.co/datasets/BeIR/scifact` (parquet), qrels from `BeIR/scifact-qrels`.
+Data: corpus/queries from `huggingface.co/datasets/BeIR/scifact` (parquet), qrels from `BeIR/scifact-qrels`;
+fetch locally with `python benchmarks/fetch_data.py --corpus scifact` (large parquet files are not committed).
 Embeddings are cached under `benchmarks/data/cache/`.
 
 ### 2b. BEIR NFCorpus replication (2026-11-25)
@@ -66,7 +67,8 @@ Replication findings: **dense > BM25 (R@10, R@100, nDCG) and rerank gives the be
 so the production rerank-the-fused-top-20 default is supported by two corpora. The SciFact claim "RRF maximizes
 recall at depth" did **not** replicate: on NFCorpus plain dense has the best Recall@100 (0.4278 vs 0.3780). The
 weighted-RRF recall advantage is therefore corpus-dependent; reranking is the robust component. Data:
-`huggingface.co/datasets/BeIR/nfcorpus` + `BeIR/nfcorpus-qrels`.
+`huggingface.co/datasets/BeIR/nfcorpus` + `BeIR/nfcorpus-qrels`, fetched with
+`python benchmarks/fetch_data.py --corpus nfcorpus`.
 
 ## 3. Memory learning loop (dreaming)
 
