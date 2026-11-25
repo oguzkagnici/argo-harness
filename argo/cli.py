@@ -132,12 +132,16 @@ def run(task: str = typer.Argument(..., help="Task for the agent."),
         show_reasoning: bool = typer.Option(False, "--reasoning", help="Show reasoning deltas."),
         max_iterations: Optional[int] = typer.Option(None, "--max-iterations"),
         yolo: bool = typer.Option(False, "--yolo", help="Allow dangerous shell/code actions without confirmation."),
-        plan: bool = typer.Option(False, "--plan", help="Read-only until a plan is approved.")) -> None:
+        plan: bool = typer.Option(False, "--plan", help="Read-only until a plan is approved."),
+        review: Optional[str] = typer.Option(None, "--review",
+                                             help="manual|adaptive|always|off — automatic review policy.")) -> None:
     """Run one task to completion."""
     cfg = _cfg(model, base_url, workspace)
     if max_iterations:
         cfg.max_iterations = max_iterations
     cfg.plan_mode = plan or cfg.plan_mode
+    if review:
+        cfg.review_policy = review
     asyncio.run(_run_task(cfg, task, session, stream, show_reasoning, yolo))
 
 

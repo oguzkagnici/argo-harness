@@ -129,6 +129,7 @@ provider/key works out of the box.
 argo run "task..."                  # one-shot, streamed
 argo run --no-stream "task..."      # final answer only
 argo run --plan "task..."           # read-only until one plan approval unlocks mutations
+argo run --review adaptive "task..." # auto-review risky artifacts (docs/code) before finishing
 argo chat                           # multi-turn REPL (/dream /memory /plan /new /stats)
 argo serve --port 8000              # OpenAI-compatible + native API
 argo daemon                         # always-on: triggers, queue, approvals, dreaming
@@ -231,7 +232,7 @@ Codex, DeepSeek Harness, OpenHands, Instinct, Hermes, and Anthropic's always-on 
 ## Tests
 
 ```bash
-pytest -q            # 64 unit/integration tests, no network required
+pytest -q            # 70 unit/integration tests, no network required
 argo doctor          # live provider check
 ```
 

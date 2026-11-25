@@ -348,36 +348,7 @@ class Agent:
     def _register_review(self, reg: ToolRegistry) -> None:
         async def review(ctx: ToolContext, criteria: str, paths: list[str] | None = None,
                          max_iterations: int = 6) -> ToolResult:
-            readonly = {n for n, t in reg.tools.items() if t.read_only and n not in ("spawn_subagent",)}
-            target = ", ".join(paths or []) or "the workspace artifacts named in the criteria"
-            available = ", ".join(sorted(readonly))
-            brief = (
-                "You are an independent evaluator. A producer agent has completed work; audit it rigorously.\n\n"
-                f"ACCEPTANCE CRITERIA:\n{criteria}\n\n"
-                f"ARTIFACTS TO INSPECT: {target}\n\n"
-                f"AVAILABLE TOOLS (the only permitted tools): {available}.\n"
-                "Do not modify anything. Do not trust claims — verify against the actual artifacts.\n"
-                "Guidance: use read_document for .docx/.pptx/.pdf/.xlsx (never cat or read_file a binary Office "
-                "file); use read_file for text/code; use list_dir/grep_files for structure. bash, run_code and "
-                "write tools are NOT available here, so do not attempt them. Inspect only the artifacts named "
-                "above; do not glob or search the rest of the workspace.\n\n"
-                "Report concisely: (1) verdict PASS/FAIL, (2) per-criterion score 0-10 with evidence, "
-                "(3) concrete defects with a precise location, (4) the minimum set of fixes required. "
-                "One inspection pass is enough unless a criterion requires a second artifact. "
-                "Be specific and skeptical; do not pad with praise.")
-            child = Agent(self.cfg, llm=self._llm, memory=self.memory, events=self.events,
-                          approvals=self.approvals, max_iterations=max_iterations, depth=self.depth + 1,
-                          allow_tools=readonly)
-            child.session = Session.create(self.cfg, self.memory,
-                                           session_id=f"{self.session.id if self.session else 's'}-rev-"
-                                                      f"{uuid.uuid4().hex[:4]}")
-            try:
-                result = await child.run(brief)
-            finally:
-                await child.close()
-            self.events.emit("review_end", verdict=result.output[:300])
-            return ToolResult(f"INDEPENDENT REVIEW ({result.brief()}):\n\n{result.output}",
-                              metadata={"reviewer_session": result.session_id})
+            return await self._run_review(criteria, paths, max_iterations=max_iterations)
 
         reg.add(
             "review_work",
@@ -392,6 +363,83 @@ class Agent:
              "required": ["criteria"]},
             review, read_only=False, timeout=1200, max_output=30_000,
         )
+
+    async def _run_review(self, criteria: str, paths: list[str] | None = None,
+                          max_iterations: int = 6) -> ToolResult:
+        readonly = {n for n, t in (self.registry.tools if self.registry else {}).items()
+                    if getattr(t, "read_only", False) and n not in ("spawn_subagent",)}
+        target = ", ".join(paths or []) or "the workspace artifacts named in the criteria"
+        available = ", ".join(sorted(readonly))
+        brief = (
+            "You are an independent evaluator. A producer agent has completed work; audit it rigorously.\n\n"
+            f"ACCEPTANCE CRITERIA:\n{criteria}\n\n"
+            f"ARTIFACTS TO INSPECT: {target}\n\n"
+            f"AVAILABLE TOOLS (the only permitted tools): {available}.\n"
+            "Do not modify anything. Do not trust claims — verify against the actual artifacts.\n"
+            "Guidance: use read_document for .docx/.pptx/.pdf/.xlsx (never cat or read_file a binary Office "
+            "file); use read_file for text/code; use list_dir/grep_files for structure. bash, run_code and "
+            "write tools are NOT available here, so do not attempt them. Inspect only the artifacts named "
+            "above; do not glob or search the rest of the workspace.\n\n"
+            "Report concisely: (1) verdict PASS/FAIL, (2) per-criterion score 0-10 with evidence, "
+            "(3) concrete defects with a precise location, (4) the minimum set of fixes required. "
+            "One inspection pass is enough unless a criterion requires a second artifact. "
+            "Be specific and skeptical; do not pad with praise.")
+        child = Agent(self.cfg, llm=self._llm, memory=self.memory, events=self.events,
+                      approvals=self.approvals, max_iterations=max_iterations, depth=self.depth + 1,
+                      allow_tools=readonly or None)
+        child.session = Session.create(self.cfg, self.memory,
+                                       session_id=f"{self.session.id if self.session else 's'}-rev-"
+                                                  f"{uuid.uuid4().hex[:4]}")
+        try:
+            result = await child.run(brief)
+        finally:
+            await child.close()
+        self.events.emit("review_end", verdict=result.output[:300])
+        return ToolResult(f"INDEPENDENT REVIEW ({result.brief()}):\n\n{result.output}",
+                          metadata={"reviewer_session": result.session_id})
+
+    def _review_risk(self) -> tuple[int, list[str]]:
+        """Heuristic risk score for auto-review: artifact type dominates, then volume and loop length."""
+        files = list(self.session.files_touched if self.session else [])
+        docs = [f for f in files if Path(f).suffix.lower() in (".docx", ".pptx", ".xlsx", ".pdf")]
+        code = [f for f in files if Path(f).suffix.lower() in (".py", ".js", ".ts", ".go", ".rs", ".java", ".sh")]
+        score, reasons = 0, []
+        if docs:
+            score += min(8, 4 * len(docs))
+            reasons.append(f"{len(docs)} document artifact(s)")
+        if code:
+            score += min(4, 2 * len(code))
+            reasons.append(f"{len(code)} code file(s)")
+        if self.iterations >= 15:
+            score += 2
+            reasons.append(f"{self.iterations} iterations")
+        return score, reasons
+
+    async def _maybe_auto_review(self) -> dict[str, Any] | None:
+        policy = str(getattr(self.cfg, "review_policy", "manual")).lower()
+        if policy not in ("adaptive", "always") or self.depth != 0:
+            return None
+        if any(m.role == "tool" and m.name == "review_work" for m in self.messages):
+            return None
+        score, reasons = self._review_risk()
+        if not reasons:
+            return None
+        threshold = int(getattr(self.cfg, "review_risk_threshold", 4))
+        if policy == "adaptive" and score < threshold:
+            return None
+        files = [f for f in (self.session.files_touched if self.session else [])
+                 if Path(f).suffix.lower() in (".docx", ".pptx", ".xlsx", ".pdf", ".py", ".js", ".ts",
+                                               ".go", ".rs", ".java", ".sh")][:8]
+        goal = str((self.session.meta.get("goal") if self.session else "") or "")[:1200]
+        criteria = (f"The user asked: {goal}\n\n"
+                    "Each named artifact exists, opens, and is non-empty; its content satisfies exactly this "
+                    "request and the requested format; no placeholders or internal contradictions. Do not "
+                    "require sections, sources, or metadata that the request did not ask for.")
+        self.events.emit("auto_review_start", score=score, reasons=reasons)
+        result = await self._run_review(criteria, files, max_iterations=4)
+        self.events.emit("auto_review_end", score=score)
+        return {"score": score, "reasons": reasons, "policy": policy,
+                "verdict": result.content[:2000], "reviewer_session": result.metadata.get("reviewer_session")}
 
     def _register_daemon_tools(self, reg: ToolRegistry) -> None:
         async def notify(ctx: ToolContext, message: str, channel: str = "user") -> ToolResult:
@@ -587,6 +635,13 @@ class Agent:
                 final_text = (resp.message.content or "").strip()
             except Exception:
                 final_text = "(stopped at step limit; no summary available)"
+
+        review_meta = await self._maybe_auto_review()
+        if review_meta is not None:
+            final_text = (final_text + "\n\n---\nAUTO-REVIEW (risk=%d, %s):\n%s" %
+                          (review_meta["score"], ", ".join(review_meta["reasons"]),
+                           review_meta["verdict"]))
+            self.session.record("auto_review", score=review_meta["score"], reasons=review_meta["reasons"])
 
         usage = Usage(
             prompt_tokens=self.last_usage.prompt_tokens - start_usage.prompt_tokens,

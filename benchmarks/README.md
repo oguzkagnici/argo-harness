@@ -241,6 +241,28 @@ The two verdict misses are conservative in the safe direction: an overstated thr
 ~120 s at concurrency 2; a provider 429 mid-run exposed two robustness gaps, both fixed: retry with backoff
 on rate limits, and a strict-JSON retry when the verifier replies in prose.
 
+## 11. Document QA (DOCX / PPTX / XLSX / PDF)
+
+Ten questions with exact answers over generated documents, answered by a fresh agent in two modes:
+
+- `tool` — `read_document`, `list_dir`, `grep_files`, `read_file`
+- `bash` — `bash`, `run_code`, `list_dir`, `read_file` (the agent must parse the formats itself)
+
+```bash
+python benchmarks/document_qa.py --self-check
+python benchmarks/document_qa.py --modes tool,bash
+```
+
+| Mode | Accuracy | Mean tokens | Mean iterations |
+|---|---|---|---|
+| `tool` | 9/10 (one 180 s provider stall) | **6,748** | **2.9** |
+| `bash` | 10/10 | 8,351 | 3.8 |
+
+The one tool-mode miss was a timeout with zero iterations; re-running that question returned `4800 req/s` in
+52 s / 4 iterations / 10,898 tokens. On answered questions both modes are accurate, but the document tool needs
+~24% fewer tokens and ~1 fewer iteration. `--self-check` verifies that every expected answer is present in
+`read_document` output before spending any model calls.
+
 ## Reproduce everything
 
 ```bash
@@ -256,6 +278,7 @@ python benchmarks/context_bench.py --policies full,microcompact,autocompact_75,a
 python benchmarks/citation.py
 python benchmarks/memory_loop.py --arms no_dream,no_wiki,no_grounding,two_generations,full
 python benchmarks/retrieval.py --queries 100 --docs 1000 --ablate
+python benchmarks/document_qa.py --modes tool,bash
 pytest -q
 ```
 

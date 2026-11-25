@@ -73,6 +73,8 @@ restrictions. Cache snapshots and record retrieval timestamps to make runs repro
 | 8 | ~~**Background tasks**~~ — done: `start_background`/`check_background` | 2 tests + live runs; wait-based check cut 10 iter/71,428 tok → **3/19,284** | Next: observability (per-tool latency/token, session replay) |
 | 9a | ~~**Memory ablations**~~ — done: `--arms` on `benchmarks/memory_loop.py` | no-dream 1.00→0.00 correct; wiki pages cut stale mentions 0.67→0.50; two generations = no gain at 2.2× cost | Next: multi-generation policy test at scale |
 | 9b | ~~**Retrieval ablations**~~ — done: `--ablate` on `benchmarks/retrieval.py` | rerank-20 knee; k=10 and dense-heavy +2 nDCG on SciFact; knobs added to config | Next: NFCorpus replication before changing defaults |
+| 9c | ~~**Document QA**~~ — done: `benchmarks/document_qa.py` | tool 9/10 at 6,748 tok / 2.9 iter (1 stall); bash 10/10 at 8,351 / 3.8 | Next: chart-heavy and scanned PDFs |
+| 9d | ~~**Adaptive review policy**~~ — done: `--review adaptive`, risk scoring | 6 tests; live doc run auto-reviewed (27.8k tok) and found defects | Next: measure cost/quality on the repair suite |
 | 9 | **Deep research implementation** — R1+R2 done (`argo/research/`) | false-support 1.000 → 0.000, supported retention 1.000 on a 12-claim local set | Next: R3 adaptive search, R4 report pipeline, GAIA subset |
 
 ## 4. Non-goals (for now)

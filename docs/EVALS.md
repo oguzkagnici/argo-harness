@@ -7,7 +7,7 @@ backed by these checks, the benchmark suite, or cited literature.
 
 ```bash
 pytest -q
-# 64 passed
+# 70 passed
 ```
 
 | Area | Checks |
@@ -28,6 +28,7 @@ pytest -q
 | Plan mode | mutation blocked before approval, plan rejection keeps block, plan-mode off is unchanged |
 | Background | job completion + result, failure containment, blocking wait, unknown id |
 | Research | ledger ids/dedupe/dangling citations, report rendering, verifier parsing, rate-limit retry, end-to-end tools |
+| Review policy | adaptive triggers on risky artifacts, skips low-risk, off never triggers, explicit review suppresses auto, risk weights, goal-aware criteria |
 | Security | untrusted wrappers, secret/canary detection, credential-URL blocking, prompt guard on/off |
 | Context policy | reserve-based threshold, compaction circuit breaker, cache-expiry eviction, verbatim fact ledger |
 
@@ -47,11 +48,15 @@ Full methodology and cached data: `benchmarks/README.md`. JSON records: `benchma
 | Plan mode (live) | `argo run --plan --yolo`, write one file | pass: 7 iterations / 45,962 tokens; no write before `propose_plan` approval |
 | Background tasks (live) | start a fetch job, then report its title | polling variant 10 iter / 71,428 tok (`no_progress`); `wait_seconds` variant **3 iter / 19,284 tok (`final`)** |
 | Citation verification (live) | 12 claims / 6 local sources | **false-support 0.000** vs 1.000 baseline; bad claims caught 1.000; supported retained 1.000; exact accuracy 0.750 (misses are conservative) |
+| Document QA (live) | 10 questions over generated DOCX/PPTX/XLSX/PDF | tool 9/10 (one provider stall), bash 10/10; tool cheaper by 24% tokens and 1 iteration |
+| Adaptive review (live) | create `report.docx`, `--review adaptive` | auto-review fired in 4 iterations / 27,796 tokens; reviewer flagged unspecified sections, so criteria were made goal-aware |
+ **false-support 0.000** vs 1.000 baseline; bad claims caught 1.000; supported retained 1.000; exact accuracy 0.750 (misses are conservative) |
  polling variant 10 iter / 71,428 tok (`no_progress`); `wait_seconds` variant **3 iter / 19,284 tok (`final`)** |
  **pass** in 2 iterations / 11,921 tokens; first attempt failed before the `input_schema` fix (3 iter / 17,928), then passed once parameters were exposed |
 | Repair loop (baseline) | 5 local repos, visible + hidden tests, 16-iteration cap | **5/5 resolved**, 0 tampered, 46,990 tokens / 163.0 s / 7.6 iter per task |
 | Repair loop (review) | same tasks + one mandatory `review_work` | **5/5 resolved**, +35% tokens, 3.2× wall time, no accuracy gain |
 | Prompt injection | 7 local attacks (4 obvious, 3 subtle) × defense off/on | **obedience 0.00 and 0 exfiltrations in both modes**; 5,191 → 5,318 mean tokens (+2.4%) |
+| Document QA | 10 questions × 2 modes (DOCX/PPTX/XLSX/PDF) | tool **9/10 answered correctly** at 6,748 tok / 2.9 iter (miss = 180 s stall, retry correct); bash 10/10 at 8,351 tok / 3.8 iter |
 | Memory ablations | 6 lessons × 5 arms | no-dream **1.00 stale / 0.00 correct**; full **0.00 / 1.00**; no-wiki stale mentions 0.67 vs 0.50; two generations = same recall, 2.2× time |
 | Retrieval ablations | SciFact, one factor at a time | rerank 20 0.9190 > 50 0.9161 > 10 0.8919; k=10 0.8649 > k=60 0.8460; dense-heavy 0.8660 > BM25-heavy 0.8100; query instruction 0.8392 |
 | Context policies | synthetic 60-step / 29.6k-token transcript, 12 planted facts | full 29,639 tok 12/12 · microcompact 24,023 tok 12/12 · **autocompact 7,502 tok 12/12** · reset 1,225 tok 1/12 |
