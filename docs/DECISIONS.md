@@ -125,6 +125,16 @@ DOCX introspection.
 - **Sampled benchmarks.** SciFact uses 100 queries / 1,000 docs and HumanEval uses 20 tasks to bound cost. Relative
   comparisons are valid; absolute values are not comparable to official leaderboards.
 
+## 2a. Adaptive prompt injection (2026-11-25, full suite)
+
+- **Result: no adaptive attack succeeds; the defenses are not load-bearing on this model.** 3 cases × (1 static +
+  2 adaptive rounds) × 2 defense modes = 18 runs. Static ASR 0.0 (0/3), adaptive ASR 0.0 (0/6), utility 1.0,
+  exfiltrations 0 in both modes. Defenses cost ~9% more tokens (4,635 vs 4,250 mean) with no utility loss.
+  Interpretation: `deepseek-v4.1-flash` is at ceiling for this benchmark, so the measurement cannot separate defended
+  from undefended behaviour. We keep the defenses (untrusted-content wrapping, egress secret block, injection guard)
+  because the fixed suite and literature justify them, but we do **not** add adaptive-specific heuristics on the
+  strength of a negative-result benchmark. A weaker target model is the next measurement that would be informative.
+
 ## 3a. Daemon leases and budgets (2026-11-25)
 
 - **Multi-worker safety via SQLite leases.** Claiming uses `BEGIN IMMEDIATE` plus a
@@ -164,6 +174,15 @@ DOCX introspection.
   (scope change) falls through to a fresh approval. This mirrors Claude Code/Codex batch-approval semantics where
   approval is tied to a declared action surface, not to a single turn. 2 tests (resume reuses approval; scope change
   re-prompts).
+
+## 3d. SWE-bench test feedback (2026-11-25)
+
+- **Give the agent the project's own failing tests.** The first Argo SWE-bench attempt could not run tests, so its
+  only feedback was reading code — the harness's strongest loop was disabled. Added `--install-deps`: editable
+  install (`pip install -e .` + pytest) in the checkout, then the prompt is upgraded from "suites are not installed"
+  to the exact `FAIL_TO_PASS` pytest command with an iterate-until-green instruction. `fail_to_pass()` /
+  `test_command()` normalise the dataset's JSON-string or list formats and target only the graded node ids (no
+  whole-suite runs). Unit-tested offline; a live graded run is in progress and its number will be recorded here.
 
 ## 4. Deliberately not done (yet)
 

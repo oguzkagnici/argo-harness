@@ -45,10 +45,17 @@ ISSUE:
 
 Work directly in the repository. Read the relevant source, find the root cause, and edit the code so the issue is
 fixed. Do not modify, delete, or weaken any test files. Prefer the minimal correct change; do not reformat unrelated
-code. You may use bash to search (grep/ripgrep) and to run `python -c` syntax checks; project test suites are not
-installed here, so do not spend many turns trying to run them.
+code. You may use bash to search (grep/ripgrep) and to run `python -c` syntax checks and the specific tests below.
 
 When done, finish with a short summary: files changed and why the fix is correct."""
+
+PROMPT_FEEDBACK = PROMPT + """
+
+The project is installed in editable mode, so you CAN and MUST run the failing tests:
+
+  {test_command}
+
+Iterate: run it, read the failure, fix the source, and re-run until it passes. Do not edit the test files."""
 
 
 def load_instances(ids: list[str], limit: int, offset: int = 0) -> list[dict]:
@@ -114,6 +121,41 @@ def make_patch(ws: Path, inst: dict) -> tuple[str, bool]:
     return diff[:MAX_PATCH_CHARS], tampered
 
 
+def fail_to_pass(inst: dict) -> list[str]:
+    raw = inst.get("FAIL_TO_PASS", inst.get("fail_to_pass", []))
+    if isinstance(raw, str):
+        try:
+            raw = json.loads(raw)
+        except json.JSONDecodeError:
+            raw = [raw]
+    return [str(x) for x in (raw or [])]
+
+
+def test_command(inst: dict) -> str:
+    """A pytest invocation restricted to the instance's FAIL_TO_PASS node ids."""
+    nodes = fail_to_pass(inst)
+    if not nodes:
+        return ""
+    quoted = " ".join(f'"{n}"' for n in nodes[:25])
+    return f"python -m pytest -q {quoted}"
+
+
+def install_env(ws: Path, timeout: float = 900.0) -> tuple[bool, str]:
+    """Editable-install the checkout so the agent can execute the project's own tests."""
+    cmds = [[sys.executable, "-m", "pip", "install", "-q", "-e", "."],
+            [sys.executable, "-m", "pip", "install", "-q", "pytest"]]
+    log: list[str] = []
+    for cmd in cmds:
+        try:
+            proc = subprocess.run(cmd, cwd=ws, capture_output=True, text=True, timeout=timeout)
+        except subprocess.TimeoutExpired:
+            return False, f"{' '.join(cmd)} timed out after {timeout:.0f}s"
+        log.append((proc.stdout + proc.stderr)[-2000:])
+        if proc.returncode != 0:
+            return False, "\n".join(log)[-4000:]
+    return True, "\n".join(log)[-2000:]
+
+
 def build_cfg(ws: Path, state: Path):
     cfg = load_config({"workspace": str(ws), "data_dir": str(state)})
     cfg.session_dir = state / "sessions"
@@ -132,10 +174,21 @@ async def generate_one(inst: dict, args) -> dict:
     started = time.monotonic()
     row = {"instance_id": inst["instance_id"], "repo": inst["repo"],
            "base_commit": inst["base_commit"], "tests_protected": sorted(test_files(inst))[:10]}
+    prompt = PROMPT.format(repo=inst["repo"], problem=inst["problem_statement"])
+    cmd = test_command(inst)
+    if getattr(args, "install_deps", False):
+        ok, log = install_env(ws)
+        row["deps_installed"] = ok
+        if not ok:
+            row["install_log"] = log[-1200:]
+        elif cmd:
+            prompt = PROMPT_FEEDBACK.format(repo=inst["repo"], problem=inst["problem_statement"],
+                                            test_command=cmd)
+        row["test_command"] = cmd
     try:
         async with Agent(cfg, max_iterations=args.max_iterations) as agent:
             result = await asyncio.wait_for(
-                agent.run(PROMPT.format(repo=inst["repo"], problem=inst["problem_statement"])),
+                agent.run(prompt),
                 timeout=args.timeout)
         row.update({"stop_reason": result.stop_reason, "iterations": result.iterations,
                     "tokens": result.usage.total_tokens, "session_id": result.session_id,
@@ -208,6 +261,8 @@ def main() -> int:
     ap.add_argument("--timeout", type=float, default=1500.0)
     ap.add_argument("--test-timeout", type=int, default=1800)
     ap.add_argument("--predictions", default="")
+    ap.add_argument("--install-deps", action="store_true",
+                    help="pip install -e . in the checkout and give the agent the FAIL_TO_PASS command")
     args = ap.parse_args()
     if args.generate:
         return asyncio.run(generate(args))

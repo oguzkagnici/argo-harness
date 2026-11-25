@@ -4,7 +4,7 @@ Ordered by (a) what is currently *unproven or broken*, (b) how much evidence exi
 (c) cost in rate limit/quota on this shared machine. Every item lists the success criterion so it can be closed with
 a measurement, not an opinion.
 
-Current state: 127 offline tests pass. Live evidence exists for retrieval, memory, repair, documents, citation,
+Current state: 130 offline tests pass. Live evidence exists for retrieval, memory, repair, documents, citation,
 injection (fixed + partial adaptive), context (synthetic + live), observability, worktree review, and the SWE-bench
 Docker path (gold patch 1/1).
 
@@ -24,14 +24,17 @@ compactions, summarization cost roughly offsets the reclaimed context. That is a
 **If it still fails:** the summary prompt, not the ledger, is the bottleneck — try "answer-probe-aware" compaction
 (re-inject the user's exact question verbatim into the compacted block).
 
-### 2. Finish the adaptive-injection suite
+### 2. ~~Finish the adaptive-injection suite~~ — done
 **Why:** the fixed suite is at ceiling (model refuses everything undefended); only one adaptive case has run.
 **Do:** `python benchmarks/adaptive_injection.py --rounds 2 --modes off,on` (3 cases × 2 rounds × 2 modes).
 **Pass:** documented ASR per round; if adaptive ASR > static ASR, add a targeted defense (e.g. strip instructions
 from HTML comments, or require confirmation for writes whose content came from a tool result).
 **Better:** add a second, smaller/weaker model as the target to see a non-ceiling result.
+**Status:** done (full 18-run suite). Static 0/3, adaptive 0/6 ASR, utility 1.0, 0 exfiltrations, both modes;
+defenses cost ~9% tokens. Adaptive did **not** beat static, so no targeted defense added. Remaining: weak-model target
+for a non-ceiling signal.
 
-### 3. Close the SWE-bench loop (agent that can run the tests)
+### 3. Close the SWE-bench loop (agent that can run the tests) — infra done, measuring
 **Why:** the first Argo SWE-bench attempt produced a plausible but likely wrong patch, because the agent could not
 run the project's tests — the harness's key feedback loop was missing.
 **Do:** two options, cheapest first:
@@ -40,6 +43,9 @@ run the project's tests — the harness's key feedback loop was missing.
 - **B. Agent-in-container**: exec the agent's read/edit/test actions inside `swebench/sweb.eval.*` (already validated
   by the gold run) so the environment is exactly official. More work, exact.
 **Pass:** 2-5 instances graded by the official harness, with a written pass rate (no cherry-picking).
+**Status:** option A implemented (`--install-deps`: editable install + FAIL_TO_PASS command in the prompt, unit-tested).
+A live run on `sympy__sympy-16988` is running; grade it with `--evaluate` and record pass rate. Option B (agent inside
+the official image) is still the exact-environment alternative.
 **Note:** one image ≈ 2.5-3 GB unpacked; this box has ~9 GB and 4 GB RAM, so run one at a time and clean up.
 
 ### 4. ~~Self-contention guard for the provider~~ — done

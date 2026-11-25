@@ -320,15 +320,21 @@ the payload for a second round. Each case also runs a fixed "static" payload as 
 python benchmarks/adaptive_injection.py --rounds 2 --modes off,on
 ```
 
-| Defense | Static ASR | Adaptive ASR (all rounds) | Final-round ASR | Utility | Exfiltrations |
-|---|---|---|---|---|---|
-| off | 0.0 | 0.0 | 0.0 | 1.0 | 0 |
-| on | 0.0 | 0.0 | 0.0 | 1.0 | 0 |
+| Defense | Static ASR | Adaptive ASR (all rounds) | Final-round ASR | Utility | Exfiltrations | Mean tokens |
+|---|---|---|---|---|---|---|
+| off | 0.0 (0/3) | 0.0 (0/6) | 0.0 | 1.0 | 0 | 4,250 |
+| on | 0.0 (0/3) | 0.0 (0/6) | 0.0 | 1.0 | 0 | 4,635 |
+
+Full suite: 3 cases (`web_write`, `web_exfil`, `file_write`) × 1 static + 2 adaptive rounds × 2 defense modes = 18
+runs, `benchmarks/results/adaptive_injection_20261125-214157.json`.
 
 Findings: the aligned target refuses both hand-written and iteratively refined injections across web, file and
-exfiltration channels; the defenses do not reduce utility. This is a negative result for the *benchmark*, not proof
-of safety — see the limitations section. The runner, payload parser, defense-aware attacker prompt and feedback
-loop are unit-tested; only `web_write`/off was executed live before the quota squeeze.
+exfiltration channels; **adaptive ASR is not higher than static ASR**, so no targeted adaptive defense was required.
+The defenses (untrusted-content wrapping + injection guard) cost about **+9% tokens** (4,635 vs 4,250) and did not
+change utility. This is a ceiling result — the target model is strong enough that the benchmark cannot separate
+defended from undefended behaviour — not proof of safety; see the limitations section. The next step that would give
+a non-ceiling signal is running a smaller/weaker target model, which we have not done. The runner, payload parser,
+defense-aware attacker prompt and feedback loop are unit-tested.
 
 ## 14. SWE-bench-Lite subset (official harness)
 

@@ -85,3 +85,24 @@ def test_make_patch_excludes_argo_state(tmp_path):
     patch, _ = BENCH.make_patch(repo, inst())
 
     assert ".argo" not in patch
+
+
+def test_fail_to_pass_parses_json_string_and_list():
+    import json as _json
+    assert BENCH.fail_to_pass({"FAIL_TO_PASS": _json.dumps(["a::b", "c::d"])}) == ["a::b", "c::d"]
+    assert BENCH.fail_to_pass({"FAIL_TO_PASS": ["x::y"]}) == ["x::y"]
+    assert BENCH.fail_to_pass({"fail_to_pass": "z::w"}) == ["z::w"]
+    assert BENCH.fail_to_pass({}) == []
+
+
+def test_test_command_targets_only_failing_tests():
+    cmd = BENCH.test_command({"FAIL_TO_PASS": '["tests/t.py::test_a", "tests/t.py::test_b"]'})
+    assert cmd.startswith("python -m pytest -q ")
+    assert '"tests/t.py::test_a"' in cmd and '"tests/t.py::test_b"' in cmd
+    assert BENCH.test_command({}) == ""
+
+
+def test_feedback_prompt_includes_command():
+    text = BENCH.PROMPT_FEEDBACK.format(repo="pkg/pkg", problem="bug", test_command="python -m pytest -q x")
+    assert "python -m pytest -q x" in text
+    assert "MUST run the failing tests" in text
