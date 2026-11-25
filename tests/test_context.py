@@ -330,3 +330,37 @@ async def test_ineffective_compaction_disables_further_compaction():
 
     assert cm._compact_disabled, "churn breaker did not fire"
     assert calls["n"] == 2
+
+
+class RecordingLLM(FakeLLM):
+    def __init__(self):
+        self.models: list = []
+
+    async def chat(self, messages, tools=None, **kwargs):
+        self.models.append(kwargs.get("model"))
+        return await super().chat(messages, tools, **kwargs)
+
+
+@pytest.mark.asyncio
+async def test_cheap_model_routes_compaction_and_handoff(tmp_path):
+    cfg = FakeCfg()
+    cfg.cheap_model = "cheap-mini"
+    cfg.session_dir = tmp_path
+    llm = RecordingLLM()
+    cm = ContextManager(cfg, llm=llm)
+    msgs = [Message(role="system", content="sys")]
+    msgs += [Message(role="user", content=f"m{i} " + "word " * 100) for i in range(20)]
+    await cm.compact(msgs)
+    await cm.make_handoff(msgs, "state")
+    assert llm.models == ["cheap-mini", "cheap-mini"]
+
+
+@pytest.mark.asyncio
+async def test_no_cheap_model_keeps_default():
+    cfg = FakeCfg()
+    cfg.cheap_model = ""
+    llm = RecordingLLM()
+    cm = ContextManager(cfg, llm=llm)
+    msgs = [Message(role="system", content="sys")] + [Message(role="user", content="x " * 200) for _ in range(20)]
+    await cm.compact(msgs)
+    assert llm.models == [None]

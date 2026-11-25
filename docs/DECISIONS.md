@@ -212,6 +212,17 @@ DOCX introspection.
   change the production default to "always RRF for recall"; reranking is the transferable win. `--corpus` now selects
   scifact/nfcorpus.
 
+## 3g. Cheap-model routing and quota pacing (2026-11-25)
+
+- **Cheap model for compaction/handoff, not the control loop.** Routing the *main* loop per turn risks cache
+  misses and incoherent edits; routing the summarization calls is the pattern Claude Code uses for subagents. Added
+  `models.cheap` (or `--cheap-model`) which is passed as `model=` to the compaction summary and the reset handoff
+  only. When unset, behaviour is unchanged. 2 tests (routing on/off). Subagent model routing is not enabled because
+  our subagents edit code; a review-only cheap model is the safer follow-up.
+- **`low_priority_pacing`.** A `--low-priority` switch turns into an optional delay before every provider call, so
+  a background benchmark does not starve an interactive session on a shared quota. Implemented centrally in
+  `LLMClient._pace()` used by `_post` and both streaming paths; 1 test.
+
 ## 4. Deliberately not done (yet)
 
 - A graded SWE-bench-Lite score (the runner and Docker path exist; only a gold-patch check has been run, because

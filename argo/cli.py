@@ -131,6 +131,10 @@ def run(task: str = typer.Argument(..., help="Task for the agent."),
         stream: bool = typer.Option(True, "--stream/--no-stream"),
         show_reasoning: bool = typer.Option(False, "--reasoning", help="Show reasoning deltas."),
         max_iterations: Optional[int] = typer.Option(None, "--max-iterations"),
+        cheap_model: Optional[str] = typer.Option(None, "--cheap-model",
+                                                  help="Cheaper model for compaction/handoff summaries."),
+        low_priority: bool = typer.Option(False, "--low-priority",
+                                          help="Pace provider calls to avoid starving other clients."),
         budget: Optional[int] = typer.Option(None, "--budget", help="Max tokens for this run."),
         max_wall: Optional[float] = typer.Option(None, "--max-wall", help="Max wall-clock seconds for this run."),
         max_tool_calls: Optional[int] = typer.Option(None, "--max-tool-calls",
@@ -143,6 +147,10 @@ def run(task: str = typer.Argument(..., help="Task for the agent."),
     cfg = _cfg(model, base_url, workspace)
     if max_iterations:
         cfg.max_iterations = max_iterations
+    if cheap_model:
+        cfg.cheap_model = cheap_model
+    if low_priority:
+        cfg.low_priority_pacing = 2.0
     if budget:
         cfg.max_run_tokens = budget
     if max_wall:

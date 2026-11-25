@@ -4,7 +4,7 @@ Ordered by (a) what is currently *unproven or broken*, (b) how much evidence exi
 (c) cost in rate limit/quota on this shared machine. Every item lists the success criterion so it can be closed with
 a measurement, not an opinion.
 
-Current state: 133 offline tests pass. Live evidence exists for retrieval, memory, repair, documents, citation,
+Current state: 136 offline tests pass. Live evidence exists for retrieval, memory, repair, documents, citation,
 injection (fixed + partial adaptive), context (synthetic + live), observability, worktree review, and the SWE-bench
 Docker path (gold patch 1/1).
 
@@ -54,7 +54,8 @@ exact-environment alternative.
 **Why:** we repeatedly interrupted each other because the harness and this session share one rate-limited endpoint.
 **Done:** in-flight cap `ARGO_MAX_CONCURRENCY` (default 2, per event loop), jittered exponential backoff honoring
 `Retry-After`, 6 attempts on both `_post` and both streaming paths. 5 tests in `tests/test_provider_limits.py`.
-Remaining: a `--low-priority` pacing flag, and a live 30-iteration competing-client run once quota allows.
+Remaining: a live 30-iteration competing-client run once quota allows. (`low_priority_pacing` flag implemented,
+tested.)
 
 ---
 
@@ -137,7 +138,8 @@ Mutating MCP tools still go through approvals (`read_only=False` default).
     exact-answer subset with cached pages.
 15. ~~**Plan persistence**~~ — done: `Session.plan_approved` + `approved_actions` are persisted and reloaded;
     a resumed plan is reused when actions ⊆ approved, and re-prompts on scope change. 2 tests.
-16. **Multi-model router**: cheap model for exploration, strong model for final edits; ablate on repair/SWE-bench.
+16. **Multi-model router**: partially done — `models.cheap` routes compaction/handoff summaries only (2 tests).
+    Per-turn exploration/final routing and a review-only cheap subagent remain, and should be ablated before enabling.
 
 ---
 

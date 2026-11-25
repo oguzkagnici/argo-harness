@@ -84,3 +84,19 @@ async def test_chat_raises_after_exhausting_retries(tmp_path, monkeypatch):
             await llm.chat([Message(role="user", content="hi")], tools=None)
 
     assert calls["n"] == 6 and "429" in str(exc.value)
+
+
+async def test_low_priority_pacing_delays_requests(tmp_path, monkeypatch):
+    import time
+    c = cfg(tmp_path)
+    c.low_priority_pacing = 0.15
+
+    async def handler(request):
+        return httpx.Response(200, json={"choices": [{"message": {"content": "ok"}}], "model": "m"})
+
+    client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    llm = LLMClient(c, client=client)
+    started = time.monotonic()
+    await llm.chat([Message(role="user", content="hi")])
+    assert time.monotonic() - started >= 0.14
+    await client.aclose()

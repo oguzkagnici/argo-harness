@@ -195,7 +195,13 @@ class LLMClient:
     def _headers(self) -> dict[str, str]:
         return self.cfg.provider.headers
 
+    async def _pace(self) -> None:
+        delay = float(getattr(self.cfg, "low_priority_pacing", 0.0) or 0.0)
+        if delay > 0:
+            await asyncio.sleep(delay)
+
     async def _post(self, path: str, payload: dict[str, Any], retries: int = 6) -> dict[str, Any]:
+        await self._pace()
         url = f"{self.cfg.provider.base_url}{path}"
         last: Exception | None = None
         for attempt in range(retries):
@@ -391,6 +397,7 @@ class LLMClient:
         The assembled final LLMResponse is available as delta.final_response on the done delta
         via attribute `done_delta` returned by `collect_stream`.
         """
+        await self._pace()
         if self.cfg.provider.wire_api == "responses":
             async for delta in self._stream_responses(messages, tools, **kwargs):
                 yield delta

@@ -276,7 +276,8 @@ class ContextManager:
         try:
             resp = await self.llm.chat([Message(role="user", content=prompt)],
                                        tools=None, temperature=0.1,
-                                       max_tokens=min(4000, self.cfg.models.max_output_tokens))
+                                       max_tokens=min(4000, self.cfg.models.max_output_tokens),
+                                       model=getattr(self.cfg, "cheap_model", "") or None)
             summary = (resp.message.content or "").strip()
         except Exception:
             summary = ""
@@ -306,7 +307,8 @@ class ContextManager:
         prompt = HANDOFF_PROMPT.format(summary=state_summary[:4000] or "(see recent messages)", recent=recent)
         try:
             resp = await self.llm.chat([Message(role="user", content=prompt)], tools=None,
-                                       temperature=0.1, max_tokens=min(3000, self.cfg.models.max_output_tokens))
+                                       temperature=0.1, max_tokens=min(3000, self.cfg.models.max_output_tokens),
+                                       model=getattr(self.cfg, "cheap_model", "") or None)
             handoff = (resp.message.content or "").strip()
         except Exception:
             handoff = ""
