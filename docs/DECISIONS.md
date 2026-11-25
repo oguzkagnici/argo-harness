@@ -160,7 +160,7 @@ DOCX introspection.
 - **MCP resources and HTTP/SSE transport.** Tools-only stdio was the last gap versus the MCP spec. `connect()` now
   picks `stdio` / `streamable_http_client` / `sse_client` from `transport`, lists `resources`, and the agent exposes
   one read-only `mcp__<server>__read_resource` tool per server (so non-callable context — docs, records, files — is
-  reachable from the loop). Verified with the stdio fixture (resource read + agent registry) and a real in-process
+  reachable from the loop), lists prompts and exposes `mcp__<server>__get_prompt`. Verified with the stdio fixture (resource read + agent registry) and a real in-process
   uvicorn streamable-HTTP server (`tests/test_mcp_http.py`). Mutating MCP tools still route through the approval
   queue via `MCPServerConfig.read_only=False`.
 

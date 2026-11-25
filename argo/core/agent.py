@@ -327,6 +327,29 @@ class Agent:
                 timeout=float(timeouts.get(server, 120.0)),
                 category="mcp",
             ))
+        prompts_by_server: dict[str, list[Any]] = {}
+        for prompt in getattr(self.mcp, "prompts", []) or []:
+            prompts_by_server.setdefault(prompt.server, []).append(prompt)
+        for server, prompts in prompts_by_server.items():
+            client = self.mcp
+
+            async def prompt_handler(ctx: ToolContext, name: str, arguments: dict | None = None,
+                                     _server=server) -> ToolResult:
+                ctx.emit("mcp_get_prompt", server=_server, prompt=name)
+                return await client.get_prompt(_server, name, arguments or {})
+
+            listing = ", ".join(p.name for p in prompts[:20])
+            reg.register(Tool(
+                name=f"mcp__{re.sub(r'[^A-Za-z0-9_-]+', '_', server)}__get_prompt",
+                description=(f"Render an MCP prompt template from '{server}'. Available: {listing}")[:1024],
+                parameters={"type": "object", "properties": {"name": {"type": "string"},
+                                                             "arguments": {"type": "object"}},
+                            "required": ["name"]},
+                handler=prompt_handler,
+                read_only=True, parallel_safe=True,
+                timeout=float(timeouts.get(server, 120.0)),
+                category="mcp",
+            ))
 
     def _register_subagent(self, reg: ToolRegistry) -> None:
         async def spawn(ctx: ToolContext, task: str, allowed_tools: list[str] | None = None,

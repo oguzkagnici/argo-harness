@@ -126,8 +126,9 @@ is the export format. OTel export and a served live view remain optional and are
 **Do:** resources + prompts, HTTP/SSE transport, and per-server/per-tool approval policy (mutating default).
 **Pass:** a live server exposing a resource is readable from the agent; a mutating MCP tool triggers the approval
 queue.
-**Status:** done. Resources listed + `mcp__<server>__read_resource` tool; `transport="http"|"sse"` via the SDK's
-`streamable_http_client`/`sse_client`. Tests: stdio resource read, agent registry read tool, real uvicorn HTTP server.
+**Status:** done. Resources + prompts (read_resource / get_prompt tools), `transport="http"|"sse"` via the SDK's
+`streamable_http_client`/`sse_client`, per-server `read_only` approval policy. Tests: stdio resource+prompt read,
+agent registry tools, real uvicorn HTTP server.
 Mutating MCP tools still go through approvals (`read_only=False` default).
 
 ---

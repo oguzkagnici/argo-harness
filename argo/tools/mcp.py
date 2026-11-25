@@ -29,6 +29,14 @@ class MCPResourceInfo:
 
 
 @dataclass
+class MCPPromptInfo:
+    server: str
+    name: str
+    description: str = ""
+    arguments: list[Any] = field(default_factory=list)
+
+
+@dataclass
 class MCPToolInfo:
     server: str
     name: str
@@ -46,6 +54,7 @@ class MCPClient:
     sessions: dict[str, Any] = field(default_factory=dict)
     tools: list[MCPToolInfo] = field(default_factory=list)
     resources: list[MCPResourceInfo] = field(default_factory=list)
+    prompts: list[MCPPromptInfo] = field(default_factory=list)
     errors: dict[str, str] = field(default_factory=dict)
     _stack: AsyncExitStack | None = None
 
@@ -92,9 +101,39 @@ class MCPClient:
                         name=str(getattr(item, "name", "") or ""),
                         mime_type=str(getattr(item, "mimeType", "") or getattr(item, "mime_type", "") or ""),
                         description=str(getattr(item, "description", "") or "")[:1024]))
+                try:
+                    listed = await session.list_prompts()
+                except Exception:
+                    listed = None
+                for item in getattr(listed, "prompts", []) or []:
+                    self.prompts.append(MCPPromptInfo(
+                        server=srv.name, name=str(getattr(item, "name", "")),
+                        description=str(getattr(item, "description", "") or "")[:1024],
+                        arguments=list(getattr(item, "arguments", []) or [])))
             except Exception as exc:  # one bad server must not take down the harness
                 self.errors[srv.name] = f"{type(exc).__name__}: {exc}"
         return self
+
+    async def get_prompt(self, server: str, name: str, arguments: dict[str, Any] | None = None) -> ToolResult:
+        session = self.sessions.get(server)
+        if session is None:
+            return ToolResult(f"MCP server '{server}' unavailable: {self.errors.get(server, 'not connected')}",
+                              is_error=True)
+        try:
+            result = await session.get_prompt(name, arguments=arguments or {})
+        except Exception as exc:
+            return ToolResult(f"MCP prompt '{server}/{name}' failed: {type(exc).__name__}: {exc}", is_error=True)
+        parts: list[str] = []
+        for item in getattr(result, "messages", []) or []:
+            content = getattr(item, "content", item)
+            text = getattr(content, "text", None)
+            if text is not None:
+                parts.append(text)
+            elif hasattr(content, "model_dump"):
+                parts.append(json.dumps(content.model_dump(), default=str))
+            else:
+                parts.append(str(content))
+        return ToolResult("\n".join(parts) or "(empty prompt)", metadata={"server": server, "prompt": name})
 
     async def read_resource(self, server: str, uri: str) -> ToolResult:
         session = self.sessions.get(server)

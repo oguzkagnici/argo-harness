@@ -224,8 +224,6 @@ async def generate_one(inst: dict, args) -> dict:
            "base_commit": inst["base_commit"], "tests_protected": sorted(test_files(inst))[:10]}
     prompt = PROMPT.format(repo=inst["repo"], problem=inst["problem_statement"])
     cmd = test_command(inst)
-    if cmd:
-        cmd = cmd.replace("python ", f"{sys.executable} ", 1)
     if getattr(args, "install_deps", False):
         row["test_patch_applied"] = apply_test_patch(ws, inst)
         ok, log = install_env(ws)
@@ -233,8 +231,14 @@ async def generate_one(inst: dict, args) -> dict:
         if not ok:
             row["install_log"] = log[-1200:]
         elif cmd:
+            # A wrapper outside the repo pins the venv interpreter (the editable install target)
+            # without adding an untracked file to the prediction diff.
+            runner = WORK / f"run_tests_{inst['instance_id']}.sh"
+            runner.parent.mkdir(parents=True, exist_ok=True)
+            real_cmd = cmd.replace("python ", f"{sys.executable} ", 1)
+            runner.write_text(f'#!/bin/bash\ncd "{ws}"\n{real_cmd}\n', encoding="utf-8")
             prompt = PROMPT_FEEDBACK.format(repo=inst["repo"], problem=inst["problem_statement"],
-                                            test_command=cmd)
+                                            test_command=f"bash {runner}")
         row["test_command"] = cmd
     try:
         async with Agent(cfg, max_iterations=args.max_iterations) as agent:

@@ -22,5 +22,10 @@ def readme() -> str:
     return "argo echo server readme: ${ECHO_SECRET}"
 
 
+@server.prompt(name="greet", description="Greet a user by name")
+def greet(name: str = "world") -> str:
+    return f"Please greet {name} warmly."
+
+
 if __name__ == "__main__":
     server.run("stdio")

@@ -30,6 +30,9 @@ async def test_mcp_client_lists_and_calls_tools():
         assert not result.is_error and result.content.strip() == "42"
         doc = await client.read_resource("echo", "echo://readme")
         assert not doc.is_error and "readme" in doc.content.lower()
+        assert [p.name for p in client.prompts] == ["greet"]
+        rendered = await client.get_prompt("echo", "greet", {"name": "Argo"})
+        assert not rendered.is_error and "Argo" in rendered.content
         rev = await client.call("echo", "reverse", {"text": "argo"})
         assert rev.content.strip() == "ogra"
     finally:
@@ -83,3 +86,7 @@ async def test_agent_registry_exposes_mcp_tools(tmp_path):
         read = agent.registry.execute("mcp__echo__read_resource", {"uri": "echo://readme"})
         read = await read
         assert not read.is_error and "readme" in read.content.lower()
+        assert "mcp__echo__get_prompt" in names
+        rendered = await agent.registry.execute("mcp__echo__get_prompt",
+                                                {"name": "greet", "arguments": {"name": "Argo"}})
+        assert not rendered.is_error and "Argo" in rendered.content
