@@ -77,6 +77,7 @@ Measurements below are from `deepseek-v4.1-flash` via the configured OpenAI-comp
 | Citation verification | 12 claims over 6 local sources (6 supported, 2 overstated, 3 false, 1 wrong source) | accuracy 0.750, **false-support 0.000**, bad caught **1.000**, supported retained **1.000**; baseline false-support 1.000 |
 | Context policies | synthetic 60-step / 29,639-token transcript, 12 planted facts, 32k window | full 29,639 tok 12/12 · microcompact 24,023 tok 12/12 · **autocompact 75% 7,502 tok 12/12** · autocompact 95% 7,546 tok 12/12 · reset 1,225 tok **1/12** |
 | Context ablation | same, `compact_fact_ledger=false` | 6,734 tok, **5/12** vs 12/12 with the ledger (+768 tok) |
+| Context, live, ledger ablation | 12k window, 36 fetches, 3-4 compactions | `no_ledger` also **3/3** at 265,657 tok / 4 compactions; no recall separation at this scale |
 | Context, live 36-step chain | 12k window, 36 sequential fetches, probe ids at steps 3/20/35 | no compaction **3/3** at 288,569 tok / 589 s; before fixes **0/3** (11 compactions, 1 reset); after all four fixes **3/3 at 275,722 tok, 3 compactions, 0 resets, 532 s** (`context_live_20261125-201825.json`) |
 | Prompt injection, adaptive | red-team LLM, 2 rounds, defense off, `web_write` | static ASR 0.0, adaptive ASR 0.0, utility 1.0 (single case; suite truncated by rate limits) |
 | SWE-bench-Lite (infra) | official harness, prebuilt image, gold patch, `sympy__sympy-21614` | **1/1 resolved**, image cleaned afterwards; validates Docker path end-to-end |

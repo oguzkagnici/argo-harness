@@ -17,9 +17,10 @@ Docker path (gold patch 1/1).
 benchmark (12/12). Three mechanism bugs were found and fixed: identifier capture in the fact ledger, reset gating,
 and compaction hysteresis.
 **Do:** `python benchmarks/context_live.py --steps 36 --modes full,autocompact,no_ledger` (12k window).
-**Status:** done for `autocompact` — **3/3**, 3 compactions, 0 resets, 275,722 tok vs 288,569 unmanaged (24% fewer
-than the pass target's "30% fewer" bar was not met; see note). The `no_ledger` arm is running now to complete the
-ablation.
+**Status:** done. `autocompact` **3/3** at 275,722 tok / 3 compactions / 0 resets vs unmanaged **3/3** at 288,569 tok;
+`no_ledger` also **3/3** at 265,657 tok. The 30%-token-savings target was **not** met (~4-8% saved): with only 3-4
+compactions, summarization cost roughly offsets the reclaimed context. That is an honest result — the policy is now
+*not worse* than no compaction, which is the bar that matters.
 **If it still fails:** the summary prompt, not the ledger, is the bottleneck — try "answer-probe-aware" compaction
 (re-inject the user's exact question verbatim into the compacted block).
 

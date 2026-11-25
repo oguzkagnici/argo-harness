@@ -251,7 +251,7 @@ Published protocols, runnable scripts and JSON records in [`benchmarks/`](benchm
 | Workflow replay, extracted `demo_login` × 5 | **5/5** success |
 | Repair loop, 5 local repos + hidden tests | baseline **5/5** at 47k tok / 163s; with review **5/5** at 63k tok / 527s (+35% tokens, no accuracy gain) |
 | Provider parity, chat vs responses | both paths pass tool calls, tool-result replay, and streaming; same token accounting |
-| Live context, 36-step token chain (12k window) | **3/3** with compaction at 275,722 tok / 3 compactions / 0 resets vs **3/3** unmanaged at 288,569 tok (churn bug found en route: 0/3, 11 compactions) |
+| Live context, 36-step token chain (12k window) | **3/3** with compaction (275,722 tok / 3 compactions / 0 resets) vs **3/3** unmanaged (288,569 tok); ledger-off also 3/3 (265,657 tok). Churn bug found en route: 0/3, 11 compactions |
 | Adaptive prompt injection (red-team loop) | static 0.0 / adaptive 0.0 ASR, utility 1.0 (1 case run; suite truncated by rate limits) |
 | SWE-bench-Lite (official harness) | Docker path validated with the gold patch: **1/1 resolved**; Argo patch generated for 1 instance, not yet graded |
 

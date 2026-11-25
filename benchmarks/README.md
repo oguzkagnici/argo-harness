@@ -281,7 +281,7 @@ python benchmarks/context_live.py --steps 36 --modes full,autocompact,no_ledger
 | `autocompact`, hysteresis only | 0/3 | 214,976 | 6 | 1 | 865 s | log only |
 | `autocompact`, identifiers + reset gating | 0/3 | 233,453 | 7 | 1 | 1,312 s | log only |
 | **`autocompact`, all fixes** | **3/3** | **275,722** | **3** | **0** | **532 s** | `context_live_20261125-201825.json` |
-| `no_ledger`, all fixes | pending | — | — | — | — | rerun in progress |
+| `no_ledger`, all fixes | **3/3** | 265,657 | 4 | 0 | 615 s | `context_live_20261125-203411.json` |
 
 Findings, in the order the runs exposed them:
 
@@ -305,6 +305,11 @@ which mechanism actually mattered.
 A caveat on interpretation: a 12k window for a 36-step task is deliberately hostile (the system prompt + tool
 schemas are ~3k). It is a stress test of the *policy*, not a typical deployment; with a 24k+ window the same run
 barely compacts.
+
+**The ledger is not load-bearing at this scale.** With the policy fixed, `no_ledger` also scores 3/3 (4 compactions,
+265,657 tok) — slightly *cheaper* than the ledger arm, because one fewer summary call offsets the smaller block.
+The ledger's measured win remains the synthetic 60-step test (5/12 → 12/12 recall at +768 tokens); here the summary
+alone kept the three ids. Keep the ledger for long, fact-dense sessions, not as a claimed universal win.
 
 ## 13. Adaptive prompt injection (AgentDojo-style red team, local)
 

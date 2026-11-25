@@ -1,0 +1,36 @@
+{
+  "benchmark": "context-live-token-chain",
+  "steps": 36,
+  "probes": [
+    3,
+    20,
+    35
+  ],
+  "window": 12000,
+  "rows": [
+    {
+      "mode": "no_ledger",
+      "steps_fetched": 35,
+      "stop": "final",
+      "iterations": 37,
+      "tokens": 265657,
+      "compactions": 4,
+      "resets": 0,
+      "correct": 3,
+      "probes": 3,
+      "expected": {
+        "3": "T03-613ad6",
+        "20": "T20-6162fa",
+        "35": "T35-2a99a5"
+      },
+      "found": {
+        "3": "T03-613ad6",
+        "20": "T20-6162fa",
+        "35": "T35-2a99a5"
+      },
+      "answer": "STEP 3: T03-613ad6\nSTEP 20: T20-6162fa\nSTEP 35: T35-2a99a5",
+      "seconds": 615.3
+    }
+  ],
+  "timestamp": "2026-11-25T20:34:11Z"
+}
