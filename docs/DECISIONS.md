@@ -241,7 +241,11 @@ DOCX introspection.
   (one bullet per tool result, identifiers copied verbatim), `twopass` (extract a raw fact list, then compress it).
   `context_live.py` gains matching modes (`prompt_ids`, `prompt_twopass`) and a `--probes` selector so shorter,
   cheaper runs can still ask multiple recall questions. Offline tests pin the prompt text, the extract->compress
-  call order, and the fact hand-off. A live 18-step A/B is running; numbers will be added to the README.
+  call order, and the fact hand-off.
+  **Measured (18 steps, 12k window, probes 3/10/17):** default 3/3 @87,320 tok / 2 compactions; `identifiers`
+  3/3 @86,490 tok / **1 compaction**; `twopass` 3/3 but **0 compactions** — its two-call summaries kept failing
+  under shared-quota 429s and the breaker disabled compaction (the run still fit the window). Decision: prefer the
+  identifier-preserving prompt (same recall, fewer compactions, cheaper); do not adopt two-pass in this harness.
 
 ## 4. Deliberately not done (yet)
 

@@ -53,7 +53,7 @@ Live numbers live in [`benchmarks/README.md`](../benchmarks/README.md); rational
 
 - Expand the SWE-bench sample beyond 3 sympy instances (e.g. django/astropy) to get a Lite-wide pass rate.
 - Memory cadence/wiki ablations at 40–60 lessons (24-lesson scale test + two-generation rule done).
-- Summary-prompt A/B ("keep raw identifiers" vs current).
+- Summary-prompt A/B: `identifiers` wins at 18 steps (3/3, 1 vs 2 compactions); confirm at 36 steps.
 - Live measurement of the repair loop (does in-place repair improve resolution/token?).
 - Deep research R3/R4: report-level citation precision/recall and a GAIA/BrowseComp-style subset.
 - Computer-use subset (WebArena/OSWorld) and unsafe-action rate.

@@ -317,6 +317,7 @@ mid-run, which stresses summary fidelity rather than just the mechanism.
 
 ```bash
 python benchmarks/context_live.py --steps 36 --modes full,autocompact,no_ledger
+python benchmarks/context_live.py --steps 18 --probes 3,10,17 --modes autocompact,prompt_ids,prompt_twopass
 ```
 
 | Mode | Recall | Tokens | Compactions | Resets | Wall | Record |
@@ -355,6 +356,26 @@ barely compacts.
 265,657 tok) — slightly *cheaper* than the ledger arm, because one fewer summary call offsets the smaller block.
 The ledger's measured win remains the synthetic 60-step test (5/12 → 12/12 recall at +768 tokens); here the summary
 alone kept the three ids. Keep the ledger for long, fact-dense sessions, not as a claimed universal win.
+
+### 12b. Summary-prompt A/B (18 steps, 12k window)
+
+`summary_prompt_variant` selects the compaction prompt; `context_live.py` runs each as a mode.
+
+```bash
+python benchmarks/context_live.py --steps 18 --probes 3,10,17 --modes autocompact,prompt_ids,prompt_twopass
+```
+
+| Mode | Recall | Tokens | Compactions | Resets | Wall | Record |
+|---|---|---|---|---|---|---|
+| `autocompact` (default prompt) | 3/3 | 87,320 | 2 | 0 | 262 s | `context_live_20261125-234714.json` |
+| **`prompt_ids` (identifier-preserving)** | **3/3** | **86,490** | **1** | 0 | **224 s** | same |
+| `prompt_twopass` (extract → compress) | 3/3* | 89,746 | 0* | 0 | 506 s | same |
+
+`prompt_ids` matches recall with **one fewer compaction** and slightly fewer tokens, so it is the best candidate to
+promote. `*` `prompt_twopass` did **not** actually compact: each two-call summary failed under shared-quota 429s,
+and after three real failures the compaction circuit breaker disabled summarization for the run. It still answered
+3/3 because 18 steps fit the 12k window without compaction. Two calls per compaction doubles exposure to rate
+limits for no measured recall gain — not adopted. Single run, one 18-step chain: directional.
 
 ## 13. Adaptive prompt injection (AgentDojo-style red team, local)
 
@@ -438,6 +459,7 @@ python benchmarks/memory_loop.py --arms no_dream,no_wiki,no_grounding,two_genera
 python benchmarks/retrieval.py --queries 100 --docs 1000 --ablate
 python benchmarks/document_qa.py --modes tool,bash
 python benchmarks/context_live.py --steps 36 --modes full,autocompact,no_ledger
+python benchmarks/context_live.py --steps 18 --probes 3,10,17 --modes autocompact,prompt_ids,prompt_twopass
 python benchmarks/adaptive_injection.py --rounds 2 --modes off,on
 python benchmarks/swebench_lite.py --generate --limit 2
 python benchmarks/swebench_lite.py --evaluate --limit 2

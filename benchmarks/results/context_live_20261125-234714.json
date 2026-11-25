@@ -1,0 +1,82 @@
+{
+  "benchmark": "context-live-token-chain",
+  "steps": 18,
+  "probes": [
+    3,
+    10,
+    17
+  ],
+  "window": 12000,
+  "rows": [
+    {
+      "mode": "autocompact",
+      "steps_fetched": 17,
+      "stop": "final",
+      "iterations": 19,
+      "tokens": 87320,
+      "compactions": 2,
+      "resets": 0,
+      "correct": 3,
+      "probes": 3,
+      "expected": {
+        "3": "T03-613ad6",
+        "10": "T10-48995f",
+        "17": "T17-205727"
+      },
+      "found": {
+        "3": "T03-613ad6",
+        "10": "T10-48995f",
+        "17": "T17-205727"
+      },
+      "answer": "STEP 3: T03-613ad6\nSTEP 10: T10-48995f\nSTEP 17: T17-205727",
+      "seconds": 261.9
+    },
+    {
+      "mode": "prompt_ids",
+      "steps_fetched": 17,
+      "stop": "final",
+      "iterations": 19,
+      "tokens": 86490,
+      "compactions": 1,
+      "resets": 0,
+      "correct": 3,
+      "probes": 3,
+      "expected": {
+        "3": "T03-613ad6",
+        "10": "T10-48995f",
+        "17": "T17-205727"
+      },
+      "found": {
+        "3": "T03-613ad6",
+        "10": "T10-48995f",
+        "17": "T17-205727"
+      },
+      "answer": "STEP 3: T03-613ad6\nSTEP 10: T10-48995f\nSTEP 17: T17-205727",
+      "seconds": 223.6
+    },
+    {
+      "mode": "prompt_twopass",
+      "steps_fetched": 17,
+      "stop": "final",
+      "iterations": 19,
+      "tokens": 89746,
+      "compactions": 0,
+      "resets": 0,
+      "correct": 3,
+      "probes": 3,
+      "expected": {
+        "3": "T03-613ad6",
+        "10": "T10-48995f",
+        "17": "T17-205727"
+      },
+      "found": {
+        "3": "T03-613ad6",
+        "10": "T10-48995f",
+        "17": "T17-205727"
+      },
+      "answer": "STEP 3: T03-613ad6\nSTEP 10: T10-48995f\nSTEP 17: T17-205727",
+      "seconds": 506.0
+    }
+  ],
+  "timestamp": "2026-11-25T23:47:14Z"
+}

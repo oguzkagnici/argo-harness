@@ -80,13 +80,15 @@ time decay; compare 1 vs 2 generations, and a "dream every N sessions" schedule.
 **Status:** done at 24 lessons / 5 sessions. Rule: 2 dream generations for cycles >~20 lessons (1 gen = no gain over
 no-dream; 2 gen = 1.00 correct, 0 stale). Cadence and wiki-on/off at scale remain optional follow-ups.
 
-### 7. Prompt/context: ablate the summary prompt itself — harness done, measuring
+### 7. ~~Prompt/context: ablate the summary prompt itself~~ — measured
 **Why:** the live run suggests summaries drop exact values; the ledger is a patch around that.
 **Do:** A/B three summary prompts (current structured; "keep a bullet per tool result with raw identifiers";
 "two-pass: extract facts, then compress") on the 12k live chain.
 **Pass:** the winning prompt reduces compactions or raises recall at equal tokens.
 **Status:** `summary_prompt_variant=default|identifiers|twopass` + `context_live --modes prompt_ids,prompt_twopass --probes`.
-Unit-tested; live 18-step A/B running. Winner becomes the default only if it wins on recall at equal tokens.
+Measured at 18 steps: `identifiers` ties recall (3/3) with 1 vs 2 compactions and fewer tokens; `twopass` is not
+viable (two calls per compaction fail under rate limits). `identifiers` is the candidate default; a 36-step rerun
+would confirm.
 
 ### 8. ~~Auto-fix loop for reviewed diffs~~ — done
 **Why:** `review_changes=true` now returns FAIL with file:line defects but the parent has to act manually.
