@@ -15,7 +15,7 @@ Live numbers live in [`benchmarks/README.md`](../benchmarks/README.md); rational
 | Subagents (isolated worktrees, review + in-place repair) | Done | `tests/test_worktree.py`, `tests/test_review.py` |
 | Plan mode + plan persistence across sessions | Done | `tests/test_plan_mode.py` (5 tests) |
 | Retrieval: BM25 + dense + weighted RRF + cross-encoder rerank | Measured on 2 corpora | SciFact + NFCorpus |
-| Memory: dream consolidation, wiki extraction | Measured (small scale) | `memory_loop.py` |
+| Memory: dream consolidation, wiki extraction | Measured + scaled | 6-lesson + 24-lesson/5-session runs; 2 generations rule |
 | Research: evidence ledger + citation verifier | Done | `benchmarks/citation.py`, `tests/test_research.py` |
 | Documents/slides (DOCX/PPTX) | Done | document QA benchmark |
 
@@ -52,7 +52,7 @@ Live numbers live in [`benchmarks/README.md`](../benchmarks/README.md); rational
 ## Still open
 
 - Expand the SWE-bench sample beyond 3 sympy instances (e.g. django/astropy) to get a Lite-wide pass rate.
-- Memory scale test: 40–60 lessons, dream cadence, recall/cost rule.
+- Memory cadence/wiki ablations at 40–60 lessons (24-lesson scale test + two-generation rule done).
 - Summary-prompt A/B ("keep raw identifiers" vs current).
 - Live measurement of the repair loop (does in-place repair improve resolution/token?).
 - Deep research R3/R4: report-level citation precision/recall and a GAIA/BrowseComp-style subset.

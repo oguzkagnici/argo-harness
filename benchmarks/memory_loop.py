@@ -67,6 +67,31 @@ LESSONS = [
 ]
 
 
+def synthetic_lessons(n: int, seed: int = 0) -> list[dict]:
+    """Generate a scalable lesson set with duplicates, contradictions and decoy facts.
+
+    Every third lesson gets a duplicate stale note (tests dedupe), every fifth has a
+    conflicting intermediate value (tests supersession ordering), and lessons are
+    ordered oldest-first so recency/importance can be exercised by the store.
+    """
+    import random
+    rng = random.Random(seed)
+    regions = ["us-east-1", "eu-central-1", "ap-south-1", "us-west-2", "eu-west-1"]
+    out: list[dict] = []
+    for i in range(n):
+        old = rng.choice(regions)
+        new = rng.choice([r for r in regions if r != old])
+        subject = f"service-{i:03d}"
+        item = {"query": f"Which region holds the primary data for {subject}?",
+                "stale": f"{subject} primary region is {old}",
+                "correction": f"{subject} was migrated to {new} after the maintenance window.",
+                "must_keep": new, "must_drop": old,
+                "duplicate": i % 3 == 0,
+                "intermediate": f"{subject} was briefly staged in {rng.choice(regions)}" if i % 5 == 0 else ""}
+        out.append(item)
+    return out
+
+
 async def probe(store: MemoryStore, lesson: dict, k: int) -> dict:
     hits = await store.retrieve(lesson["query"], k=k, include_files=False, rerank=False)
     text = "\n".join(h.text for h in hits).lower()
@@ -82,7 +107,10 @@ def rate(rows, key):
     return round(sum(1 for r in rows if r[key]) / len(rows), 4) if rows else 0.0
 
 
-async def run_arm(arm: str, cfg, llm, k: int) -> dict:
+async def run_arm(arm: str, cfg, llm, k: int, lessons: list[dict] | None = None,
+                  sessions: int = 1) -> dict:
+    lessons = lessons or LESSONS
+    sessions = max(1, sessions)
     import argo.memory.dream as dream_mod
 
     tmp = tempfile.TemporaryDirectory(prefix=f"argo_mem_{arm}_")
@@ -93,12 +121,19 @@ async def run_arm(arm: str, cfg, llm, k: int) -> dict:
     if arm == "no_grounding":
         dream_mod._grounded = lambda evidence, corpus: True
     try:
-        for i, lesson in enumerate(LESSONS):
+        session_ids = [f"bench{s}" for s in range(sessions)]
+        for i, lesson in enumerate(lessons):
+            sid = session_ids[i % len(session_ids)]
             await store.add(lesson["stale"], layer="note", kind="fact", importance=0.75,
                             confidence=0.9, source="bench:stale")
-            store.log("bench", "user", f"Update for lesson {i}: {lesson['correction']}")
-            store.log("bench", "assistant", f"Noted. {lesson['correction']}")
-        before = [await probe(store, lesson, k) for lesson in LESSONS]
+            if lesson.get("duplicate"):
+                await store.add(lesson["stale"], layer="note", kind="fact", importance=0.6,
+                                confidence=0.8, source="bench:duplicate")
+            if lesson.get("intermediate"):
+                store.log(sid, "user", f"Interim status: {lesson['intermediate']}")
+            store.log(sid, "user", f"Update for lesson {i}: {lesson['correction']}")
+            store.log(sid, "assistant", f"Noted. {lesson['correction']}")
+        before = [await probe(store, lesson, k) for lesson in lessons]
 
         reports = []
         seconds = 0.0
@@ -109,9 +144,9 @@ async def run_arm(arm: str, cfg, llm, k: int) -> dict:
                             if arm == "no_wiki" else "")
             for _ in range(passes):
                 t0 = time.monotonic()
-                reports.append(await eng.run(session_ids=["bench"], instructions=instructions, apply=True))
+                reports.append(await eng.run(session_ids=session_ids, instructions=instructions, apply=True))
                 seconds += time.monotonic() - t0
-        after = [await probe(store, lesson, k) for lesson in LESSONS]
+        after = [await probe(store, lesson, k) for lesson in lessons]
         stats = store.stats()
         active = [i.text for i in store.list_items()]
     finally:
@@ -121,6 +156,7 @@ async def run_arm(arm: str, cfg, llm, k: int) -> dict:
 
     return {
         "arm": arm,
+        "lessons": len(lessons),
         "dream": [{"status": r.status, "generation": f"{r.input_generation}->{r.output_generation}",
                    "added": r.added, "superseded": r.superseded, "merged": r.merged,
                    "archived": r.archived, "wiki": r.wiki, "insights": r.insights,
@@ -140,20 +176,24 @@ async def run_arm(arm: str, cfg, llm, k: int) -> dict:
 async def main_async(args: argparse.Namespace) -> int:
     cfg = load_config()
     arms = [a.strip() for a in args.arms.split(",") if a.strip()]
+    lessons = synthetic_lessons(args.lessons, args.seed) if args.lessons else LESSONS
+    print(f"lessons: {len(lessons)} across {args.sessions} session(s)", flush=True)
     rows = []
     async with LLMClient(cfg) as llm:
         for arm in arms:
-            row = await run_arm(arm, cfg, llm, args.k)
+            row = await run_arm(arm, cfg, llm, args.k, lessons=lessons, sessions=args.sessions)
             rows.append(row)
             print(f"{arm:<16} stale {row['before']['stale_rate']:.2f}->{row['after']['stale_rate']:.2f}  "
                   f"mention {row['before']['stale_mention_rate']:.2f}->{row['after']['stale_mention_rate']:.2f}  "
                   f"correct {row['before']['correct_rate']:.2f}->{row['after']['correct_rate']:.2f}  "
                   f"items={row['active_items']} {row['seconds']:.1f}s", flush=True)
 
-    summary = {"benchmark": "memory-learning-loop-ablation", "lessons": len(LESSONS), "k": args.k,
+    summary = {"benchmark": "memory-learning-loop-ablation", "lessons": len(lessons),
+               "sessions": args.sessions, "k": args.k,
                "arms": rows, "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
     RESULTS.mkdir(parents=True, exist_ok=True)
-    out = RESULTS / (f"memory_ablation_{time.strftime('%Y%m%d-%H%M%S')}.json")
+    tag = f"scale{len(lessons)}" if args.lessons else "base"
+    out = RESULTS / (f"memory_ablation_{tag}_{time.strftime('%Y%m%d-%H%M%S')}.json")
     out.write_text(json.dumps(summary, indent=2, default=str), encoding="utf-8")
 
     print(f"\n{'arm':<16} {'stale':>7} {'mention':>8} {'correct':>8} {'items':>6}")
@@ -169,6 +209,10 @@ def main() -> int:
     parser.add_argument("--k", type=int, default=3)
     parser.add_argument("--arms", default="no_dream,full",
                         help="comma-separated: no_dream,no_wiki,no_grounding,two_generations,full")
+    parser.add_argument("--lessons", type=int, default=0,
+                        help="use N synthetic lessons instead of the 6 hand-written ones")
+    parser.add_argument("--sessions", type=int, default=1, help="spread lessons across N transcripts")
+    parser.add_argument("--seed", type=int, default=0)
     args = parser.parse_args()
     return asyncio.run(main_async(args))
 

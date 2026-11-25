@@ -88,6 +88,27 @@ python benchmarks/memory_loop.py --k 3
 
 Dream report: applied, generation 0→1, added 6, merged 6, superseded 6, 0 warnings.
 
+### 3b. Memory at scale (24 lessons, 5 sessions)
+
+```bash
+python benchmarks/memory_loop.py --lessons 24 --sessions 5 --arms no_dream,full,two_generations --k 3
+```
+
+Synthetic lessons add duplicates (every 3rd), conflicting intermediates (every 5th) and spread corrections
+across 5 session transcripts.
+
+| Arm | Contradictory stale | Stale mention | Corrected fact | Active items | Dream calls |
+|---|---|---|---|---|---|
+| no_dream | 0.42 | 0.58 | 0.42 | 24 | 0 |
+| full (1 generation) | 0.33 | 0.50 | 0.42 | 8 | 1 |
+| two_generations | **0.00** | 1.00 | **1.00** | 15 | 2 |
+
+Finding: at this scale **one dream generation does not improve recall** (correct 0.42 = no-dream baseline); the
+second pass is what reconciles duplicates/conflicts (generation 1→2 superseded 2, merged 6) and reaches 1.00
+correct with 0 contradictory-stale hits. Old values remain as *mentions* (1.00), which the protocol accepts as
+history. Rule: for histories with >~20 lessons/session spread, schedule **two** consolidation passes; at 6 lessons
+one pass is sufficient. Cost is one extra dream call per cycle. Single run, single model — directional, not a CI.
+
 ## 4. Workflow replay (computer use)
 
 Extracted workflow `demo_login` (trace → parameterized steps → replay) is re-run against a local form page

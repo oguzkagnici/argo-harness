@@ -1,0 +1,928 @@
+{
+  "benchmark": "memory-learning-loop-ablation",
+  "lessons": 24,
+  "sessions": 5,
+  "k": 3,
+  "arms": [
+    {
+      "arm": "no_dream",
+      "lessons": 24,
+      "dream": [],
+      "seconds": 0.0,
+      "before": {
+        "stale_rate": 0.4167,
+        "stale_mention_rate": 0.5833,
+        "correct_rate": 0.4167
+      },
+      "after": {
+        "stale_rate": 0.4167,
+        "stale_mention_rate": 0.5833,
+        "correct_rate": 0.4167
+      },
+      "memory_stats": {
+        "generation": 0,
+        "layers": {
+          "note": {
+            "active": 24
+          }
+        },
+        "transcripts": 53,
+        "chunks": 0,
+        "dreams": 0,
+        "path": "/tmp/argo_mem_no_dream_i39mvm0j/memory.sqlite"
+      },
+      "items": [
+        "service-023 primary region is eu-west-1",
+        "service-022 primary region is eu-central-1",
+        "service-021 primary region is eu-west-1",
+        "service-020 primary region is ap-south-1",
+        "service-019 primary region is ap-south-1",
+        "service-018 primary region is us-east-1",
+        "service-017 primary region is us-east-1",
+        "service-016 primary region is eu-west-1",
+        "service-015 primary region is us-west-2",
+        "service-014 primary region is eu-west-1",
+        "service-013 primary region is ap-south-1",
+        "service-012 primary region is ap-south-1",
+        "service-011 primary region is eu-west-1",
+        "service-010 primary region is us-east-1",
+        "service-009 primary region is ap-south-1",
+        "service-008 primary region is eu-west-1",
+        "service-007 primary region is eu-west-1",
+        "service-006 primary region is eu-central-1",
+        "service-005 primary region is eu-west-1",
+        "service-004 primary region is eu-west-1"
+      ],
+      "active_items": 24,
+      "per_lesson_after": [
+        {
+          "stale": true,
+          "stale_mention": true,
+          "correct": false,
+          "top": [
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1",
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-003 primary region is us-west-2\nservice-003 primary region is us-west-2"
+          ]
+        },
+        {
+          "stale": true,
+          "stale_mention": true,
+          "correct": false,
+          "top": [
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1",
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-003 primary region is us-west-2\nservice-003 primary region is us-west-2"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1",
+            "service-003 primary region is us-west-2\nservice-003 primary region is us-west-2"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "service-003 primary region is us-west-2\nservice-003 primary region is us-west-2",
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1",
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": false,
+          "correct": false,
+          "top": [
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1",
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-003 primary region is us-west-2\nservice-003 primary region is us-west-2"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": false,
+          "correct": false,
+          "top": [
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1",
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-003 primary region is us-west-2\nservice-003 primary region is us-west-2"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": false,
+          "correct": false,
+          "top": [
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1",
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-003 primary region is us-west-2\nservice-003 primary region is us-west-2"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": false,
+          "correct": true,
+          "top": [
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1",
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-003 primary region is us-west-2\nservice-003 primary region is us-west-2"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": false,
+          "correct": false,
+          "top": [
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1",
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-003 primary region is us-west-2\nservice-003 primary region is us-west-2"
+          ]
+        },
+        {
+          "stale": true,
+          "stale_mention": true,
+          "correct": false,
+          "top": [
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1",
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-003 primary region is us-west-2\nservice-003 primary region is us-west-2"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1",
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-010 primary region is us-east-1\nservice-010 primary region is us-east-1"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": false,
+          "correct": true,
+          "top": [
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1",
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-010 primary region is us-east-1\nservice-010 primary region is us-east-1"
+          ]
+        },
+        {
+          "stale": true,
+          "stale_mention": true,
+          "correct": false,
+          "top": [
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1",
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-010 primary region is us-east-1\nservice-010 primary region is us-east-1"
+          ]
+        },
+        {
+          "stale": true,
+          "stale_mention": true,
+          "correct": false,
+          "top": [
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1",
+            "service-003 primary region is us-west-2\nservice-003 primary region is us-west-2",
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": false,
+          "correct": true,
+          "top": [
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1",
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-010 primary region is us-east-1\nservice-010 primary region is us-east-1"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1",
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-010 primary region is us-east-1\nservice-010 primary region is us-east-1"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": false,
+          "correct": true,
+          "top": [
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1",
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-010 primary region is us-east-1\nservice-010 primary region is us-east-1"
+          ]
+        },
+        {
+          "stale": true,
+          "stale_mention": true,
+          "correct": false,
+          "top": [
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1",
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-010 primary region is us-east-1\nservice-010 primary region is us-east-1"
+          ]
+        },
+        {
+          "stale": true,
+          "stale_mention": true,
+          "correct": false,
+          "top": [
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1",
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-010 primary region is us-east-1\nservice-010 primary region is us-east-1"
+          ]
+        },
+        {
+          "stale": true,
+          "stale_mention": true,
+          "correct": false,
+          "top": [
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1",
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-010 primary region is us-east-1\nservice-010 primary region is us-east-1"
+          ]
+        },
+        {
+          "stale": true,
+          "stale_mention": true,
+          "correct": false,
+          "top": [
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1",
+            "service-003 primary region is us-west-2\nservice-003 primary region is us-west-2"
+          ]
+        },
+        {
+          "stale": true,
+          "stale_mention": true,
+          "correct": false,
+          "top": [
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1",
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-021 primary region is eu-west-1\nservice-021 primary region is eu-west-1"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": false,
+          "correct": true,
+          "top": [
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-003 primary region is us-west-2\nservice-003 primary region is us-west-2",
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": false,
+          "correct": true,
+          "top": [
+            "service-003 primary region is us-west-2\nservice-003 primary region is us-west-2",
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1"
+          ]
+        }
+      ]
+    },
+    {
+      "arm": "full",
+      "lessons": 24,
+      "dream": [
+        {
+          "status": "applied",
+          "generation": "0->1",
+          "added": 3,
+          "superseded": 0,
+          "merged": 24,
+          "archived": 0,
+          "wiki": 2,
+          "insights": 1,
+          "procedures": 1,
+          "unverified": 0,
+          "warnings": 0
+        }
+      ],
+      "seconds": 208.7,
+      "before": {
+        "stale_rate": 0.4167,
+        "stale_mention_rate": 0.5833,
+        "correct_rate": 0.4167
+      },
+      "after": {
+        "stale_rate": 0.3333,
+        "stale_mention_rate": 0.5,
+        "correct_rate": 0.4167
+      },
+      "memory_stats": {
+        "generation": 1,
+        "layers": {
+          "note": {
+            "active": 5,
+            "superseded": 24
+          },
+          "procedure": {
+            "active": 1
+          },
+          "wiki": {
+            "active": 2
+          }
+        },
+        "transcripts": 53,
+        "chunks": 0,
+        "dreams": 1,
+        "path": "/tmp/argo_mem_full_71k122k7/memory.sqlite"
+      },
+      "items": [
+        "All 24 services (service-000..service-023) were migrated to new primary regions after a maintenance window; the pre-migration region values in generation 0 are stale for every service.\n\nEvidence: \u201cUpdate for lesson 0: service-000 was migrated to eu-west-1 after the maintenance window.\u201d",
+        "When to use: When a session reports staging or migration of services between regions.\nSteps:\n1. Ignore 'briefly staged in <region>' interim statuses entirely.\n2. Collect each 'migrated to <region> after the maintenance window' statement as the new authoritative value.\n3. Overwrite the service's entry in the single canonical region table rather than creating a new per-service note.\n4. If a service has no migration statement, keep its prior value but mark it as unverified for the cycle.",
+        "Interim 'briefly staged in <region>' statuses are transient and must not be recorded as a service's primary region; only the post-maintenance 'migrated to <region>' value is authoritative.\n\nEvidence: \u201cInterim status: service-000 was briefly staged in us-east-1\u201d",
+        "Rules for processing region updates: (1) 'briefly staged in X' is transient and never becomes the recorded primary region; (2) 'migrated to X after the maintenance window' is authoritative and supersedes prior values; (3) batch updates arrive per 'lesson N' and cover many services at once, so reconcile in bulk rather than appending one note per service.",
+        "Canonical current primary region per service, after the maintenance-window migration round. Values: 000 eu-west-1, 001 eu-west-1, 002 ap-south-1, 003 ap-south-1, 004 eu-central-1, 005 eu-central-1, 006 us-east-1, 007 ap-south-1, 008 eu-central-1, 009 us-east-1, 010 us-west-2, 011 us-east-1, 012 eu-west-1, 013 eu-central-1, 014 us-west-2, 015 ap-south-1, 016 us-east-1, 017 eu-west-1, 018 eu-west-1, 019 eu-central-1, 020 us-east-1, 021 eu-central-1, 022 ap-south-1, 023 us-west-2. Region distribution: eu-west-1 x6, ap-south-1 x5, eu-central-1 x5, us-east-1 x5, us-west-2 x3. Treat as volatile: supersede on any newer migration update.",
+        "Service primary regions (post-maintenance, current): 000 eu-west-1; 001 eu-west-1; 002 ap-south-1; 003 ap-south-1; 004 eu-central-1; 005 eu-central-1; 006 us-east-1; 007 ap-south-1; 008 eu-central-1; 009 us-east-1; 010 us-west-2; 011 us-east-1; 012 eu-west-1; 013 eu-central-1; 014 us-west-2; 015 ap-south-1; 016 us-east-1; 017 eu-west-1; 018 eu-west-1; 019 eu-central-1; 020 us-east-1; 021 eu-central-1; 022 ap-south-1; 023 us-west-2.",
+        "The migration round touched 100% of tracked services, which suggests region data is refreshed wholesale rather than incrementally; storing one table instead of 24 notes keeps memory small and avoids partial staleness.\n\nBasis: All 24 services received a 'migrated to ... after the maintenance window' update in the same session batch.",
+        "Region assignments are volatile across sessions; re-verify a service's region from the latest update rather than trusting a cached note.\n\nEvidence: \u201cUpdate for lesson 23: service-023 was migrated to us-west-2 after the maintenance window.\u201d"
+      ],
+      "active_items": 8,
+      "per_lesson_after": [
+        {
+          "stale": false,
+          "stale_mention": false,
+          "correct": true,
+          "top": [
+            "All 24 services (service-000..service-023) were migrated to new primary regions \nAll 24 se",
+            "Interim 'briefly staged in <region>' statuses are transient and must not be reco\nInterim '",
+            "Reconcile service region updates\nWhen to use: When a session reports staging or migration "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": false,
+          "correct": true,
+          "top": [
+            "All 24 services (service-000..service-023) were migrated to new primary regions \nAll 24 se",
+            "Interim 'briefly staged in <region>' statuses are transient and must not be reco\nInterim '",
+            "Reconcile service region updates\nWhen to use: When a session reports staging or migration "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": false,
+          "correct": false,
+          "top": [
+            "All 24 services (service-000..service-023) were migrated to new primary regions \nAll 24 se",
+            "Interim 'briefly staged in <region>' statuses are transient and must not be reco\nInterim '",
+            "Reconcile service region updates\nWhen to use: When a session reports staging or migration "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": false,
+          "correct": false,
+          "top": [
+            "All 24 services (service-000..service-023) were migrated to new primary regions \nAll 24 se",
+            "Interim 'briefly staged in <region>' statuses are transient and must not be reco\nInterim '",
+            "Reconcile service region updates\nWhen to use: When a session reports staging or migration "
+          ]
+        },
+        {
+          "stale": true,
+          "stale_mention": true,
+          "correct": false,
+          "top": [
+            "All 24 services (service-000..service-023) were migrated to new primary regions \nAll 24 se",
+            "Interim 'briefly staged in <region>' statuses are transient and must not be reco\nInterim '",
+            "Reconcile service region updates\nWhen to use: When a session reports staging or migration "
+          ]
+        },
+        {
+          "stale": true,
+          "stale_mention": true,
+          "correct": false,
+          "top": [
+            "All 24 services (service-000..service-023) were migrated to new primary regions \nAll 24 se",
+            "Interim 'briefly staged in <region>' statuses are transient and must not be reco\nInterim '",
+            "Reconcile service region updates\nWhen to use: When a session reports staging or migration "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": false,
+          "correct": true,
+          "top": [
+            "All 24 services (service-000..service-023) were migrated to new primary regions \nAll 24 se",
+            "Interim 'briefly staged in <region>' statuses are transient and must not be reco\nInterim '",
+            "Reconcile service region updates\nWhen to use: When a session reports staging or migration "
+          ]
+        },
+        {
+          "stale": true,
+          "stale_mention": true,
+          "correct": false,
+          "top": [
+            "All 24 services (service-000..service-023) were migrated to new primary regions \nAll 24 se",
+            "Interim 'briefly staged in <region>' statuses are transient and must not be reco\nInterim '",
+            "Reconcile service region updates\nWhen to use: When a session reports staging or migration "
+          ]
+        },
+        {
+          "stale": true,
+          "stale_mention": true,
+          "correct": false,
+          "top": [
+            "All 24 services (service-000..service-023) were migrated to new primary regions \nAll 24 se",
+            "Interim 'briefly staged in <region>' statuses are transient and must not be reco\nInterim '",
+            "Reconcile service region updates\nWhen to use: When a session reports staging or migration "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": false,
+          "correct": true,
+          "top": [
+            "All 24 services (service-000..service-023) were migrated to new primary regions \nAll 24 se",
+            "Interim 'briefly staged in <region>' statuses are transient and must not be reco\nInterim '",
+            "Reconcile service region updates\nWhen to use: When a session reports staging or migration "
+          ]
+        },
+        {
+          "stale": true,
+          "stale_mention": true,
+          "correct": false,
+          "top": [
+            "All 24 services (service-000..service-023) were migrated to new primary regions \nAll 24 se",
+            "Interim 'briefly staged in <region>' statuses are transient and must not be reco\nInterim '",
+            "Reconcile service region updates\nWhen to use: When a session reports staging or migration "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "All 24 services (service-000..service-023) were migrated to new primary regions \nAll 24 se",
+            "Interim 'briefly staged in <region>' statuses are transient and must not be reco\nInterim '",
+            "Reconcile service region updates\nWhen to use: When a session reports staging or migration "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": false,
+          "correct": true,
+          "top": [
+            "All 24 services (service-000..service-023) were migrated to new primary regions \nAll 24 se",
+            "Interim 'briefly staged in <region>' statuses are transient and must not be reco\nInterim '",
+            "Reconcile service region updates\nWhen to use: When a session reports staging or migration "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": false,
+          "correct": false,
+          "top": [
+            "All 24 services (service-000..service-023) were migrated to new primary regions \nAll 24 se",
+            "Interim 'briefly staged in <region>' statuses are transient and must not be reco\nInterim '",
+            "Reconcile service region updates\nWhen to use: When a session reports staging or migration "
+          ]
+        },
+        {
+          "stale": true,
+          "stale_mention": true,
+          "correct": false,
+          "top": [
+            "All 24 services (service-000..service-023) were migrated to new primary regions \nAll 24 se",
+            "Interim 'briefly staged in <region>' statuses are transient and must not be reco\nInterim '",
+            "Reconcile service region updates\nWhen to use: When a session reports staging or migration "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": false,
+          "correct": false,
+          "top": [
+            "All 24 services (service-000..service-023) were migrated to new primary regions \nAll 24 se",
+            "Interim 'briefly staged in <region>' statuses are transient and must not be reco\nInterim '",
+            "Reconcile service region updates\nWhen to use: When a session reports staging or migration "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "All 24 services (service-000..service-023) were migrated to new primary regions \nAll 24 se",
+            "Interim 'briefly staged in <region>' statuses are transient and must not be reco\nInterim '",
+            "Reconcile service region updates\nWhen to use: When a session reports staging or migration "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "All 24 services (service-000..service-023) were migrated to new primary regions \nAll 24 se",
+            "Interim 'briefly staged in <region>' statuses are transient and must not be reco\nInterim '",
+            "Reconcile service region updates\nWhen to use: When a session reports staging or migration "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "All 24 services (service-000..service-023) were migrated to new primary regions \nAll 24 se",
+            "Interim 'briefly staged in <region>' statuses are transient and must not be reco\nInterim '",
+            "Reconcile service region updates\nWhen to use: When a session reports staging or migration "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": false,
+          "correct": false,
+          "top": [
+            "All 24 services (service-000..service-023) were migrated to new primary regions \nAll 24 se",
+            "Interim 'briefly staged in <region>' statuses are transient and must not be reco\nInterim '",
+            "Reconcile service region updates\nWhen to use: When a session reports staging or migration "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": false,
+          "correct": true,
+          "top": [
+            "All 24 services (service-000..service-023) were migrated to new primary regions \nAll 24 se",
+            "Interim 'briefly staged in <region>' statuses are transient and must not be reco\nInterim '",
+            "Reconcile service region updates\nWhen to use: When a session reports staging or migration "
+          ]
+        },
+        {
+          "stale": true,
+          "stale_mention": true,
+          "correct": false,
+          "top": [
+            "All 24 services (service-000..service-023) were migrated to new primary regions \nAll 24 se",
+            "Interim 'briefly staged in <region>' statuses are transient and must not be reco\nInterim '",
+            "Reconcile service region updates\nWhen to use: When a session reports staging or migration "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": false,
+          "correct": false,
+          "top": [
+            "All 24 services (service-000..service-023) were migrated to new primary regions \nAll 24 se",
+            "Interim 'briefly staged in <region>' statuses are transient and must not be reco\nInterim '",
+            "Reconcile service region updates\nWhen to use: When a session reports staging or migration "
+          ]
+        },
+        {
+          "stale": true,
+          "stale_mention": true,
+          "correct": false,
+          "top": [
+            "All 24 services (service-000..service-023) were migrated to new primary regions \nAll 24 se",
+            "Interim 'briefly staged in <region>' statuses are transient and must not be reco\nInterim '",
+            "Reconcile service region updates\nWhen to use: When a session reports staging or migration "
+          ]
+        }
+      ]
+    },
+    {
+      "arm": "two_generations",
+      "lessons": 24,
+      "dream": [
+        {
+          "status": "applied",
+          "generation": "0->1",
+          "added": 4,
+          "superseded": 0,
+          "merged": 24,
+          "archived": 0,
+          "wiki": 2,
+          "insights": 2,
+          "procedures": 1,
+          "unverified": 0,
+          "warnings": 0
+        },
+        {
+          "status": "applied",
+          "generation": "1->2",
+          "added": 4,
+          "superseded": 2,
+          "merged": 6,
+          "archived": 0,
+          "wiki": 2,
+          "insights": 2,
+          "procedures": 1,
+          "unverified": 0,
+          "warnings": 1
+        }
+      ],
+      "seconds": 116.3,
+      "before": {
+        "stale_rate": 0.4167,
+        "stale_mention_rate": 0.5833,
+        "correct_rate": 0.4167
+      },
+      "after": {
+        "stale_rate": 0.0,
+        "stale_mention_rate": 1.0,
+        "correct_rate": 1.0
+      },
+      "memory_stats": {
+        "generation": 2,
+        "layers": {
+          "note": {
+            "active": 12,
+            "superseded": 5
+          },
+          "procedure": {
+            "active": 1,
+            "superseded": 1
+          },
+          "wiki": {
+            "active": 2,
+            "superseded": 2
+          }
+        },
+        "transcripts": 53,
+        "chunks": 0,
+        "dreams": 2,
+        "path": "/tmp/argo_mem_two_generations_x9jv27yb/memory.sqlite"
+      },
+      "items": [
+        "Canonical post-migration primary region map (gen1, service-000..service-023): 000=eu-west-1, 001=eu-west-1, 002=ap-south-1, 003=ap-south-1, 004=eu-central-1, 005=eu-central-1, 006=us-east-1, 007=ap-south-1, 008=eu-central-1, 009=us-east-1, 010=us-west-2, 011=us-east-1, 012=eu-west-1, 013=eu-central-1, 014=us-west-2, 015=ap-south-1, 016=us-east-1, 017=eu-west-1, 018=eu-west-1, 019=eu-central-1, 020=us-east-1, 021=eu-central-1, 022=ap-south-1, 023=us-west-2. Distribution: eu-central-1 x6, eu-west-1 x5, us-east-1 x5, ap-south-1 x5, us-west-2 x3.\n\nEvidence: \u201cUpdate for lesson 23: service-023 was migrated to us-west-2 after the maintenance window.\u201d",
+        "Canonical post-migration primary region map (gen1, service-000..service-023): 000=eu-west-1, 001=eu-west-1, 002=ap-south-1, 003=ap-south-1, 004=eu-central-1, 005=eu-central-1, 006=us-east-1, 007=ap-south-1, 008=eu-central-1, 009=us-east-1, 010=us-west-2, 011=us-east-1, 012=eu-west-1, 013=eu-central-1, 014=us-west-2, 015=ap-south-1, 016=us-east-1, 017=eu-west-1, 018=eu-west-1, 019=eu-central-1, 020=us-east-1, 021=eu-central-1, 022=ap-south-1, 023=us-west-2. Distribution: eu-central-1 x6, eu-west-1 x5, us-east-1 x5, ap-south-1 x5, us-west-2 x3.",
+        "When to use: When transcripts or messages report service region changes, especially 'interim status' staging notes followed by post-maintenance migration updates.\nSteps:\n1. Collect all region statements per service from the session.\n2. Discard 'briefly staged in' interim statements as transient.\n3. Keep the latest 'migrated to <region> after the maintenance window' statement as the primary region.\n4. If many services changed at once, rewrite the region map as a single snapshot note instead of editing per-service notes.\n5. Supersede/merge old per-service or per-generation notes so no stale region values remain.\n6. Recompute and verify the region distribution counts against the map before publishing.",
+        "All 24 services (service-000..service-023) changed primary region within the same maintenance window (gen0->gen1); any region mapping predating that window is stale and should be replaced wholesale, not patched per service.\n\nEvidence: \u201cservice-023 was migrated to us-west-2 after the maintenance window.\u201d",
+        "'Interim status: service-N was briefly staged in <region>' is transient staging information and must never be persisted as the primary region; only the 'migrated to <region> after the maintenance window' update is authoritative.\n\nEvidence: \u201cInterim status: service-000 was briefly staged in us-east-1\u201d",
+        "Region changes arrive as interim staging notices (transient, ignore) and post-window migration updates (authoritative). Message form: 'Update for lesson N: service-N was migrated to <region> after the maintenance window.', with N == service index. The gen0->gen1 window moved all 24 services at once, so pre-window region facts are stale and the map should be rewritten wholesale.",
+        "Canonical post-migration region map for service-000..service-023: 000 eu-west-1 | 001 eu-west-1 | 002 ap-south-1 | 003 ap-south-1 | 004 eu-central-1 | 005 eu-central-1 | 006 us-east-1 | 007 ap-south-1 | 008 eu-central-1 | 009 us-east-1 | 010 us-west-2 | 011 us-east-1 | 012 eu-west-1 | 013 eu-central-1 | 014 us-west-2 | 015 ap-south-1 | 016 us-east-1 | 017 eu-west-1 | 018 eu-west-1 | 019 eu-central-1 | 020 us-east-1 | 021 eu-central-1 | 022 ap-south-1 | 023 us-west-2. Distribution: eu-central-1 x6, eu-west-1 x5, us-east-1 x5, ap-south-1 x5, us-west-2 x3. Store as one versioned snapshot, not 24 independent facts.",
+        "Maintenance-window migrations: region changes are announced in two forms. (1) 'Interim status: service-N was briefly staged in <region>' \u2014 transient staging, do not persist as the primary region. (2) 'Update for lesson N: service-N was migrated to <region> after the maintenance window.' \u2014 authoritative final region, with N == service index. In the gen0->gen1 cycle all 24 services migrated in a single window, so any region fact predating that window is stale.",
+        "Service primary regions (gen1): canonical post-migration map for service-000..service-023. Distribution: eu-central-1 x6, eu-west-1 x5, us-east-1 x5, ap-south-1 x5, us-west-2 x3 (24 total). All values reflect the single gen0->gen1 maintenance window.",
+        "Interim 'briefly staged in' notices are near-always contradicted by the later migration update (4/5 observed), making them safe to discard; the one coincidence (service-010) means they cannot be used as positive evidence either.\n\nBasis: bench0 interim statuses for 000, 005, 010, 015, 020 compared against their final migration updates.",
+        "Region assignments are re-shuffled wholesale rather than incrementally, so per-service region knowledge should be stored as one versioned snapshot keyed by generation, not as 24 independent facts.\n\nBasis: All 24 services changed region within the same maintenance window across bench0-bench4.",
+        "Insight: interim 'briefly staged in' reports are distractors and should not be persisted. In 4 of 5 observed cases the staged region differed from the final region (000: us-east-1->eu-west-1; 005: ap-south-1->eu-central-1; 015: us-east-1->ap-south-1; 020: eu-central-1->us-east-1), but service-010 staged us-west-2 and finally landed in us-west-2 \u2014 so staging is unconfirmed, not reliably wrong.",
+        "Region assignments appear to be re-shuffled wholesale rather than incrementally, so per-service region notes should be stored as one versioned snapshot rather than 24 independent facts.\n\nBasis: All 24 services changed region within the same maintenance window across bench0-bench4.",
+        "Every one of the 24 services (service-000..service-023) changed primary region in the same maintenance window; any pre-migration region mapping is stale.\n\nEvidence: \u201cservice-023 was migrated to us-west-2 after the maintenance window.\u201d",
+        "Region update messages follow the form 'Update for lesson N: service-N was migrated to <region> after the maintenance window.' \u2014 the lesson index N always equals the service index, so a lesson number alone identifies the service.\n\nEvidence: \u201cUpdate for lesson 5: service-005 was migrated to eu-central-1 after the maintenance window.\u201d"
+      ],
+      "active_items": 15,
+      "per_lesson_after": [
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-migration primary region map (gen1, service-000..service-023): 00\nCanonical",
+            "Canonical post-migration primary region map (gen1, service-000..service-023): 00\nCanonical",
+            "All 24 services (service-000..service-023) changed primary region within the sam\nAll 24 se"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-migration primary region map (gen1, service-000..service-023): 00\nCanonical",
+            "Canonical post-migration primary region map (gen1, service-000..service-023): 00\nCanonical",
+            "All 24 services (service-000..service-023) changed primary region within the sam\nAll 24 se"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-migration primary region map (gen1, service-000..service-023): 00\nCanonical",
+            "Canonical post-migration primary region map (gen1, service-000..service-023): 00\nCanonical",
+            "All 24 services (service-000..service-023) changed primary region within the sam\nAll 24 se"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-migration primary region map (gen1, service-000..service-023): 00\nCanonical",
+            "Canonical post-migration primary region map (gen1, service-000..service-023): 00\nCanonical",
+            "All 24 services (service-000..service-023) changed primary region within the sam\nAll 24 se"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-migration primary region map (gen1, service-000..service-023): 00\nCanonical",
+            "Canonical post-migration primary region map (gen1, service-000..service-023): 00\nCanonical",
+            "All 24 services (service-000..service-023) changed primary region within the sam\nAll 24 se"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-migration primary region map (gen1, service-000..service-023): 00\nCanonical",
+            "Canonical post-migration primary region map (gen1, service-000..service-023): 00\nCanonical",
+            "All 24 services (service-000..service-023) changed primary region within the sam\nAll 24 se"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-migration primary region map (gen1, service-000..service-023): 00\nCanonical",
+            "Canonical post-migration primary region map (gen1, service-000..service-023): 00\nCanonical",
+            "All 24 services (service-000..service-023) changed primary region within the sam\nAll 24 se"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-migration primary region map (gen1, service-000..service-023): 00\nCanonical",
+            "Canonical post-migration primary region map (gen1, service-000..service-023): 00\nCanonical",
+            "All 24 services (service-000..service-023) changed primary region within the sam\nAll 24 se"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-migration primary region map (gen1, service-000..service-023): 00\nCanonical",
+            "Canonical post-migration primary region map (gen1, service-000..service-023): 00\nCanonical",
+            "All 24 services (service-000..service-023) changed primary region within the sam\nAll 24 se"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-migration primary region map (gen1, service-000..service-023): 00\nCanonical",
+            "Canonical post-migration primary region map (gen1, service-000..service-023): 00\nCanonical",
+            "All 24 services (service-000..service-023) changed primary region within the sam\nAll 24 se"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-migration primary region map (gen1, service-000..service-023): 00\nCanonical",
+            "Canonical post-migration primary region map (gen1, service-000..service-023): 00\nCanonical",
+            "All 24 services (service-000..service-023) changed primary region within the sam\nAll 24 se"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-migration primary region map (gen1, service-000..service-023): 00\nCanonical",
+            "Canonical post-migration primary region map (gen1, service-000..service-023): 00\nCanonical",
+            "All 24 services (service-000..service-023) changed primary region within the sam\nAll 24 se"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-migration primary region map (gen1, service-000..service-023): 00\nCanonical",
+            "Canonical post-migration primary region map (gen1, service-000..service-023): 00\nCanonical",
+            "All 24 services (service-000..service-023) changed primary region within the sam\nAll 24 se"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-migration primary region map (gen1, service-000..service-023): 00\nCanonical",
+            "Canonical post-migration primary region map (gen1, service-000..service-023): 00\nCanonical",
+            "All 24 services (service-000..service-023) changed primary region within the sam\nAll 24 se"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-migration primary region map (gen1, service-000..service-023): 00\nCanonical",
+            "Canonical post-migration primary region map (gen1, service-000..service-023): 00\nCanonical",
+            "All 24 services (service-000..service-023) changed primary region within the sam\nAll 24 se"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-migration primary region map (gen1, service-000..service-023): 00\nCanonical",
+            "Canonical post-migration primary region map (gen1, service-000..service-023): 00\nCanonical",
+            "All 24 services (service-000..service-023) changed primary region within the sam\nAll 24 se"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-migration primary region map (gen1, service-000..service-023): 00\nCanonical",
+            "Canonical post-migration primary region map (gen1, service-000..service-023): 00\nCanonical",
+            "All 24 services (service-000..service-023) changed primary region within the sam\nAll 24 se"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-migration primary region map (gen1, service-000..service-023): 00\nCanonical",
+            "Canonical post-migration primary region map (gen1, service-000..service-023): 00\nCanonical",
+            "All 24 services (service-000..service-023) changed primary region within the sam\nAll 24 se"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-migration primary region map (gen1, service-000..service-023): 00\nCanonical",
+            "Canonical post-migration primary region map (gen1, service-000..service-023): 00\nCanonical",
+            "All 24 services (service-000..service-023) changed primary region within the sam\nAll 24 se"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-migration primary region map (gen1, service-000..service-023): 00\nCanonical",
+            "Canonical post-migration primary region map (gen1, service-000..service-023): 00\nCanonical",
+            "All 24 services (service-000..service-023) changed primary region within the sam\nAll 24 se"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-migration primary region map (gen1, service-000..service-023): 00\nCanonical",
+            "Canonical post-migration primary region map (gen1, service-000..service-023): 00\nCanonical",
+            "All 24 services (service-000..service-023) changed primary region within the sam\nAll 24 se"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-migration primary region map (gen1, service-000..service-023): 00\nCanonical",
+            "Canonical post-migration primary region map (gen1, service-000..service-023): 00\nCanonical",
+            "All 24 services (service-000..service-023) changed primary region within the sam\nAll 24 se"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-migration primary region map (gen1, service-000..service-023): 00\nCanonical",
+            "Canonical post-migration primary region map (gen1, service-000..service-023): 00\nCanonical",
+            "All 24 services (service-000..service-023) changed primary region within the sam\nAll 24 se"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-migration primary region map (gen1, service-000..service-023): 00\nCanonical",
+            "Canonical post-migration primary region map (gen1, service-000..service-023): 00\nCanonical",
+            "All 24 services (service-000..service-023) changed primary region within the sam\nAll 24 se"
+          ]
+        }
+      ]
+    }
+  ],
+  "timestamp": "2026-11-25T23:23:42Z"
+}

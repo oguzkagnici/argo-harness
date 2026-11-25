@@ -9,7 +9,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def load_bench():
-    spec = importlib.util.spec_from_file_location("swebench_lite", ROOT / "benchmarks" / "swebench_lite.py")
+    spec = importlib.util.spec_from_file_location(
+        "swebench_lite", ROOT / "benchmarks" / "swebench_lite.py")
     mod = importlib.util.module_from_spec(spec)
     assert spec.loader is not None
     spec.loader.exec_module(mod)
