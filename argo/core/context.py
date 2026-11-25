@@ -44,6 +44,56 @@ CONVERSATION:
 {history}
 """
 
+SUMMARY_PROMPT_IDENTIFIERS = """You are compacting an autonomous agent's history. The next agent must be able to
+answer exact-value questions, so preserving identifiers is the top priority.
+
+Write:
+1. GOAL & CONSTRAINTS (verbatim user request).
+2. ONE BULLET PER TOOL RESULT: tool name, arguments, and every raw identifier in the result
+   (paths, ids, hashes, numbers, URLs, version strings) copied exactly, even if it looks noisy.
+3. PROGRESS / FILES / OPEN ISSUES / NEXT STEPS.
+
+Rules:
+- Never paraphrase or round an identifier; copy it character for character.
+- Drop prose filler, keep facts.
+- Output markdown only.
+
+CONVERSATION:
+{history}"""
+
+SUMMARY_PROMPT_EXTRACT = """Extract a raw fact list from this agent history. One line per tool call/result:
+`<tool>(<args>) -> <all identifiers and exact values from the result>`.
+Do not compress, do not omit numbers or ids. Markdown bullets only.
+
+CONVERSATION:
+{history}"""
+
+SUMMARY_PROMPT_TWOPASS = """You are compressing an agent's history into a state document. A raw fact extraction is
+provided below; merge it into a dense, non-redundant state document.
+
+1. GOAL & CONSTRAINTS.
+2. PROGRESS (files/commands).
+3. KEY FACTS: every identifier, path, number and URL from the extraction that could matter later.
+4. OPEN ISSUES & NEXT STEPS.
+
+Rules: never drop an identifier; do not invent; markdown only.
+
+RAW FACTS:
+{facts}
+
+CONVERSATION TAIL:
+{history}"""
+
+
+def summary_prompt(cfg: Any, history: str, facts: str = "") -> str:
+    variant = str(getattr(cfg, "summary_prompt_variant", "default") or "default")
+    if variant == "identifiers":
+        return SUMMARY_PROMPT_IDENTIFIERS.format(history=history)
+    if variant == "twopass":
+        return SUMMARY_PROMPT_TWOPASS.format(history=history, facts=facts)
+    return SUMMARY_PROMPT.format(history=history)
+
+
 FACT_LINE_RE = re.compile(r"^\s{0,4}([A-Za-z][A-Za-z0-9_.\-/ ]{0,47})\s*(?::|=)\s*(\S.{0,160})$", re.M)
 URL_RE = re.compile(r"https?://[^\s)<>\"']+")
 # Identifiers that appear in running prose rather than `key: value` lines. The live 36-step benchmark lost
@@ -272,12 +322,21 @@ class ContextManager:
             self._compact_insufficient = True
             return messages
         history = self._render_history(head)
-        prompt = SUMMARY_PROMPT.format(history=history[:120_000])
+        variant = str(getattr(self.cfg, "summary_prompt_variant", "default") or "default")
+        cheap = getattr(self.cfg, "cheap_model", "") or None
+        facts_pass = ""
         try:
+            if variant == "twopass":
+                extract = await self.llm.chat(
+                    [Message(role="user", content=SUMMARY_PROMPT_EXTRACT.format(history=history[:120_000]))],
+                    tools=None, temperature=0.1,
+                    max_tokens=min(3000, self.cfg.models.max_output_tokens), model=cheap)
+                facts_pass = (extract.message.content or "").strip()
+            prompt = summary_prompt(self.cfg, history[:120_000], facts=facts_pass[:40_000])
             resp = await self.llm.chat([Message(role="user", content=prompt)],
                                        tools=None, temperature=0.1,
                                        max_tokens=min(4000, self.cfg.models.max_output_tokens),
-                                       model=getattr(self.cfg, "cheap_model", "") or None)
+                                       model=cheap)
             summary = (resp.message.content or "").strip()
         except Exception:
             summary = ""

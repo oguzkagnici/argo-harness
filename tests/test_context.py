@@ -364,3 +364,44 @@ async def test_no_cheap_model_keeps_default():
     msgs = [Message(role="system", content="sys")] + [Message(role="user", content="x " * 200) for _ in range(20)]
     await cm.compact(msgs)
     assert llm.models == [None]
+
+
+@pytest.mark.asyncio
+async def test_identifiers_variant_uses_identifier_prompt(tmp_path):
+    from argo.core.context import SUMMARY_PROMPT_IDENTIFIERS
+    cfg = FakeCfg()
+    cfg.summary_prompt_variant = "identifiers"
+    seen = []
+
+    class LLM(FakeLLM):
+        async def chat(self, messages, tools=None, **kwargs):
+            seen.append(messages[0].content)
+            return await super().chat(messages, tools, **kwargs)
+
+    cm = ContextManager(cfg, llm=LLM())
+    msgs = [Message(role="system", content="sys")] + [Message(role="user", content="x " * 200) for _ in range(20)]
+    await cm.compact(msgs)
+    assert any("ONE BULLET PER TOOL RESULT" in (c or "") for c in seen)
+    assert SUMMARY_PROMPT_IDENTIFIERS.splitlines()[0] in (seen[0] or "")
+
+
+@pytest.mark.asyncio
+async def test_twopass_variant_makes_extract_then_compress_calls(tmp_path):
+    cfg = FakeCfg()
+    cfg.summary_prompt_variant = "twopass"
+    prompts = []
+
+    class LLM(FakeLLM):
+        async def chat(self, messages, tools=None, **kwargs):
+            prompts.append(messages[0].content)
+            if len(prompts) == 1:
+                return LLMResponse(message=Message(role="assistant", content="- bash(x) -> id=ABC123"),
+                                   usage=Usage())
+            return await super().chat(messages, tools, **kwargs)
+
+    cm = ContextManager(cfg, llm=LLM())
+    msgs = [Message(role="system", content="sys")] + [Message(role="user", content="x " * 200) for _ in range(20)]
+    await cm.compact(msgs)
+    assert len(prompts) == 2
+    assert "Extract a raw fact list" in (prompts[0] or "")
+    assert "id=ABC123" in (prompts[1] or "")

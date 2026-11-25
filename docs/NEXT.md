@@ -4,7 +4,7 @@ Ordered by (a) what is currently *unproven or broken*, (b) how much evidence exi
 (c) cost in rate limit/quota on this shared machine. Every item lists the success criterion so it can be closed with
 a measurement, not an opinion.
 
-Current state: 138 offline tests pass. Live evidence exists for retrieval, memory, repair, documents, citation,
+Current state: 140 offline tests pass. Live evidence exists for retrieval, memory, repair, documents, citation,
 injection (fixed + partial adaptive), context (synthetic + live), observability, worktree review, and the SWE-bench
 Docker path (gold patch 1/1).
 
@@ -80,11 +80,13 @@ time decay; compare 1 vs 2 generations, and a "dream every N sessions" schedule.
 **Status:** done at 24 lessons / 5 sessions. Rule: 2 dream generations for cycles >~20 lessons (1 gen = no gain over
 no-dream; 2 gen = 1.00 correct, 0 stale). Cadence and wiki-on/off at scale remain optional follow-ups.
 
-### 7. Prompt/context: ablate the summary prompt itself
+### 7. Prompt/context: ablate the summary prompt itself — harness done, measuring
 **Why:** the live run suggests summaries drop exact values; the ledger is a patch around that.
 **Do:** A/B three summary prompts (current structured; "keep a bullet per tool result with raw identifiers";
 "two-pass: extract facts, then compress") on the 12k live chain.
 **Pass:** the winning prompt reduces compactions or raises recall at equal tokens.
+**Status:** `summary_prompt_variant=default|identifiers|twopass` + `context_live --modes prompt_ids,prompt_twopass --probes`.
+Unit-tested; live 18-step A/B running. Winner becomes the default only if it wins on recall at equal tokens.
 
 ### 8. ~~Auto-fix loop for reviewed diffs~~ — done
 **Why:** `review_changes=true` now returns FAIL with file:line defects but the parent has to act manually.

@@ -119,6 +119,7 @@ def build_cfg(ws: Path, mode: str):
     cfg.compaction_enabled = mode != "full"  # unmanaged baseline: never summarize
     cfg.compaction_threshold = 0.75
     cfg.compact_fact_ledger = mode != "no_ledger"
+    cfg.summary_prompt_variant = {"prompt_ids": "identifiers", "prompt_twopass": "twopass"}.get(mode, "default")
     return cfg
 
 
@@ -152,7 +153,8 @@ async def run_mode(mode: str, base: str, steps: list[dict], probes: list[int], t
 
 async def main_async(args) -> int:
     steps = build_steps(args.steps)
-    probes = sorted({p for p in (3, 20, min(36, args.steps - 1)) if p < args.steps})
+    wanted = [int(x) for x in str(args.probes).split(",") if x.strip()]
+    probes = sorted({p for p in wanted if 0 < p < args.steps})
     srv, base = serve()
     STATE["steps"] = steps
     rows = []
@@ -181,6 +183,8 @@ def main() -> int:
     ap.add_argument("--steps", type=int, default=36)
     ap.add_argument("--modes", default="full,autocompact,no_ledger")
     ap.add_argument("--timeout", type=float, default=1800.0)
+    ap.add_argument("--probes", default="3,20,35",
+                    help="comma-separated step indices whose checkpoints are queried at the end")
     return asyncio.run(main_async(ap.parse_args()))
 
 

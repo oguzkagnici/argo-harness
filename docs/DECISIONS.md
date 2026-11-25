@@ -234,6 +234,15 @@ DOCX introspection.
   The 1→2 pass superseded 2 and merged 6 items, i.e. it is reconciliation, not duplicate creation. Rule adopted:
   two consolidation passes when a cycle covers >~20 lessons, one pass for small cycles. Cost: one extra dream call.
 
+## 3i. Summary-prompt A/B harness (2026-11-25)
+
+- **Three compaction prompts behind one switch.** The live 36-step run suggested summaries lose exact values while
+  the ledger patches around it. Added `summary_prompt_variant`: `default` (current structured), `identifiers`
+  (one bullet per tool result, identifiers copied verbatim), `twopass` (extract a raw fact list, then compress it).
+  `context_live.py` gains matching modes (`prompt_ids`, `prompt_twopass`) and a `--probes` selector so shorter,
+  cheaper runs can still ask multiple recall questions. Offline tests pin the prompt text, the extract->compress
+  call order, and the fact hand-off. A live 18-step A/B is running; numbers will be added to the README.
+
 ## 4. Deliberately not done (yet)
 
 - A graded SWE-bench-Lite score (the runner and Docker path exist; only a gold-patch check has been run, because
