@@ -149,3 +149,111 @@ async def test_compaction_keeps_verbatim_fact_ledger():
     block = [m for m in out if m.role == "system" and "compacted_context" in (m.content or "")]
     assert block and "VERBATIM FACTS" in block[0].content
     assert "FACT-11: 998877-Z" in block[0].content
+
+
+async def test_compaction_can_be_disabled(tmp_path):
+    from argo.config import ArgoConfig
+    from argo.core.context import ContextManager
+    from argo.core.types import Message
+
+    cfg = ArgoConfig(workspace=tmp_path, data_dir=tmp_path / "d", session_dir=tmp_path / "s",
+                     index_dir=tmp_path / "i", workflow_dir=tmp_path / "w", skill_dir=tmp_path / "k",
+                     spool_dir=tmp_path / "sp")
+    cfg.ensure_dirs()
+    cfg.compaction_enabled = False
+    cfg.compaction_threshold = 0.01  # would otherwise fire immediately
+    messages = [Message(role="user", content="x " * 5000),
+                Message(role="assistant", content="ok"), Message(role="user", content="more")]
+    mgr = ContextManager(cfg, llm=None)
+    out = await mgr.manage(messages)
+    assert out == messages and mgr.stats.compactions == 0
+
+
+class CountingLLM:
+    def __init__(self):
+        self.calls = 0
+
+    async def chat(self, messages, tools=None, **kwargs):
+        self.calls += 1
+        return LLMResponse(message=Message(role="assistant", content="summary text"), usage=Usage())
+
+
+def churn_cfg():
+    cfg = BigWindowCfg()
+    cfg.models.context_window = 8_000
+    cfg.models.max_output_tokens = 1_000
+    cfg.compaction_threshold = 0.5
+    cfg.keep_recent_tokens = 3_000
+    cfg.compact_reserve_tokens = 1_000
+    cfg.compact_min_growth_tokens = 1_200
+    cfg.compact_fact_ledger = False
+    return cfg
+
+
+async def test_no_repeat_compaction_without_growth():
+    """Regression: the live 36-step run compacted 11 times, each summarizing 2 messages."""
+    cfg = churn_cfg()
+    llm = CountingLLM()
+    cm = ContextManager(cfg, llm=llm)
+    msgs = [Message(role="system", content="sys")]
+    for i in range(30):
+        msgs.append(Message(role="user", content=f"turn {i} " + "word " * 900))
+        msgs.append(Message(role="assistant", content="ok " + "word " * 40))
+
+    out = await cm.manage(msgs)
+    assert llm.calls == 1 and cm.stats.compactions == 1
+    after = len(out)
+    # Next few turns add only a little context: hysteresis must suppress more summary calls.
+    for i in range(3):
+        out.append(Message(role="assistant", content="ok " + "word " * 40))
+        out = await cm.manage(out)
+    assert llm.calls == 1, "compaction repeated without meaningful growth"
+
+    # Substantial growth eventually justifies a new compaction.
+    out += [Message(role="user", content="more " + "word " * 4000)] * 3
+    out = await cm.manage(out)
+    assert llm.calls == 2 and cm.stats.compactions == 2
+
+
+async def test_tiny_head_does_not_trip_circuit_breaker():
+    cfg = churn_cfg()
+    cfg.compact_min_growth_tokens = 0
+    llm = CountingLLM()
+    cm = ContextManager(cfg, llm=llm)
+    msgs = [Message(role="system", content="sys"),
+            Message(role="user", content="hi " + "word " * 5000),
+            Message(role="assistant", content="ok")]
+    out = await cm.manage(msgs)
+    assert llm.calls == 0 and not cm._compact_disabled
+    assert cm.stats.compactions == 0
+
+
+def test_ledger_captures_identifiers_from_prose():
+    from argo.core.context import extract_fact_lines
+
+    msgs = [
+        Message(role="tool", name="fetch_url", content=(
+            "STEP 03. Latency stayed in envelope. Checkpoint id T03-613ad6. End of step 03.")),
+        Message(role="tool", name="bash", content=(
+            "fixed in commit 4f2b9c1 and emailed ops@example.com; request 550e8400-e29b-41d4-a716-446655440000")),
+        Message(role="user", content="DB_HOST: prod-17"),
+    ]
+    ledger = extract_fact_lines(msgs)
+    assert "ID: T03-613ad6" in ledger
+    assert "4f2b9c1" in ledger and "ops@example.com" in ledger
+    assert "550e8400-e29b-41d4-a716-446655440000" in ledger
+    assert "DB_HOST: prod-17" in ledger
+
+
+async def test_successful_compaction_does_not_trigger_reset():
+    cfg = churn_cfg()
+    cfg.reset_threshold = 0.05  # reset would fire at 5% of budget if the gate were absent
+    cfg.compact_min_growth_tokens = 0
+    cm = ContextManager(cfg, llm=CountingLLM())
+    msgs = [Message(role="system", content="sys")]
+    msgs += [Message(role="user", content=f"m{i} " + "word " * 700) for i in range(10)]
+    msgs += [Message(role="tool", content="DB_HOST: prod-17\n" + "x" * 300, name="read_file")]
+    out = await cm.manage(msgs)
+    assert cm.stats.compactions == 1
+    assert cm.stats.resets == 0, "reset fired right after a successful compaction"
+    assert any("compacted_context" in (m.content or "") for m in out if m.role == "system")

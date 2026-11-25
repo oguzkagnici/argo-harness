@@ -74,10 +74,16 @@ def build_agent(tmp_path, llm: FakeLLM, executed: list[str]) -> Agent:
             executed.append(f"write_file:{key}")
             return ToolResult(f"wrote {key}")
 
+        async def fetch(ctx: ToolContext, url: str = "") -> ToolResult:
+            executed.append(f"fetch_url:{url}")
+            return ToolResult(f"page body for {url}")
+
         reg.add("inspect", "read-only probe", {"type": "object", "properties": {"key": {"type": "string"}}},
                 inspect, read_only=True)
         reg.add("write_file", "mutating write", {"type": "object", "properties": {"key": {"type": "string"}}},
                 mutate, read_only=False)
+        reg.add("fetch_url", "read-only external fetch", {"type": "object", "properties": {"url": {"type": "string"}}},
+                fetch, read_only=True, parallel_safe=True)
         agent.tool_ctx.extra["registry"] = reg
         return reg
 
@@ -175,3 +181,69 @@ async def test_no_progress_limit_is_configurable(tmp_path):
     assert result.stop_reason == "no_progress" and result.iterations == 5
     nudges = [e.data["count"] for e in agent.events.history if e.type == "loop_nudge"]
     assert nudges == [2, 3]
+
+
+async def test_external_fetches_count_as_progress(tmp_path):
+    """A long sequential fetch chain is research, not a verify-only loop (36-step context benchmark)."""
+    executed: list[str] = []
+    script = [tool_turn(("fetch_url", f'{{"url": "https://example.test/step/{i}"}}')) for i in range(14)]
+    result, agent = await run(tmp_path, script, executed)
+
+    assert result.stop_reason == "final"
+    assert len(executed) == 14
+    assert not any(e.type == "loop_nudge" for e in agent.events.history)
+
+
+async def test_repeated_external_fetch_is_not_progress(tmp_path):
+    """Identical reads still trip the guard: only novel external calls count."""
+    executed: list[str] = []
+    script = [tool_turn(("fetch_url", '{"url": "https://example.test/same"}')) for _ in range(16)]
+    result, agent = await run(tmp_path, script, executed)
+
+    assert result.stop_reason == "no_progress"
+    assert len(executed) == 2
+
+
+def read_agent(tmp_path, script, executed):
+    """Like build_agent but with real read-tool names (novel-path progress rule)."""
+    cfg = make_cfg(tmp_path)
+    cfg.ensure_dirs()
+    llm = FakeLLM(script)
+    agent = Agent(cfg, llm=llm)
+
+    def fake_registry() -> ToolRegistry:
+        reg = ToolRegistry(agent.tool_ctx)
+
+        async def read(ctx: ToolContext, path: str = "") -> ToolResult:
+            executed.append(f"read_file:{path}")
+            return ToolResult(f"contents of {path}")
+
+        reg.add("read_file", "read a file", {"type": "object", "properties": {"path": {"type": "string"}}},
+                read, read_only=True, parallel_safe=True)
+        agent.tool_ctx.extra["registry"] = reg
+        return reg
+
+    agent._build_registry = fake_registry  # type: ignore[method-assign]
+    return agent, llm
+
+
+async def test_novel_file_reads_count_as_progress(tmp_path):
+    executed: list[str] = []
+    script = [tool_turn(("read_file", f'{{"path": "src/f{i}.py"}}')) for i in range(14)]
+    agent, _ = read_agent(tmp_path, script, executed)
+    async with agent:
+        result = await agent.run("explore the repo")
+
+    assert result.stop_reason == "final" and len(executed) == 14
+    assert not any(e.type == "loop_nudge" for e in agent.events.history)
+
+
+async def test_rereading_the_same_file_is_not_progress(tmp_path):
+    executed: list[str] = []
+    script = [tool_turn(("read_file", '{"path": "src/app.py"}')) for _ in range(20)]
+    agent, _ = read_agent(tmp_path, script, executed)
+    async with agent:
+        result = await agent.run("re-inspect")
+
+    assert result.stop_reason == "no_progress"
+    assert len(executed) == 2  # exact-repeat guard blocks the rest

@@ -7,12 +7,12 @@ backed by these checks, the benchmark suite, or cited literature.
 
 ```bash
 pytest -q
-# 70 passed
+# 101 passed
 ```
 
 | Area | Checks |
 |---|---|
-| Loop guard | duplicate read-only calls blocked, no-progress nudge at 4/7 + stop at 10, progress reset, call-order preservation |
+| Loop guard | duplicate read-only calls blocked, no-progress nudge at 4/7 + stop at 10, progress reset, call-order preservation, external-info tools reset the counter, repeated external fetch still stops |
 | Retrieval | tokenization, heading-aware chunking, BM25 ranking, RRF fusion, cosine, recency decay |
 | Memory | add/retrieve, exact dedupe, generation isolation, transcripts, link graph |
 | Dreaming | generational clone, supersede, ungrounded-claim downgrade, wiki/procedure creation, rollback |
@@ -108,6 +108,9 @@ Tool calling was verified separately: the model returned a valid `tool_calls` pa
 | Workflow extraction from browser trace | Passed; parameterized `url` + `name`, 3 steps with assertions |
 | Daemon `--once` | Passed; webhook trigger queued, read-only allowlist enforced (bash denied), goal done, outbox delivered |
 | Memory export with `--git` | Passed; markdown + frontmatter + `_dashboard.md`, git commit |
+| Live 36-step token chain (12k window) | `full` (unmanaged), `autocompact` (0.75 + ledger), `no_ledger`; 36 sequential HTTP fetches with probe recall at steps 3/20/35 — see `benchmarks/results/context_live_*.json` |
+| Adaptive injection (local) | Red-team LLM writes and refines injections against the target over two rounds, defense off/on; static payload as baseline — see `benchmarks/results/adaptive_injection_*.json` |
+| Observability | `argo metrics` and `argo trace` verified on a real 10-iteration session (tool calls, stop reason, per-tool durations after the change) |
 
 ## 5. What these checks do *not* prove
 
@@ -120,7 +123,9 @@ Tool calling was verified separately: the model returned a valid `tool_calls` pa
   drift, and multi-site flows are untested.
 - **Cost/latency optimization.** Per-run token accounting exists; no cross-provider cost benchmark yet.
 - **Multi-model generalization.** All benchmark numbers are from one provider/model.
-- **Injection resistance in general.** Seven fixed payloads against one aligned model, all refused; this does not predict behavior under adaptive attacks (AgentDojo), weaker models, or tool-output impersonation at scale.
+- **Injection resistance in general.** Fixed payloads against one aligned model were all refused; the adaptive
+  benchmark (attacker refines over rounds, defense-aware) is a better signal, but it is still one attacker model,
+  one target model, and three scenarios rather than the full AgentDojo suite.
 - **Long-horizon context quality in production.** The context numbers come from a synthetic transcript with a small window; real sessions mix images, huge diffs, and many tool types.
 
 ## 6. Recommended next evaluations
@@ -154,6 +159,8 @@ python benchmarks/repair.py --self-check
 python benchmarks/repair.py --modes baseline,review
 python benchmarks/provider_parity.py
 python benchmarks/injection.py --modes off,on
+python benchmarks/adaptive_injection.py --rounds 2 --modes off,on
+python benchmarks/context_live.py --steps 36 --modes full,autocompact,no_ledger
 python benchmarks/context_bench.py --policies full,microcompact,autocompact_75,autocompact_95,reset
 argo run --no-stream "Create hello.py that prints hi, run it, and report the output."
 argo dream --apply

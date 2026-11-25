@@ -98,3 +98,55 @@ async def test_read_only_trigger_restricts_tools(tmp_path, monkeypatch):
     d.queue.enqueue("manual task")
     await d._execute(d.queue.claim_next())
     assert CaptureAgent.last.kwargs["allow_tools"] is None
+
+
+def _age_goal(queue, gid: str, seconds: float = 9000) -> None:
+    queue.db.execute("UPDATE goals SET updated_at=? WHERE id=?", (__import__("time").time() - seconds, gid))
+    queue.db.commit()
+
+
+def test_recover_stale_requeues_running_goal(tmp_path):
+    d = Daemon(make_cfg(tmp_path), stale_claim_seconds=60)
+    gid = d.queue.enqueue("long research job")
+    d.queue.claim_next()  # worker claims, then dies
+    _age_goal(d.queue, gid)
+
+    assert d.queue.recover_stale(d.stale_claim_seconds) == [gid]
+    goal = d.queue.list_goals()[0]
+    assert goal["status"] == "pending" and goal["attempts"] == 1
+    assert "requeued after stale claim" in goal["error"]
+
+
+def test_recover_stale_fails_after_max_attempts(tmp_path):
+    d = Daemon(make_cfg(tmp_path), stale_claim_seconds=60)
+    gid = d.queue.enqueue("poison job")
+    for _ in range(3):
+        d.queue.claim_next()
+        _age_goal(d.queue, gid)
+        d.queue.recover_stale(d.stale_claim_seconds, max_attempts=3)
+
+    goal = d.queue.list_goals()[0]
+    assert goal["status"] == "failed" and goal["attempts"] == 3
+    assert "stale claim after 3 attempts" in goal["error"]
+    assert d.queue.claim_next() is None
+
+
+def test_recover_stale_leaves_fresh_and_pending_alone(tmp_path):
+    d = Daemon(make_cfg(tmp_path), stale_claim_seconds=60)
+    fresh = d.queue.enqueue("fresh job")
+    d.queue.claim_next()
+    pending = d.queue.enqueue("queued job")
+
+    assert d.queue.recover_stale(d.stale_claim_seconds) == []
+    status = {g["id"]: g["status"] for g in d.queue.list_goals()}
+    assert status[fresh] == "running" and status[pending] == "pending"
+
+
+def test_dedupe_survives_stale_requeue(tmp_path):
+    d = Daemon(make_cfg(tmp_path))
+    gid = d.queue.enqueue("same goal")
+    d.queue.claim_next()
+    _age_goal(d.queue, gid)
+    d.queue.recover_stale(60)
+
+    assert d.queue.enqueue("same goal") is None  # pending duplicate still rejected
