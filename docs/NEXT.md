@@ -43,9 +43,11 @@ run the project's tests — the harness's key feedback loop was missing.
 - **B. Agent-in-container**: exec the agent's read/edit/test actions inside `swebench/sweb.eval.*` (already validated
   by the gold run) so the environment is exactly official. More work, exact.
 **Pass:** 2-5 instances graded by the official harness, with a written pass rate (no cherry-picking).
-**Status:** option A implemented (`--install-deps`: editable install + FAIL_TO_PASS command in the prompt, unit-tested).
-A live run on `sympy__sympy-16988` is running; grade it with `--evaluate` and record pass rate. Option B (agent inside
-the official image) is still the exact-environment alternative.
+**Status:** option A implemented and **measured**: `sympy__sympy-16988` is **resolved 1/1** (FAIL_TO_PASS 2/2,
+PASS_TO_PASS 72/72), 17 iter / 228,926 tok, vs a 0-line ungraded patch before. Found and fixed two harness bugs along
+the way (novel shell output now counts as progress; official test patch must be applied, `setuptools` for py3.12).
+Remaining for the pass bar: grade 2-5 instances, not just one. Option B (agent inside the official image) is still the
+exact-environment alternative.
 **Note:** one image ≈ 2.5-3 GB unpacked; this box has ~9 GB and 4 GB RAM, so run one at a time and clean up.
 
 ### 4. ~~Self-contention guard for the provider~~ — done
@@ -58,12 +60,14 @@ Remaining: a `--low-priority` pacing flag, and a live 30-iteration competing-cli
 
 ## P1 — mechanisms with strong literature but no local measurement
 
-### 5. Retrieval: replicate the RRF/rerank findings on a second corpus (NFCorpus)
+### 5. ~~Retrieval: replicate the RRF/rerank findings on a second corpus (NFCorpus)~~ — done
 **Why:** the current defaults (`k=60`, dense-heavy 1.2) were tuned on SciFact alone; a 2-point nDCG swing on one
 sampled corpus is weak evidence.
 **Do:** add NFCorpus to `benchmarks/retrieval.py` and rerun `--ablate`.
 **Pass:** the direction (dense-heavy > BM25-heavy, rerank depth 20 as the knee) holds on both corpora before any
 default changes. Then consider `rrf_k=10` as the default.
+**Status:** done. Dense > BM25 and rerank-best-nDCG replicate; RRF-best-Recall@100 does not. No default changed;
+`--corpus nfcorpus` added. A full `--ablate` pass on NFCorpus is still optional.
 
 ### 6. Memory: scale the dream-generation policy
 **Why:** "two generations = same recall at 2.2× cost" was measured on 6 lessons. Consolidation policies usually pay

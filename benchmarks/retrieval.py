@@ -38,11 +38,12 @@ DATA = Path(__file__).resolve().parent / "data"
 RESULTS = Path(__file__).resolve().parent / "results"
 
 
-def load_data():
-    corpus = {row["_id"]: row for row in pq.read_table(DATA / "scifact_corpus.parquet").to_pylist()}
-    queries = {row["_id"]: row for row in pq.read_table(DATA / "scifact_queries.parquet").to_pylist()}
+def load_data(name: str = "scifact"):
+    prefix = DATA / name
+    corpus = {row["_id"]: row for row in pq.read_table(f"{prefix}_corpus.parquet").to_pylist()}
+    queries = {row["_id"]: row for row in pq.read_table(f"{prefix}_queries.parquet").to_pylist()}
     qrels: dict[str, set[str]] = {}
-    lines = (DATA / "scifact_qrels_test.tsv").read_text(encoding="utf-8").splitlines()
+    lines = Path(f"{prefix}_qrels_test.tsv").read_text(encoding="utf-8").splitlines()
     for line in lines[1:]:
         qid, docid, score = line.split("\t")
         if int(score) > 0:
@@ -171,9 +172,10 @@ def summarize(rankings: dict[str, dict[str, list[str]]], qrels, n_queries: int) 
 
 async def main_async(args: argparse.Namespace) -> int:
     cfg = load_config()
-    corpus, queries, qrels = load_data()
+    corpus, queries, qrels = load_data(args.corpus)
     docs, qs, qrels = build_sample(corpus, queries, qrels, args.queries, args.docs, args.seed)
-    print(f"SciFact sample: {len(docs)} docs, {len(qs)} queries, "
+    label = {"scifact": "SciFact", "nfcorpus": "NFCorpus"}.get(args.corpus, args.corpus)
+    print(f"{label} sample: {len(docs)} docs, {len(qs)} queries, "
           f"{sum(len(qrels[q['id']]) for q in qs)} positive judgments", flush=True)
 
     model = cfg.models.embedding_model or "qwen3-embedding-8b"
@@ -206,11 +208,11 @@ async def main_async(args: argparse.Namespace) -> int:
             ablation = await run_ablations(args, llm, docs, qs, model, doc_mat, q_mat)
             ablation["rrf+rerank20"] = rankings["rrf+rerank"]
             metrics = summarize(ablation, qrels, len(qs))
-            summary = {"benchmark": "BEIR-SciFact-ablation", "docs": len(docs), "queries": len(qs),
+            summary = {"benchmark": f"BEIR-{label}-ablation", "corpus": args.corpus, "docs": len(docs), "queries": len(qs),
                        "embedding_model": model, "seed": args.seed, "metrics": metrics,
                        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
             RESULTS.mkdir(parents=True, exist_ok=True)
-            out = RESULTS / f"retrieval_ablation_{time.strftime('%Y%m%d-%H%M%S')}.json"
+            out = RESULTS / f"retrieval_{args.corpus}_ablation_{time.strftime('%Y%m%d-%H%M%S')}.json"
             out.write_text(json.dumps(summary, indent=2), encoding="utf-8")
             print(f"\n{'config':<22} {'R@10':>7} {'R@100':>7} {'nDCG@10':>8}")
             for name, m in sorted(metrics.items(), key=lambda kv: -kv[1]["ndcg@10"]):
@@ -230,12 +232,12 @@ async def main_async(args: argparse.Namespace) -> int:
         for metric in metrics[method]:
             metrics[method][metric] = round(metrics[method][metric] / len(qs), 4)
 
-    summary = {"benchmark": "BEIR-SciFact", "docs": len(docs), "queries": len(qs),
+    summary = {"benchmark": f"BEIR-{label}", "corpus": args.corpus, "docs": len(docs), "queries": len(qs),
                "embedding_model": model, "seed": args.seed, "metrics": metrics,
                "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
     RESULTS.mkdir(parents=True, exist_ok=True)
     stamp = time.strftime("%Y%m%d-%H%M%S")
-    out = RESULTS / f"retrieval_scifact_{stamp}.json"
+    out = RESULTS / f"retrieval_{args.corpus}_{stamp}.json"
     out.write_text(json.dumps(summary, indent=2), encoding="utf-8")
 
     print(f"\n{'method':<12} {'R@10':>7} {'R@100':>7} {'nDCG@10':>8}")
@@ -251,6 +253,8 @@ def main() -> int:
     parser.add_argument("--docs", type=int, default=1000)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--ablate", action="store_true", help="run one-factor-at-a-time retrieval ablations")
+    parser.add_argument("--corpus", default="scifact", choices=["scifact", "nfcorpus"],
+                        help="BEIR corpus; data must exist in benchmarks/data/<corpus>_{corpus,queries}.parquet")
     args = parser.parse_args()
     return asyncio.run(main_async(args))
 

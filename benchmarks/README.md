@@ -46,6 +46,28 @@ relative comparisons are.
 Data: corpus/queries from `huggingface.co/datasets/BeIR/scifact` (parquet), qrels from `BeIR/scifact-qrels`.
 Embeddings are cached under `benchmarks/data/cache/`.
 
+### 2b. BEIR NFCorpus replication (2026-11-25)
+
+Same protocol and recipe as SciFact (`--corpus nfcorpus --queries 100 --docs 1000`, seed 0); 2,104 docs
+(all sampled positives + distractors), 100 queries, 3,630 positive judgments.
+
+```bash
+python benchmarks/retrieval.py --corpus nfcorpus --queries 100 --docs 1000
+```
+
+| Method | Recall@10 | Recall@100 | nDCG@10 |
+|---|---|---|---|
+| BM25 | 0.1633 | 0.2490 | 0.3486 |
+| Dense (qwen3-embedding-8b) | **0.1899** | **0.4278** | 0.3936 |
+| RRF (BM25 + dense) | 0.1877 | 0.3780 | 0.4055 |
+| RRF + rerank (qwen3-reranker-8b) | **0.2011** | 0.3780 | **0.4451** |
+
+Replication findings: **dense > BM25 (R@10, R@100, nDCG) and rerank gives the best nDCG hold on a second corpus**,
+so the production rerank-the-fused-top-20 default is supported by two corpora. The SciFact claim "RRF maximizes
+recall at depth" did **not** replicate: on NFCorpus plain dense has the best Recall@100 (0.4278 vs 0.3780). The
+weighted-RRF recall advantage is therefore corpus-dependent; reranking is the robust component. Data:
+`huggingface.co/datasets/BeIR/nfcorpus` + `BeIR/nfcorpus-qrels`.
+
 ## 3. Memory learning loop (dreaming)
 
 CL-Bench-style protocol (Patwardhan et al., 2025): plant six stale facts, correct each in a transcript, run
@@ -347,10 +369,17 @@ python benchmarks/swebench_lite.py --generate --limit 2
 python benchmarks/swebench_lite.py --evaluate --limit 2      # docker, prebuilt swebench/sweb.eval.*
 ```
 
-| Instance | Stop | Iterations | Tokens | Patch | Tampered tests |
-|---|---|---|---|---|---|
-| sympy__sympy-21614 (gold, harness check) | — | — | — | gold | n/a — **1/1 resolved** |
-| sympy__sympy-16988 (Argo) | no_progress | 22 | 464,315 | 1 file / 470 chars | no |
+| Instance | Stop | Iterations | Tokens | Patch | Tampered tests | Official result |
+|---|---|---|---|---|---|---|
+| sympy__sympy-21614 (gold, harness check) | — | — | — | gold | n/a | **1/1 resolved** |
+| sympy__sympy-16988 (Argo, no test feedback) | no_progress | 22 | 464,315 | 1 file / 470 chars | no | not graded |
+| sympy__sympy-16988 (Argo, `--install-deps`) | final | 17 | 228,926 | 1 file / 808 chars | no | **1/1 resolved** |
+
+**Headline:** with the test-feedback loop (`--install-deps`: official test patch applied + editable install + the
+exact `FAIL_TO_PASS` pytest command in the prompt) the same instance that previously produced no patch **resolves**:
+FAIL_TO_PASS 2/2, PASS_TO_PASS 72/72, patch applied cleanly (`logs/run_evaluation/argo_20261125221307`). The agent
+used 17 iterations and 228,926 tokens — roughly half the tokens of the pre-fix attempt, because failing tests give a
+direct signal instead of unbounded exploration. Sample size is n=1; this establishes the mechanism, not a pass rate.
 
 Infrastructure check: grading the **gold** patch through the official harness resolved **1/1**
 (`gold.gold_check.json`), and `--cache_level none --clean True` removed the image afterwards (disk returned to

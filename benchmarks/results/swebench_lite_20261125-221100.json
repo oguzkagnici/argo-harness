@@ -1,0 +1,29 @@
+{
+  "benchmark": "swebench-lite-local",
+  "dataset": "princeton-nlp/SWE-bench_Lite",
+  "predictions": "benchmarks/results/swebench_lite_preds_20261125-221100.jsonl",
+  "rows": [
+    {
+      "instance_id": "sympy__sympy-16988",
+      "repo": "sympy/sympy",
+      "base_commit": "e727339af6dc22321b00f52d971cda39e4ce89fb",
+      "tests_protected": [
+        "sympy/sets/tests/test_sets.py"
+      ],
+      "test_patch_applied": true,
+      "deps_installed": true,
+      "test_command": "/workspaces/argo/.venv/bin/python -m pytest -q \"sympy/sets/tests/test_sets.py\" -k \"test_imageset or test_intersection\"",
+      "stop_reason": "final",
+      "iterations": 17,
+      "tokens": 228926,
+      "session_id": "20261125-220532-c99e4d",
+      "output": "Done.\n\n## Summary\n\n**File changed:** `sympy/sets/sets.py` (2 lines)\n\n**Root cause:** `Intersection.__new__` passed the sympified args straight into `simplify_intersection`, which converts args to a Python `set` only *after* the finite-set handling stage. `Intersection._handle_finite_sets` picks the smallest `FiniteSet` as the \"base\" set and tests each of its elements against the remaining args. With duplicates like `Intersection({1}, {1}, {x})`, the two identical `{1}` sets were both present, so `{1}` was chosen as base and the *other* `{1}` was treated as a separate constraint \u2014 the element `1` was checked against `{1}` (true) and `{x}` (unknown), producing an unevaluated/incorrect result that collapsed to `EmptySet()`. With a single `{1}`, the base set is `{1}` and only `{x}` remains as ",
+      "patch_chars": 808,
+      "patch_files": 1,
+      "tampered_tests": false,
+      "patch": "diff --git a/sympy/sets/sets.py b/sympy/sets/sets.py\nindex 03cf57a30b..aaf94ef29b 100644\n--- a/sympy/sets/sets.py\n+++ b/sympy/sets/sets.py\n@@ -23,7 +23,7 @@\n from sympy.logic.boolalg import And, Or, Not, true, false\n from sympy.sets.contains import Contains\n from sympy.utilities import subsets\n-from sympy.utilities.iterables import sift\n+from sympy.utilities.iterables import sift, uniq\n from sympy.utilities.misc import func_name, filldedent\n \n from mpmath import mpi, mpf\n@@ -1260,7 +1260,7 @@ def __new__(cls, *args, **kwargs):\n         evaluate = kwargs.get('evaluate', global_evaluate[0])\n \n         # flatten inputs to merge intersections and iterables\n-        args = _sympify(args)\n+        args = list(ordered(uniq(_sympify(args))))\n \n         # Reduce sets using known rules\n         if evaluate:",
+      "seconds": 331.0
+    }
+  ],
+  "timestamp": "2026-11-25T22:11:00Z"
+}

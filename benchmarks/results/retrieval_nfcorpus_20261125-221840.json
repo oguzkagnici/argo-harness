@@ -1,0 +1,31 @@
+{
+  "benchmark": "BEIR-NFCorpus",
+  "corpus": "nfcorpus",
+  "docs": 2104,
+  "queries": 100,
+  "embedding_model": "qwen3-embedding-8b",
+  "seed": 0,
+  "metrics": {
+    "bm25": {
+      "recall@10": 0.1633,
+      "recall@100": 0.249,
+      "ndcg@10": 0.3486
+    },
+    "dense": {
+      "recall@10": 0.1899,
+      "recall@100": 0.4278,
+      "ndcg@10": 0.3936
+    },
+    "rrf": {
+      "recall@10": 0.1877,
+      "recall@100": 0.378,
+      "ndcg@10": 0.4055
+    },
+    "rrf+rerank": {
+      "recall@10": 0.2011,
+      "recall@100": 0.378,
+      "ndcg@10": 0.4451
+    }
+  },
+  "timestamp": "2026-11-25T22:18:40Z"
+}

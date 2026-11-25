@@ -198,6 +198,20 @@ DOCX introspection.
   still flagged as tampering), installs `setuptools` (Python 3.12 removed `distutils`, old sympy needs it), and the
   prompt carries the absolute-interpreter pytest command. Verified on the clone: `2 failed, 1 passed` before the fix.
 
+## 3f. Measured outcomes: SWE-bench test feedback and NFCorpus (2026-11-25)
+
+- **SWE-bench: 0 -> 1 resolved.** `sympy__sympy-16988` went from a 0-line patch (`no_progress`, 22 iter, 464k tok,
+  not graded) to **resolved 1/1** with `--install-deps`: FAIL_TO_PASS 2/2, PASS_TO_PASS 72/72, 17 iterations,
+  228,926 tokens, patch applied cleanly by the official harness. Mechanism: the agent can *execute the graded tests*,
+  so the loop becomes edit -> observe failure -> fix instead of reading code. Token use roughly halved despite
+  finishing the job. n=1: this proves the mechanism, not a pass rate. Grading used the official
+  `swebench.harness.run_evaluation` with the prebuilt image, then `--clean True` removed it.
+- **NFCorpus retrieval replication.** The production recipe's core holds on a second corpus: dense beats BM25 on
+  R@10/R@100/nDCG and rerank-fused-top-20 gives the best nDCG (0.4451 vs 0.3936 dense / 0.3486 BM25). The SciFact
+  claim that RRF maximizes Recall@100 did **not** replicate (dense 0.4278 > RRF 0.3780 on NFCorpus), so we will not
+  change the production default to "always RRF for recall"; reranking is the transferable win. `--corpus` now selects
+  scifact/nfcorpus.
+
 ## 4. Deliberately not done (yet)
 
 - A graded SWE-bench-Lite score (the runner and Docker path exist; only a gold-patch check has been run, because
