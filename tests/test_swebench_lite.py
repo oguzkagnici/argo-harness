@@ -102,6 +102,14 @@ def test_test_command_targets_only_failing_tests():
     assert BENCH.test_command({}) == ""
 
 
+def test_test_command_resolves_bare_names_to_test_patch_file():
+    instance = inst()
+    instance["FAIL_TO_PASS"] = '["test_imageset", "test_intersection"]'
+    cmd = BENCH.test_command(instance)
+    assert '"tests/test_core.py"' in cmd
+    assert '-k "test_imageset or test_intersection"' in cmd
+
+
 def test_feedback_prompt_includes_command():
     text = BENCH.PROMPT_FEEDBACK.format(repo="pkg/pkg", problem="bug", test_command="python -m pytest -q x")
     assert "python -m pytest -q x" in text

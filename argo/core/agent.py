@@ -151,6 +151,7 @@ class Agent:
         self.iterations = 0
         self._sig_counts: dict[str, int] = {}
         self._seen_reads: set[str] = set()
+        self._seen_outputs: set[str] = set()
         self._no_progress = 0
         self._nudges = 0
         self.mcp: Any = None
@@ -798,12 +799,22 @@ class Agent:
                 tc.name in EXTERNAL_INFO_TOOLS and not res.is_error and not res.metadata.get("duplicate")
                 for tc, res in results)
             read_progress = any(res.metadata.get("novel_read") for _tc, res in results)
-            if mutating_progress or external_progress or read_progress:
+            # A shell/code probe that returns output we have not seen before is new information,
+            # i.e. real progress for an exploratory workload (SWE-bench-style grep/read loops).
+            # Identical repeated output is not progress, so verify-only loops still stop.
+            output_progress = False
+            for tc, res in results:
+                if tc.name in ("bash", "run_code") and not res.is_error and res.content:
+                    digest = hashlib.sha1((tc.name + "|" + res.content[:4000]).encode()).hexdigest()
+                    if digest not in self._seen_outputs:
+                        self._seen_outputs.add(digest)
+                        output_progress = True
+            if mutating_progress or external_progress or read_progress or output_progress:
                 self._no_progress = 0
             if mutating_progress:
                 self._sig_counts.clear()
                 self._seen_reads.clear()  # after an edit, re-reading a file is legitimate verification
-            if not (mutating_progress or external_progress or read_progress):
+            if not (mutating_progress or external_progress or read_progress or output_progress):
                 self._no_progress += 1
                 limit = max(2, int(getattr(self.cfg, "no_progress_limit", 10) or 10))
                 nudge_at = {max(2, int(limit * 0.4)), max(3, int(limit * 0.7))}

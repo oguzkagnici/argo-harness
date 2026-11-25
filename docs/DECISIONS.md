@@ -184,6 +184,20 @@ DOCX introspection.
   `test_command()` normalise the dataset's JSON-string or list formats and target only the graded node ids (no
   whole-suite runs). Unit-tested offline; a live graded run is in progress and its number will be recorded here.
 
+## 3e. Loop guard: novel shell output is progress (2026-11-25)
+
+- **Bug found by the SWE-bench run.** The agent explored with `bash` (grep/sed) for 10 steps and was killed by the
+  no-progress guard with a 0-line patch, even though every command returned new information. The guard only counted
+  typed `read_file` (novel path), mutations, and external fetches. Fix: a successful `bash`/`run_code` result whose
+  output hash has not been seen this run is progress; identical repeated output (the verify-loop case) still is not.
+  This is the "new information = progress" definition the guard was always aiming at, now extended to the tool the
+  agent actually uses for exploration. Tests: novel outputs run past the 10-step limit; identical outputs stop at 11.
+- **SWE-bench feedback also needed the official test patch.** Resolving bare test names to `test_sets.py -k ...`
+  was not enough: at the base commit those tests pass because the *test patch* had not been applied. `apply_test_patch`
+  now applies it and commits it as the baseline (so the later diff is source-only, and extra agent edits to tests are
+  still flagged as tampering), installs `setuptools` (Python 3.12 removed `distutils`, old sympy needs it), and the
+  prompt carries the absolute-interpreter pytest command. Verified on the clone: `2 failed, 1 passed` before the fix.
+
 ## 4. Deliberately not done (yet)
 
 - A graded SWE-bench-Lite score (the runner and Docker path exist; only a gold-patch check has been run, because

@@ -132,17 +132,65 @@ def fail_to_pass(inst: dict) -> list[str]:
 
 
 def test_command(inst: dict) -> str:
-    """A pytest invocation restricted to the instance's FAIL_TO_PASS node ids."""
+    """A pytest invocation restricted to the instance's FAIL_TO_PASS tests.
+
+    SWE-bench stores either full node ids (``path::test``) or bare test names. Bare
+    names are resolved against the test file named in the instance's test patch, using
+    ``-k`` so the command works without guessing the exact class path.
+    """
     nodes = fail_to_pass(inst)
     if not nodes:
         return ""
+    if all("::" in n for n in nodes):
+        quoted = " ".join(f'"{n}"' for n in nodes[:25])
+        return f"python -m pytest -q {quoted}"
+    files = sorted(test_files(inst))
+    names = [n.split("::")[-1] for n in nodes[:25]]
+    selector = " or ".join(names)
+    if files:
+        return f'python -m pytest -q {" ".join(chr(34) + f + chr(34) for f in files)} -k "{selector}"'
     quoted = " ".join(f'"{n}"' for n in nodes[:25])
     return f"python -m pytest -q {quoted}"
 
 
+def apply_test_patch(ws: Path, inst: dict) -> bool:
+    """Apply the official test patch and commit it as the baseline.
+
+    SWE-bench applies the test patch before running FAIL_TO_PASS, so the agent must see
+    those tests too. Committing it keeps the later ``git diff`` limited to source edits
+    (and still detects *additional* agent edits to test files as tampering).
+    """
+    patch = inst.get("test_patch") or ""
+    if not patch.strip():
+        return False
+    marker = ws / ".git" / "argo_test_patch_applied"
+    if marker.exists():
+        return True
+    import tempfile
+    with tempfile.NamedTemporaryFile("w", suffix=".patch", delete=False) as fh:
+        fh.write(patch)
+        tmp = fh.name
+    try:
+        proc = subprocess.run(["git", "-C", str(ws), "apply", "--whitespace=nowarn", tmp],
+                              capture_output=True, text=True)
+        if proc.returncode != 0:
+            return False
+        sh("git", "-C", str(ws), "add", "-A")
+        subprocess.run(["git", "-C", str(ws), "-c", "user.email=argo@local", "-c", "user.name=argo",
+                        "commit", "-qm", "official test patch"], capture_output=True, text=True)
+        marker.write_text("1")
+        return True
+    finally:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+
+
 def install_env(ws: Path, timeout: float = 900.0) -> tuple[bool, str]:
     """Editable-install the checkout so the agent can execute the project's own tests."""
-    cmds = [[sys.executable, "-m", "pip", "install", "-q", "-e", "."],
+    cmds = [[sys.executable, "-m", "pip", "install", "-q", "setuptools", "wheel"],
+            [sys.executable, "-m", "pip", "install", "-q", "-e", "."],
             [sys.executable, "-m", "pip", "install", "-q", "pytest"]]
     log: list[str] = []
     for cmd in cmds:
@@ -176,7 +224,10 @@ async def generate_one(inst: dict, args) -> dict:
            "base_commit": inst["base_commit"], "tests_protected": sorted(test_files(inst))[:10]}
     prompt = PROMPT.format(repo=inst["repo"], problem=inst["problem_statement"])
     cmd = test_command(inst)
+    if cmd:
+        cmd = cmd.replace("python ", f"{sys.executable} ", 1)
     if getattr(args, "install_deps", False):
+        row["test_patch_applied"] = apply_test_patch(ws, inst)
         ok, log = install_env(ws)
         row["deps_installed"] = ok
         if not ok:

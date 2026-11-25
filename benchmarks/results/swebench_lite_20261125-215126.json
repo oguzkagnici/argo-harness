@@ -1,0 +1,28 @@
+{
+  "benchmark": "swebench-lite-local",
+  "dataset": "princeton-nlp/SWE-bench_Lite",
+  "predictions": "benchmarks/results/swebench_lite_preds_20261125-215126.jsonl",
+  "rows": [
+    {
+      "instance_id": "sympy__sympy-16988",
+      "repo": "sympy/sympy",
+      "base_commit": "e727339af6dc22321b00f52d971cda39e4ce89fb",
+      "tests_protected": [
+        "sympy/sets/tests/test_sets.py"
+      ],
+      "deps_installed": true,
+      "test_command": "python -m pytest -q \"test_imageset\" \"test_intersection\"",
+      "stop_reason": "no_progress",
+      "iterations": 10,
+      "tokens": 98312,
+      "session_id": "20261125-214645-f02350",
+      "output": "I ran out of steps before completing the fix. Here's the state:\n\n## What I found (root cause)\n\n`Intersection.__new__` in `sympy/sets/sets.py` (line ~1267) does:\n\n```python\nargs = _sympify(args)\nif evaluate:\n    args = list(cls._new_args_filter(args))\n    return simplify_intersection(args)\n```\n\n`_new_args_filter` (in `sympy/core/operations.py`) is a generator that flattens nested `Intersection`s and drops identity/zero args, but it **does not deduplicate**. So `Intersection({1}, {1}, {x})` passes `[{1}, {1}, {x}]` into `simplify_intersection`.\n\nIn `simplify_intersection`, the pairwise loop does `args = set(args)` \u2014 which collapses the duplicate `{1}` \u2014 but `Intersection._handle_finite_sets(args)` is called **before** that, on the raw list. With the duplicate present, `fs_args` contains two ",
+      "patch_chars": 0,
+      "patch_files": 0,
+      "tampered_tests": false,
+      "patch": "",
+      "seconds": 287.9
+    }
+  ],
+  "timestamp": "2026-11-25T21:51:26Z"
+}
