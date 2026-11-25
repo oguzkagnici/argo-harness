@@ -125,6 +125,21 @@ DOCX introspection.
 - **Sampled benchmarks.** SciFact uses 100 queries / 1,000 docs and HumanEval uses 20 tasks to bound cost. Relative
   comparisons are valid; absolute values are not comparable to official leaderboards.
 
+## 3a. Daemon leases and budgets (2026-11-25)
+
+- **Multi-worker safety via SQLite leases.** Claiming uses `BEGIN IMMEDIATE` plus a
+  `WHERE status='pending'` guard, so two workers on the same DB can never execute one goal twice. Each claim records
+  `worker_id` and `heartbeat_at`; the worker renews the lease every `stale_claim_seconds/3` while a goal runs, and
+  `recover_stale` keys liveness on `heartbeat_at` (falling back to `updated_at` for pre-lease rows). This is the
+  standard heartbeat/lease pattern used by queue workers (Celery/Redis leases, Kubernetes leader election) and is
+  the minimum needed for an always-on agent that restarts. Measured effect: offline test claims 20 goals across two
+  queues with zero duplicates; a live lease is never recovered while a crashed one is recovered exactly once.
+- **Per-run caps + priced cost.** Token accounting existed but not prices or per-goal limits. Added
+  `max_run_tokens`, `max_run_wall_seconds`, `max_run_tool_calls` (stopping with `stop_reason="budget"` and a partial
+  result) and a `[pricing]` table (model substring → USD per 1M input/output). Rationale: always-on agents need hard
+  limits per goal, and cost is the metric operators actually budget. `argo metrics --cost` reports USD total and per
+  run. Verified by 5 unit tests (token, wall-clock, tool-call caps, longest-prefix pricing, summarize cost).
+
 ## 4. Deliberately not done (yet)
 
 - A graded SWE-bench-Lite score (the runner and Docker path exist; only a gold-patch check has been run, because

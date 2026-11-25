@@ -93,10 +93,25 @@ class Budget:
         if limit and self.data[self.today]["tokens"] >= limit:
             raise BudgetExceeded(f"daily token budget exhausted ({self.data[self.today]['tokens']:,}/{limit:,})")
 
-    def add(self, usage: Usage) -> None:
-        day = self.data.setdefault(self.today, {"tokens": 0, "calls": 0})
+    def price(self, model: str | None) -> tuple[float, float]:
+        """Return (input, output) USD per 1M tokens for ``model`` (longest prefix wins)."""
+        table = getattr(self.cfg, "model_prices", None) or {}
+        best_key, best = "", (0.0, 0.0)
+        for key, val in table.items():
+            if model and key.lower() in model.lower() and len(key) > len(best_key):
+                best_key = key
+                best = (float(val.get("input", 0.0)), float(val.get("output", 0.0)))
+        return best
+
+    def cost(self, usage: Usage, model: str | None = None) -> float:
+        pin, pout = self.price(model)
+        return (usage.prompt_tokens * pin + usage.completion_tokens * pout) / 1_000_000
+
+    def add(self, usage: Usage, model: str | None = None) -> None:
+        day = self.data.setdefault(self.today, {"tokens": 0, "calls": 0, "cost": 0.0})
         day["tokens"] += usage.total_tokens
         day["calls"] += 1
+        day["cost"] = round(float(day.get("cost", 0.0)) + self.cost(usage, model), 6)
         try:
             self.path.write_text(json.dumps(self.data, indent=2), encoding="utf-8")
         except OSError:
@@ -121,6 +136,12 @@ class Agent:
         self.allow_tools = allow_tools
         self.extra = dict(extra or {})
         self.budget = Budget(cfg)
+        self.run_limits = {
+            "max_tokens": int(getattr(cfg, "max_run_tokens", 0) or 0),
+            "max_wall": float(getattr(cfg, "max_run_wall_seconds", 0.0) or 0.0),
+            "max_tool_calls": int(getattr(cfg, "max_run_tool_calls", 0) or 0),
+        }
+        self.run_limits.update({k: v for k, v in (self.extra.get("run_limits") or {}).items() if v})
         self.messages: list[Message] = []
         self.session: Session | None = None
         self.ctxmgr: ContextManager | None = None
@@ -659,6 +680,19 @@ class Agent:
         stop_reason = "final"
         final_text = ""
         empty_retries = 0
+        run_start = time.time()
+        run_tokens = 0
+        tool_calls = 0
+        last_content = ""
+
+        def over_limit() -> str | None:
+            if self.run_limits["max_wall"] and (time.time() - run_start) > self.run_limits["max_wall"]:
+                return "wall clock budget"
+            if self.run_limits["max_tokens"] and run_tokens >= self.run_limits["max_tokens"]:
+                return "run token budget"
+            if self.run_limits["max_tool_calls"] and tool_calls >= self.run_limits["max_tool_calls"]:
+                return "run tool-call budget"
+            return None
 
         while iterations < self.max_iterations:
             iterations += 1
@@ -667,6 +701,12 @@ class Agent:
                 self.budget.check()
             except BudgetExceeded:
                 stop_reason = "budget"
+                break
+            hit = over_limit()
+            if hit:
+                stop_reason = "budget"
+                final_text = f"(stopped: {hit} reached) " + (last_content[:2000] or "")
+                self.events.emit("run_budget", reason=hit, tokens=run_tokens, tool_calls=tool_calls)
                 break
 
             self.messages = await self.ctxmgr.manage(self.messages, state_summary=self._state_summary())
@@ -682,13 +722,16 @@ class Agent:
                 break
 
             self.last_usage.add(resp.usage)
-            self.budget.add(resp.usage)
+            self.budget.add(resp.usage, model=resp.model)
+            run_tokens += resp.usage.total_tokens
             self.session.add_usage(resp.usage)
             if self.ctxmgr:
                 self.ctxmgr.observe_usage(resp.usage.prompt_tokens, len(self.messages))
             self.events.emit("usage", **resp.usage.as_dict(), model=resp.model)
 
             assistant = resp.message
+            if assistant.content:
+                last_content = assistant.content
             self.messages.append(assistant)
             self.session.log_message(assistant)
             self.events.emit("assistant", content=assistant.content or "",
@@ -705,6 +748,7 @@ class Agent:
                     continue
                 break
 
+            tool_calls += len(assistant.tool_calls)
             results = await self._execute_tool_calls(assistant.tool_calls)
             images: list[str] = []
             for tc, res in results:

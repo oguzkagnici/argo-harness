@@ -42,7 +42,8 @@ CREATE TABLE IF NOT EXISTS goals (
   id TEXT PRIMARY KEY, goal TEXT, source TEXT DEFAULT '', trigger_id TEXT,
   priority INTEGER DEFAULT 5, status TEXT DEFAULT 'pending', dedupe_key TEXT,
   created_at REAL, updated_at REAL, started_at REAL, finished_at REAL,
-  session_id TEXT, result TEXT, error TEXT, attempts INTEGER DEFAULT 0
+  session_id TEXT, result TEXT, error TEXT, attempts INTEGER DEFAULT 0,
+  worker_id TEXT, heartbeat_at REAL
 );
 CREATE INDEX IF NOT EXISTS idx_goals_status ON goals(status, priority DESC, created_at);
 CREATE TABLE IF NOT EXISTS approvals (
@@ -91,10 +92,15 @@ class GoalQueue:
         self.db = sqlite3.connect(str(path), check_same_thread=False)
         self.db.row_factory = sqlite3.Row
         self.db.executescript(SCHEMA)
-        try:  # migrate pre-attempts databases
-            self.db.execute("ALTER TABLE goals ADD COLUMN attempts INTEGER DEFAULT 0")
-        except sqlite3.OperationalError:
-            pass
+        for ddl in (
+            "ALTER TABLE goals ADD COLUMN attempts INTEGER DEFAULT 0",
+            "ALTER TABLE goals ADD COLUMN worker_id TEXT",
+            "ALTER TABLE goals ADD COLUMN heartbeat_at REAL",
+        ):
+            try:  # migrate pre-existing databases
+                self.db.execute(ddl)
+            except sqlite3.OperationalError:
+                pass
         self.db.execute("PRAGMA journal_mode=WAL")
         self.db.commit()
 
@@ -114,24 +120,55 @@ class GoalQueue:
         self.db.commit()
         return gid
 
-    def claim_next(self) -> dict[str, Any] | None:
-        row = self.db.execute("SELECT * FROM goals WHERE status='pending' ORDER BY priority DESC, created_at ASC "
-                              "LIMIT 1").fetchone()
-        if not row:
-            return None
+    def claim_next(self, worker_id: str | None = None) -> dict[str, Any] | None:
+        """Atomically claim one pending goal.
+
+        Uses ``BEGIN IMMEDIATE`` so concurrent workers serialise on the write lock
+        and the ``WHERE status='pending'`` guard makes a lost race a no-op instead
+        of a double execution.
+        """
         now = time.time()
-        cur = self.db.execute("UPDATE goals SET status='running', started_at=?, updated_at=? "
-                              "WHERE id=? AND status='pending'", (now, now, row["id"]))
-        self.db.commit()
+        self.db.execute("BEGIN IMMEDIATE")
+        try:
+            row = self.db.execute(
+                "SELECT * FROM goals WHERE status='pending' ORDER BY priority DESC, created_at ASC "
+                "LIMIT 1").fetchone()
+            if not row:
+                self.db.rollback()
+                return None
+            cur = self.db.execute(
+                "UPDATE goals SET status='running', started_at=?, updated_at=?, worker_id=?, heartbeat_at=? "
+                "WHERE id=? AND status='pending'", (now, now, worker_id, now, row["id"]))
+            self.db.commit()
+        except Exception:
+            self.db.rollback()
+            raise
         if cur.rowcount == 0:
             return None
-        return dict(row)
+        claimed = dict(row)
+        claimed["worker_id"] = worker_id
+        return claimed
+
+    def heartbeat(self, gid: str, worker_id: str) -> bool:
+        """Renew the lease on a running goal; returns False if we no longer own it."""
+        cur = self.db.execute(
+            "UPDATE goals SET heartbeat_at=?, updated_at=? WHERE id=? AND status='running' AND worker_id=?",
+            (time.time(), time.time(), gid, worker_id))
+        self.db.commit()
+        return cur.rowcount > 0
 
     def recover_stale(self, stale_after: float = 1800.0, max_attempts: int = 3) -> list[str]:
-        """Requeue goals whose worker died mid-run; give up after ``max_attempts``."""
+        """Requeue goals whose worker lease expired; give up after ``max_attempts``.
+
+        Liveness is keyed on ``heartbeat_at`` (falling back to ``updated_at`` for
+        rows created before leases existed) so a live worker that keeps renewing
+        its lease is never stolen, while a crashed worker stops renewing and its
+        goal is recovered exactly once.
+        """
         cutoff = time.time() - stale_after
-        rows = self.db.execute("SELECT id,attempts FROM goals WHERE status='running' AND updated_at < ?",
-                               (cutoff,)).fetchall()
+        rows = self.db.execute(
+            "SELECT id,attempts FROM goals WHERE status='running' AND COALESCE(heartbeat_at, updated_at) < ?",
+            (cutoff,)).fetchall()
         recovered = []
         for row in rows:
             attempts = int(row["attempts"] or 0) + 1
@@ -269,6 +306,7 @@ class Daemon:
         self.stale_claim_seconds = stale_claim_seconds
         self.dream_every = dream_every_hours
         self.queue = GoalQueue(Path(cfg.data_dir) / "daemon.sqlite")
+        self.worker_id = f"{__import__('socket').gethostname()}:{__import__('os').getpid()}:{uuid.uuid4().hex[:6]}"
         self.running = True
 
     async def run(self) -> None:
@@ -281,7 +319,7 @@ class Daemon:
                 recovered = self.queue.recover_stale(self.stale_claim_seconds)
                 if recovered:
                     console.print(f"[yellow]requeued {len(recovered)} stale goal(s)[/]")
-                goal = self.queue.claim_next()
+                goal = self.queue.claim_next(self.worker_id)
                 if goal:
                     await self._execute(goal)
                 elif self._dream_due():
@@ -358,6 +396,7 @@ class Daemon:
                       extra={"daemon_queue": self.queue, "goal_id": goal["id"]})
         agent.events.subscribe(lambda ev: None)
         started = time.time()
+        lease = asyncio.create_task(self._renew_lease(goal["id"]))
         try:
             async with agent:
                 result = await agent.run(goal["goal"], session=sess)
@@ -370,4 +409,21 @@ class Daemon:
             self.queue.finish(goal["id"], error=f"{type(exc).__name__}: {exc}", status="failed")
             console.print(f"[red]failed[/] {exc}")
         finally:
+            lease.cancel()
+            try:
+                await lease
+            except (asyncio.CancelledError, Exception):
+                pass
             await agent.close()
+
+    async def _renew_lease(self, gid: str) -> None:
+        """Keep this worker's claim alive so other workers never recover a live goal."""
+        interval = max(1.0, self.stale_claim_seconds / 3.0)
+        try:
+            while True:
+                await asyncio.sleep(interval)
+                if not self.queue.heartbeat(gid, self.worker_id):
+                    console.print(f"[yellow]lease lost[/] {gid} (another worker recovered it)")
+                    return
+        except asyncio.CancelledError:
+            raise

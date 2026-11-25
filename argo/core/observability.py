@@ -33,13 +33,23 @@ def load_events(path: str | Path) -> list[dict[str, Any]]:
     return events
 
 
-def summarize(paths: Iterable[str | Path]) -> dict[str, Any]:
+def _price_for(model: str, prices: dict) -> tuple[float, float]:
+    best_key, best = "", (0.0, 0.0)
+    for key, val in (prices or {}).items():
+        if model and str(key).lower() in model.lower() and len(str(key)) > len(best_key):
+            best_key = str(key)
+            best = (float(val.get("input", 0.0)), float(val.get("output", 0.0)))
+    return best
+
+
+def summarize(paths: Iterable[str | Path], model_prices: dict | None = None) -> dict[str, Any]:
     sessions = 0
     runs: list[float] = []
     prompt_tokens = completion_tokens = total_tokens = 0
     tool_calls = tool_errors = 0
     tool_times: dict[str, list[float]] = {}
     compactions = resets = 0
+    cost_usd = 0.0
     stops: Counter[str] = Counter()
     for path in paths:
         events = load_events(path)
@@ -55,6 +65,9 @@ def summarize(paths: Iterable[str | Path]) -> dict[str, Any]:
                 completion_tokens += completion
                 total_tokens += total
                 run_tokens += total
+                if model_prices:
+                    pin, pout = _price_for(str(ev.get("model") or ""), model_prices)
+                    cost_usd += (prompt * pin + completion * pout) / 1_000_000
             elif etype == "tool":
                 tool_calls += 1
                 if ev.get("is_error"):
@@ -86,6 +99,9 @@ def summarize(paths: Iterable[str | Path]) -> dict[str, Any]:
         "compactions": compactions,
         "resets": resets,
         "stop_reasons": dict(stops),
+        "cost": {"usd": round(cost_usd, 4),
+                 "per_run": round(cost_usd / len(runs), 6) if runs else 0.0,
+                 "priced": bool(model_prices)},
     }
 
 

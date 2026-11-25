@@ -138,6 +138,10 @@ class ArgoConfig:
     microcompact_gap_minutes: float = 60.0 # 1h server cache TTL, so a longer gap means the prefix is rewritten anyway
     microcompact_keep_recent: int = 5      # tool results preserved by cache-expiry eviction
     daily_token_budget: int = 0            # 0 = unlimited
+    max_run_tokens: int = 0                # per-run token cap, 0 = unlimited
+    max_run_wall_seconds: float = 0.0      # per-run wall-clock cap, 0 = unlimited
+    max_run_tool_calls: int = 0            # per-run tool-call cap, 0 = unlimited
+    model_prices: dict = field(default_factory=dict)  # {model_substr: {"input": $/Mtok, "output": $/Mtok}}
     memory_inject_chars: int = 6000        # always-loaded memory budget
     no_progress_limit: int = 10            # stop a run stuck in verify-only loops
     plan_mode: bool = False                # read-only exploration until a plan is approved
@@ -277,6 +281,11 @@ def load_config(overrides: dict[str, Any] | None = None) -> ArgoConfig:
         reset_threshold=float(user.get("reset_threshold", 0.92)),
         keep_recent_tokens=int(user.get("keep_recent_tokens", 12_000)),
         daily_token_budget=int(user.get("daily_token_budget", 0)),
+        max_run_tokens=int(overrides.get("max_run_tokens") or user.get("max_run_tokens", 0)),
+        max_run_wall_seconds=float(overrides.get("max_run_wall_seconds")
+                                   or user.get("max_run_wall_seconds", 0.0)),
+        max_run_tool_calls=int(overrides.get("max_run_tool_calls") or user.get("max_run_tool_calls", 0)),
+        model_prices=dict(user.get("pricing", {}) or {}),
         plan_mode=bool(overrides.get("plan_mode", user.get("plan_mode", False))),
         review_policy=str(overrides.get("review_policy", user.get("review_policy", "manual"))),
         review_risk_threshold=int(overrides.get("review_risk_threshold", user.get("review_risk_threshold", 4))),

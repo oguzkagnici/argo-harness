@@ -4,7 +4,7 @@ Ordered by (a) what is currently *unproven or broken*, (b) how much evidence exi
 (c) cost in rate limit/quota on this shared machine. Every item lists the success criterion so it can be closed with
 a measurement, not an opinion.
 
-Current state: 101 offline tests pass. Live evidence exists for retrieval, memory, repair, documents, citation,
+Current state: 122 offline tests pass. Live evidence exists for retrieval, memory, repair, documents, citation,
 injection (fixed + partial adaptive), context (synthetic + live), observability, worktree review, and the SWE-bench
 Docker path (gold patch 1/1).
 
@@ -83,17 +83,22 @@ Test: `test_review_failure_triggers_in_place_repair_and_recheck`.
 
 ## P2 — always-on and operations
 
-### 9. Multi-worker daemon safety
+### 9. ~~Multi-worker daemon safety~~ — done
 **Why:** `recover_stale` assumes one worker per queue; two daemons would double-claim or falsely recover.
 **Do:** SQLite advisory lock (`BEGIN IMMEDIATE`) around claim, worker id + heartbeat column, lease renewal every
 N seconds, and recovery keyed on `heartbeat_at` rather than `updated_at`.
 **Pass:** two workers, 20 goals, zero double-executions; kill -9 a worker mid-goal → exactly one requeue.
+**Status:** done. `BEGIN IMMEDIATE` claim + `worker_id`/`heartbeat_at` leases renewed every t/3; recovery keyed on
+`heartbeat_at`. 5 tests (`tests/test_daemon.py`): 20-goal two-queue race, live lease not stolen, crashed lease requeued,
+stolen heartbeat rejected, in-run renewal.
 
-### 10. Cost and budget controls
+### 10. ~~Cost and budget controls~~ — done
 **Why:** tokens are accounted but not priced; always-on agents need per-goal caps.
 **Do:** model price table, per-goal `max_tokens`/`max_wall`/`max_tool_calls`, `--budget` on `argo run`, and a
 `argo metrics --cost` column. Stop reason `budget` already exists.
 **Pass:** a goal that exceeds its cap ends `budget` with a partial result and an outbox note.
+**Status:** done. `max_run_tokens` / `max_run_wall_seconds` / `max_run_tool_calls`, `[pricing]` table,
+`argo run --budget/--max-wall/--max-tool-calls`, `argo metrics --cost`. 5 tests in `tests/test_budget.py`.
 
 ### 11. Observability depth
 **Why:** `argo trace`/`argo metrics` exist but are single-host and coarse.

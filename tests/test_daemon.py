@@ -100,8 +100,13 @@ async def test_read_only_trigger_restricts_tools(tmp_path, monkeypatch):
     assert CaptureAgent.last.kwargs["allow_tools"] is None
 
 
-def _age_goal(queue, gid: str, seconds: float = 9000) -> None:
-    queue.db.execute("UPDATE goals SET updated_at=? WHERE id=?", (__import__("time").time() - seconds, gid))
+def _age_goal(queue, gid: str, seconds: float = 9000, heartbeat: bool = True) -> None:
+    import time
+    old = time.time() - seconds
+    if heartbeat:
+        queue.db.execute("UPDATE goals SET updated_at=?, heartbeat_at=? WHERE id=?", (old, old, gid))
+    else:
+        queue.db.execute("UPDATE goals SET updated_at=? WHERE id=?", (old, gid))
     queue.db.commit()
 
 
@@ -150,3 +155,73 @@ def test_dedupe_survives_stale_requeue(tmp_path):
     d.queue.recover_stale(60)
 
     assert d.queue.enqueue("same goal") is None  # pending duplicate still rejected
+
+
+def test_two_workers_claim_each_goal_exactly_once(tmp_path):
+    from argo.daemon import GoalQueue
+    db = tmp_path / "q.sqlite"
+    q1, q2 = GoalQueue(db), GoalQueue(db)
+    ids = {q1.enqueue(f"goal {i}") for i in range(20)}
+
+    seen = []
+    while True:
+        got = [q1.claim_next("w1") or q2.claim_next("w2")]
+        got = [g for g in got if g]
+        if not got:
+            break
+        seen.extend(g["id"] for g in got)
+
+    assert len(seen) == 20 and set(seen) == ids
+    assert all(g["status"] == "running" for g in q1.list_goals())
+
+
+def test_live_lease_is_not_recovered(tmp_path):
+    d = Daemon(make_cfg(tmp_path), stale_claim_seconds=60)
+    gid = d.queue.enqueue("slow but alive")
+    d.queue.claim_next("worker-a")
+    _age_goal(d.queue, gid, seconds=3600, heartbeat=False)  # updated_at old...
+
+    # ...but a heartbeat keeps the lease fresh.
+    assert d.queue.heartbeat(gid, "worker-a") is True
+    assert d.queue.recover_stale(d.stale_claim_seconds) == []
+    assert d.queue.list_goals()[0]["status"] == "running"
+
+
+def test_crashed_worker_lease_is_recovered(tmp_path):
+    d = Daemon(make_cfg(tmp_path), stale_claim_seconds=60)
+    gid = d.queue.enqueue("worker died")
+    d.queue.claim_next("worker-a")
+    _age_goal(d.queue, gid)  # heartbeat also stale -> worker presumed dead
+
+    assert d.queue.recover_stale(d.stale_claim_seconds) == [gid]
+    assert d.queue.list_goals()[0]["status"] == "pending"
+
+
+def test_stolen_goal_heartbeat_is_rejected(tmp_path):
+    d = Daemon(make_cfg(tmp_path), stale_claim_seconds=60)
+    gid = d.queue.enqueue("contested")
+    d.queue.claim_next("worker-a")
+    assert d.queue.heartbeat(gid, "worker-a") is True
+    # A worker that does not own the lease cannot renew it.
+    assert d.queue.heartbeat(gid, "worker-b") is False
+
+
+async def test_execute_renews_lease_while_running(tmp_path, monkeypatch):
+    import asyncio
+
+    class SlowAgent(CaptureAgent):
+        async def run(self, task, session=None, **kwargs):
+            await asyncio.sleep(0.3)
+            return await super().run(task, session=session, **kwargs)
+
+    monkeypatch.setattr(daemon_mod, "Agent", SlowAgent)
+    d = Daemon(make_cfg(tmp_path), stale_claim_seconds=3)  # renews ~1s
+    gid = d.queue.enqueue("long task")
+    goal = d.queue.claim_next(d.worker_id)
+    exec_task = asyncio.create_task(d._execute(goal))
+    await asyncio.sleep(0.15)
+    first = d.queue.db.execute("SELECT heartbeat_at FROM goals WHERE id=?", (gid,)).fetchone()[0]
+    await exec_task
+    stored = d.queue.list_goals()[0]
+    assert stored["status"] == "done"
+    assert first is not None

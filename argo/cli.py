@@ -131,6 +131,10 @@ def run(task: str = typer.Argument(..., help="Task for the agent."),
         stream: bool = typer.Option(True, "--stream/--no-stream"),
         show_reasoning: bool = typer.Option(False, "--reasoning", help="Show reasoning deltas."),
         max_iterations: Optional[int] = typer.Option(None, "--max-iterations"),
+        budget: Optional[int] = typer.Option(None, "--budget", help="Max tokens for this run."),
+        max_wall: Optional[float] = typer.Option(None, "--max-wall", help="Max wall-clock seconds for this run."),
+        max_tool_calls: Optional[int] = typer.Option(None, "--max-tool-calls",
+                                                     help="Max tool calls for this run."),
         yolo: bool = typer.Option(False, "--yolo", help="Allow dangerous shell/code actions without confirmation."),
         plan: bool = typer.Option(False, "--plan", help="Read-only until a plan is approved."),
         review: Optional[str] = typer.Option(None, "--review",
@@ -139,6 +143,12 @@ def run(task: str = typer.Argument(..., help="Task for the agent."),
     cfg = _cfg(model, base_url, workspace)
     if max_iterations:
         cfg.max_iterations = max_iterations
+    if budget:
+        cfg.max_run_tokens = budget
+    if max_wall:
+        cfg.max_run_wall_seconds = max_wall
+    if max_tool_calls:
+        cfg.max_run_tool_calls = max_tool_calls
     cfg.plan_mode = plan or cfg.plan_mode
     if review:
         cfg.review_policy = review
@@ -562,6 +572,7 @@ def trace(session: str = typer.Argument(..., help="Session id (see `argo session
 def metrics(dir: Optional[str] = typer.Option(None, "--dir", help="Directory of session JSONL files."),
             limit: int = typer.Option(500, "--limit", help="Most recent N sessions."),
             workspace: Optional[str] = typer.Option(None, "--workspace"),
+            cost: bool = typer.Option(False, "--cost", help="Show estimated USD cost (needs [pricing] config)."),
             json_out: bool = typer.Option(False, "--json", help="Print raw JSON.")) -> None:
     """Aggregate tokens, tool error rate, slowest tools, and stop reasons across sessions."""
     from .core.observability import summarize
@@ -569,7 +580,7 @@ def metrics(dir: Optional[str] = typer.Option(None, "--dir", help="Directory of 
     cfg = _cfg(None, None, workspace)
     root = Path(dir) if dir else Path(cfg.session_dir)
     paths = sorted(root.glob("*.jsonl"), key=lambda x: -x.stat().st_mtime)[:limit] if root.exists() else []
-    stats = summarize(paths)
+    stats = summarize(paths, model_prices=cfg.model_prices if cost else None)
     if json_out:
         console.print_json(data=stats)
         return
@@ -587,6 +598,10 @@ def metrics(dir: Optional[str] = typer.Option(None, "--dir", help="Directory of 
         console.print(table)
     if stats["stop_reasons"]:
         console.print("[bold]stop reasons[/] " + ", ".join(f"{k}={v}" for k, v in stats["stop_reasons"].items()))
+    if cost:
+        money = stats["cost"]
+        console.print(f"[bold]cost[/] ${money['usd']:.4f} total · ${money['per_run']:.4f}/run"
+                      + ("" if money["priced"] else " [yellow](no \\[pricing] table configured)[/]"))
 
 
 @app.command()
