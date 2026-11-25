@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS goals (
   id TEXT PRIMARY KEY, goal TEXT, source TEXT DEFAULT '', trigger_id TEXT,
   priority INTEGER DEFAULT 5, status TEXT DEFAULT 'pending', dedupe_key TEXT,
   created_at REAL, updated_at REAL, started_at REAL, finished_at REAL,
-  session_id TEXT, result TEXT, error TEXT
+  session_id TEXT, result TEXT, error TEXT, attempts INTEGER DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS idx_goals_status ON goals(status, priority DESC, created_at);
 CREATE TABLE IF NOT EXISTS approvals (
@@ -91,6 +91,10 @@ class GoalQueue:
         self.db = sqlite3.connect(str(path), check_same_thread=False)
         self.db.row_factory = sqlite3.Row
         self.db.executescript(SCHEMA)
+        try:  # migrate pre-attempts databases
+            self.db.execute("ALTER TABLE goals ADD COLUMN attempts INTEGER DEFAULT 0")
+        except sqlite3.OperationalError:
+            pass
         self.db.execute("PRAGMA journal_mode=WAL")
         self.db.commit()
 
@@ -122,6 +126,25 @@ class GoalQueue:
         if cur.rowcount == 0:
             return None
         return dict(row)
+
+    def recover_stale(self, stale_after: float = 1800.0, max_attempts: int = 3) -> list[str]:
+        """Requeue goals whose worker died mid-run; give up after ``max_attempts``."""
+        cutoff = time.time() - stale_after
+        rows = self.db.execute("SELECT id,attempts FROM goals WHERE status='running' AND updated_at < ?",
+                               (cutoff,)).fetchall()
+        recovered = []
+        for row in rows:
+            attempts = int(row["attempts"] or 0) + 1
+            if attempts >= max_attempts:
+                self.db.execute("UPDATE goals SET status='failed', attempts=?, error=?, updated_at=? WHERE id=?",
+                                (attempts, f"stale claim after {attempts} attempts", time.time(), row["id"]))
+            else:
+                self.db.execute("UPDATE goals SET status='pending', attempts=?, updated_at=?, "
+                                "error='requeued after stale claim' WHERE id=?",
+                                (attempts, time.time(), row["id"]))
+                recovered.append(row["id"])
+        self.db.commit()
+        return recovered
 
     def finish(self, gid: str, result: str = "", error: str = "", session_id: str = "",
                status: str = "done") -> None:
@@ -239,10 +262,11 @@ class GoalQueue:
 
 class Daemon:
     def __init__(self, cfg: ArgoConfig, once: bool = False, poll_seconds: int = 30,
-                 dream_every_hours: float = 24.0):
+                 dream_every_hours: float = 24.0, stale_claim_seconds: float = 1800.0):
         self.cfg = cfg
         self.once = once
         self.poll_seconds = max(5, poll_seconds)
+        self.stale_claim_seconds = stale_claim_seconds
         self.dream_every = dream_every_hours
         self.queue = GoalQueue(Path(cfg.data_dir) / "daemon.sqlite")
         self.running = True
@@ -254,6 +278,9 @@ class Daemon:
         while self.running:
             try:
                 self._enqueue_due()
+                recovered = self.queue.recover_stale(self.stale_claim_seconds)
+                if recovered:
+                    console.print(f"[yellow]requeued {len(recovered)} stale goal(s)[/]")
                 goal = self.queue.claim_next()
                 if goal:
                     await self._execute(goal)

@@ -138,6 +138,8 @@ argo memory list|search|add|stats|export --git|activate|dreams
 argo index ./docs                   # embed workspace files for recall
 argo workflow list|show|extract ID --name NAME|run NAME -p key=value
 argo session list|show ID
+argo trace ID                       # timeline of tools/usage/compactions for a session
+argo metrics [--dir DIR]            # tokens, tool error rate, slowest tools, stop reasons
 argo trigger add NAME "goal" --kind interval --seconds 3600 --read-only
 argo goals | argo outbox | argo approvals list
 argo doctor                         # end-to-end connectivity check
@@ -232,7 +234,7 @@ Codex, DeepSeek Harness, OpenHands, Instinct, Hermes, and Anthropic's always-on 
 ## Tests
 
 ```bash
-pytest -q            # 70 unit/integration tests, no network required
+pytest -q            # 101 unit/integration tests, no network required
 argo doctor          # live provider check
 ```
 
@@ -248,6 +250,11 @@ Published protocols, runnable scripts and JSON records in [`benchmarks/`](benchm
 | Workflow replay, extracted `demo_login` × 5 | **5/5** success |
 | Repair loop, 5 local repos + hidden tests | baseline **5/5** at 47k tok / 163s; with review **5/5** at 63k tok / 527s (+35% tokens, no accuracy gain) |
 | Provider parity, chat vs responses | both paths pass tool calls, tool-result replay, and streaming; same token accounting |
+| Live context, 36-step token chain (12k window) | no compaction 3/3 at 288,569 tok; compaction churn bug found (0/3, 11 compactions) and fixed — rerun pending |
+| Adaptive prompt injection (red-team loop) | static 0.0 / adaptive 0.0 ASR, utility 1.0 (1 case run; suite truncated by rate limits) |
+| SWE-bench-Lite (official harness) | Docker path validated with the gold patch: **1/1 resolved**; Argo patch generated for 1 instance, not yet graded |
+
+Next steps and open defects are tracked in [`docs/NEXT.md`](docs/NEXT.md).
 
 ## Known limitations
 
@@ -256,8 +263,8 @@ Published protocols, runnable scripts and JSON records in [`benchmarks/`](benchm
   retries are your friend.
 - Dreaming can still hallucinate; evidence grounding and non-destructive generations reduce, not eliminate, risk.
 - Both wire APIs are supported (`/chat/completions` and `/responses`); provider-specific quirks are covered by parity tests.
-- No MCP client yet (skills + CLI tools cover similar ground); no distributed worker/lease; cron is limited to
-  interval/daily/weekly/once.
+- MCP tools work over stdio (resources/prompts and HTTP transport are not implemented); no distributed worker/lease;
+  cron is limited to interval/daily/weekly/once.
 - Reasoning tokens count toward `max_tokens` on some providers; Argo defaults to a generous output budget.
 
 ## Layout

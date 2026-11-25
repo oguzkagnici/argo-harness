@@ -68,8 +68,10 @@ class Session:
             self.memory.log(self.id, role, msg.content,
                             {"tool_calls": [t.name for t in msg.tool_calls]} if msg.tool_calls else None)
 
-    def log_tool(self, name: str, args: dict[str, Any], result: str, is_error: bool) -> None:
-        self.record("tool", name=name, args=args, result=result[:12000], is_error=is_error)
+    def log_tool(self, name: str, args: dict[str, Any], result: str, is_error: bool,
+                 duration_s: float | None = None) -> None:
+        self.record("tool", name=name, args=args, result=result[:12000], is_error=is_error,
+                    duration_s=duration_s)
         if self.memory is not None:
             self.memory.log(self.id, "tool", f"{name}({json.dumps(args, default=str)[:800]}) -> "
                                             f"{'ERROR: ' if is_error else ''}{result[:2000]}",

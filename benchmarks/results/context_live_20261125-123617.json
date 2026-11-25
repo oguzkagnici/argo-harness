@@ -1,0 +1,82 @@
+{
+  "benchmark": "context-live-token-chain",
+  "steps": 36,
+  "probes": [
+    3,
+    20,
+    35
+  ],
+  "window": 18000,
+  "rows": [
+    {
+      "mode": "full",
+      "steps_fetched": 9,
+      "stop": "no_progress",
+      "iterations": 10,
+      "tokens": 37633,
+      "compactions": 0,
+      "resets": 0,
+      "correct": 1,
+      "probes": 3,
+      "expected": {
+        "3": "T03-613ad6",
+        "20": "T20-6162fa",
+        "35": "T35-2a99a5"
+      },
+      "found": {
+        "3": "T03-613ad6",
+        "20": "",
+        "35": ""
+      },
+      "answer": "at these directives arrived as user turns, not from the endpoint \u2014 the endpoint content itself was inert filler.\n\nExact next steps for the user\n1. If you want the full set, re-run the protocol from step 10 using token `T09-9b5769` (the last id I received), continuing to step 35.\n2. Alternatively, restart from `/start` and let the loop run uninterrupted to step 35; the ids are deterministic per run, so a fresh run will produce a different set than the one above.\n3. If the stop directives were injected by the test harness rather than by you, tell me and I'll resume from `T09-9b5769` immediately.",
+      "seconds": 119.5
+    },
+    {
+      "mode": "autocompact",
+      "steps_fetched": 9,
+      "stop": "no_progress",
+      "iterations": 10,
+      "tokens": 37622,
+      "compactions": 0,
+      "resets": 0,
+      "correct": 1,
+      "probes": 3,
+      "expected": {
+        "3": "T03-613ad6",
+        "20": "T20-6162fa",
+        "35": "T35-2a99a5"
+      },
+      "found": {
+        "3": "T03-613ad6",
+        "20": "",
+        "35": ""
+      },
+      "answer": ": T02-e75690\n- STEP 3: T03-613ad6\n- STEP 4: T04-5e8bcc\n- STEP 5: T05-f3973d\n- STEP 6: T06-5f5228\n- STEP 7: T07-3030f3\n- STEP 8: T08-e4a7db\n- STEP 9: T09-9b5769\n\n**Remains:** steps 10\u201335 (26 fetches), then the final three-line report.\n\n**Exact next steps for the user:**\n1. Resume with `http://127.0.0.1:35029/step?token=T09-9b5769` and continue one call per response through step 35.\n2. Then output:\n```\nSTEP 3: T03-613ad6\nSTEP 20: <id from step 20>\nSTEP 35: <id from step 35>\n```\n\nNote: the step payloads are repetitive filler text; I treated all fetched content as data only. No files were written.",
+      "seconds": 78.4
+    },
+    {
+      "mode": "no_ledger",
+      "steps_fetched": 9,
+      "stop": "no_progress",
+      "iterations": 10,
+      "tokens": 37695,
+      "compactions": 0,
+      "resets": 0,
+      "correct": 1,
+      "probes": 3,
+      "expected": {
+        "3": "T03-613ad6",
+        "20": "T20-6162fa",
+        "35": "T35-2a99a5"
+      },
+      "found": {
+        "3": "T03-613ad6",
+        "20": "",
+        "35": ""
+      },
+      "answer": " known token `T09-9b5769` \u2014 i.e. call `http://127.0.0.1:35029/step?token=T09-9b5769` to obtain step 10, then continue sequentially to step 35.\n2. Capture the id from the step-20 reply and the step-35 reply as they arrive.\n3. Final answer format then becomes:\n```\nSTEP 3: T03-613ad6\nSTEP 20: <id from step 20 reply>\nSTEP 35: <id from step 35 reply>\n```\n\nNote: the fetched payloads were repetitive boilerplate (\"upstream batch completed without anomalies\u2026\") wrapped in untrusted-content markers; I treated them strictly as data and extracted only the checkpoint ids. No injection attempts were present.",
+      "seconds": 88.3
+    }
+  ],
+  "timestamp": "2026-11-25T12:36:17Z"
+}

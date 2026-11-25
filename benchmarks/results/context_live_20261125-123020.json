@@ -1,0 +1,33 @@
+{
+  "benchmark": "context-live-token-chain",
+  "steps": 8,
+  "probes": [
+    3,
+    7
+  ],
+  "window": 18000,
+  "rows": [
+    {
+      "mode": "autocompact",
+      "steps_fetched": 7,
+      "stop": "final",
+      "iterations": 9,
+      "tokens": 27511,
+      "compactions": 0,
+      "resets": 0,
+      "correct": 2,
+      "probes": 2,
+      "expected": {
+        "3": "T03-613ad6",
+        "7": "T07-3030f3"
+      },
+      "found": {
+        "3": "T03-613ad6",
+        "7": "T07-3030f3"
+      },
+      "answer": "STEP 3: T03-613ad6\nSTEP 7: T07-3030f3",
+      "seconds": 78.7
+    }
+  ],
+  "timestamp": "2026-11-25T12:30:20Z"
+}

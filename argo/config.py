@@ -125,11 +125,14 @@ class ArgoConfig:
     skill_dir: Path = field(default_factory=lambda: Path.cwd() / ".argo" / "skills")
     spool_dir: Path = field(default_factory=lambda: Path.cwd() / ".argo" / "spool")
     max_iterations: int = 60
+    compaction_enabled: bool = True        # False = never summarize (use when the provider window is large)
     compaction_threshold: float = 0.75     # fraction of context window that triggers work
     reset_threshold: float = 0.92
     keep_recent_tokens: int = 12_000
     compact_reserve_tokens: int = 13_000   # headroom kept below the window (Claude Code AUTOCOMPACT_BUFFER_TOKENS)
     compact_max_failures: int = 3          # circuit breaker for failing compaction calls
+    compact_min_head_messages: int = 3     # do not summarize a 1-2 message head (avoid churn)
+    compact_min_growth_tokens: int = 1200  # hysteresis: re-compact only after this much new context
     compact_fact_ledger: bool = True       # keep verbatim key/value facts across compaction
     time_based_microcompact: bool = True   # evict stale tool output once the server prompt cache has expired
     microcompact_gap_minutes: float = 60.0 # 1h server cache TTL, so a longer gap means the prefix is rewritten anyway
@@ -269,6 +272,7 @@ def load_config(overrides: dict[str, Any] | None = None) -> ArgoConfig:
         skill_dir=project / "skills",
         spool_dir=project / "spool",
         max_iterations=int(overrides.get("max_iterations") or user.get("max_iterations", 60)),
+        compaction_enabled=bool(user.get("compaction_enabled", True)),
         compaction_threshold=float(user.get("compaction_threshold", 0.75)),
         reset_threshold=float(user.get("reset_threshold", 0.92)),
         keep_recent_tokens=int(user.get("keep_recent_tokens", 12_000)),

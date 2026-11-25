@@ -46,6 +46,17 @@ CONVERSATION:
 
 FACT_LINE_RE = re.compile(r"^\s{0,4}([A-Za-z][A-Za-z0-9_.\-/ ]{0,47})\s*(?::|=)\s*(\S.{0,160})$", re.M)
 URL_RE = re.compile(r"https?://[^\s)<>\"']+")
+# Identifiers that appear in running prose rather than `key: value` lines. The live 36-step benchmark lost
+# checkpoint ids ("Checkpoint id T03-613ad6") because the ledger only matched key/value lines; these patterns
+# generalize that case to UUIDs, commit hashes and emails (all paraphrased away by narrative summaries).
+IDENTIFIER_RES = [
+    re.compile(r"\b[A-Z][A-Z0-9]{0,7}[-_][0-9a-fA-F]{4,32}\b"),      # T03-613ad6, REQ-9f2c11
+    re.compile(r"\b[A-Z]{2,8}-\d{2,8}\b"),                          # ticket ids: ENG-1042
+    re.compile(r"\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b", re.I),
+    re.compile(r"\b(?:sha|commit|rev(?:ision)?)[:=\s]+([0-9a-f]{7,40})\b", re.I),
+    re.compile(r"\b[\w.+-]+@[\w-]+\.[\w.-]{2,}\b"),
+]
+MAX_IDENTIFIERS = 60
 FACT_LEDGER_CHARS = 6000
 
 
@@ -74,6 +85,17 @@ def extract_fact_lines(messages: Sequence[Message], limit_chars: int = FACT_LEDG
             if norm not in seen:
                 order.append(norm)
             seen[norm] = f"URL: {url}"
+        for pattern in IDENTIFIER_RES:
+            for match in pattern.findall(msg.content):
+                value = match if isinstance(match, str) else match[0]
+                if len(value) < 5 or value.casefold() in seen:
+                    continue
+                norm = "id:" + value.casefold()
+                if norm not in seen:
+                    order.append(norm)
+                seen[norm] = f"ID: {value}"
+        if len(order) > MAX_IDENTIFIERS * 4:  # bound scanning memory on huge tool dumps
+            order = order[-MAX_IDENTIFIERS * 4:]
     lines: list[str] = []
     used = 0
     for norm in reversed(order):
@@ -129,6 +151,8 @@ class ContextManager:
         self._last_activity = time.time()
         self._compact_failures = 0
         self._compact_disabled = False
+        self._compact_insufficient = False
+        self._compact_after = 0  # tokens right after the last successful compaction (hysteresis)
         self.cache_evictions = 0
 
     def budget(self) -> int:
@@ -241,7 +265,10 @@ class ContextManager:
             tail.insert(0, m)
             tokens += t
         head = convo[: len(convo) - len(tail)]
-        if not head:
+        # Summarizing a 1-2 message head costs a full summary call and buys almost nothing; require a
+        # substantive span. This prevents the live-run churn where every turn re-summarized 2 messages.
+        if len(head) < int(getattr(self.cfg, "compact_min_head_messages", 3)):
+            self._compact_insufficient = True
             return messages
         history = self._render_history(head)
         prompt = SUMMARY_PROMPT.format(history=history[:120_000])
@@ -298,11 +325,14 @@ class ContextManager:
 
     # ---------------------------------------------------------------- policy
     async def manage(self, messages: list[Message], state_summary: str = "") -> list[Message]:
+        if not getattr(self.cfg, "compaction_enabled", True):
+            return messages
         limit = self.budget()
         threshold = self.compaction_threshold()
         self.evict_cached_prefix(messages)
         tokens = self.tokens(messages)
-        if tokens < threshold:
+        growth = int(getattr(self.cfg, "compact_min_growth_tokens", 1200))
+        if tokens < threshold or tokens < self._compact_after + growth:
             self._last_activity = time.time()
             return messages
         # 1) reclaim space cheaply
@@ -317,18 +347,25 @@ class ContextManager:
             return messages
         # 2) summarize in place (bounded retries: a failing summary must not burn a call every turn)
         before = messages
+        self._compact_insufficient = False
         messages = await self.compact(messages)
         if messages is before:
-            self._compact_failures += 1
-            if self._compact_failures >= int(getattr(self.cfg, "compact_max_failures", 3)):
-                self._compact_disabled = True
-                self._emit("context_compact_disabled", failures=self._compact_failures)
+            if not self._compact_insufficient:  # a real failure (empty summary), not "nothing to compact"
+                self._compact_failures += 1
+                if self._compact_failures >= int(getattr(self.cfg, "compact_max_failures", 3)):
+                    self._compact_disabled = True
+                    self._emit("context_compact_disabled", failures=self._compact_failures)
         else:
             self._compact_failures = 0
+            self._compact_after = estimate_messages(messages) + self.tool_tokens
         self._last_usage = None
         tokens = estimate_messages(messages) + self.tool_tokens
-        # 3) clean-slate reset if still dangerously full
-        if tokens > int(limit * self.cfg.reset_threshold):
+        # 3) clean-slate reset only when compaction did not help, or the prompt would exceed the window.
+        # A successful compaction that lands between reset_threshold and the budget must NOT reset: the live
+        # 12k benchmark reset once per run, wiping ids that the ledger had just preserved.
+        compacted_now = messages is not before
+        reset_at = int(limit * self.cfg.reset_threshold)
+        if tokens > limit or (tokens > reset_at and not compacted_now):
             _handoff, tail = await self.make_handoff(messages, state_summary)
             system = [m for m in messages if m.role == "system"][:1]
             messages = system + tail

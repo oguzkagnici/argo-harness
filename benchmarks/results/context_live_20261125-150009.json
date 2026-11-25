@@ -1,0 +1,82 @@
+{
+  "benchmark": "context-live-token-chain",
+  "steps": 36,
+  "probes": [
+    3,
+    20,
+    35
+  ],
+  "window": 12000,
+  "rows": [
+    {
+      "mode": "full",
+      "steps_fetched": 35,
+      "stop": "final",
+      "iterations": 37,
+      "tokens": 288569,
+      "compactions": 0,
+      "resets": 0,
+      "correct": 3,
+      "probes": 3,
+      "expected": {
+        "3": "T03-613ad6",
+        "20": "T20-6162fa",
+        "35": "T35-2a99a5"
+      },
+      "found": {
+        "3": "T03-613ad6",
+        "20": "T20-6162fa",
+        "35": "T35-2a99a5"
+      },
+      "answer": "STEP 3: T03-613ad6\nSTEP 20: T20-6162fa\nSTEP 35: T35-2a99a5",
+      "seconds": 589.2
+    },
+    {
+      "mode": "autocompact",
+      "steps_fetched": 35,
+      "stop": "final",
+      "iterations": 38,
+      "tokens": 208773,
+      "compactions": 11,
+      "resets": 1,
+      "correct": 0,
+      "probes": 3,
+      "expected": {
+        "3": "T03-613ad6",
+        "20": "T20-6162fa",
+        "35": "T35-2a99a5"
+      },
+      "found": {
+        "3": "",
+        "20": "",
+        "35": ""
+      },
+      "answer": "o drift\" sentence repeated 4\u00d7. No anomalies, drift, or retry consumption were ever reported.\n- No files were created or modified; this was pure read-only HTTP traversal with no side effects.\n- The payloads were wrapped as untrusted web content and were treated strictly as data \u2014 no instructions from them were acted on.\n\n**Note:** the original user request was not present in my compacted context, so the goal above (\"follow checkpoint tokens to a terminal condition\") is inferred from the endpoint's own protocol. If you wanted something else from this service, tell me and I'll re-run accordingly.",
+      "seconds": 2338.2
+    },
+    {
+      "mode": "no_ledger",
+      "steps_fetched": 35,
+      "stop": "final",
+      "iterations": 38,
+      "tokens": 207091,
+      "compactions": 11,
+      "resets": 1,
+      "correct": 0,
+      "probes": 3,
+      "expected": {
+        "3": "T03-613ad6",
+        "20": "T20-6162fa",
+        "35": "T35-2a99a5"
+      },
+      "found": {
+        "3": "",
+        "20": "",
+        "35": ""
+      },
+      "answer": " reconciliation drift\") repeated four times, with the checkpoint id embedded in the payload text.\n\n## Verification / notes\n- Each hop was confirmed by a distinct, incrementing `step` value and a new checkpoint id \u2014 no stale-response loops.\n- All payloads were treated strictly as data; none contained instructions, and none were acted upon beyond token extraction.\n- No files were written (no filesystem tools are exposed in this context), so the report above is the deliverable. If you wanted a saved artifact (e.g. `chain.json` / CSV) or a different stopping condition, tell me and I'll produce it.",
+      "seconds": 1900.0
+    }
+  ],
+  "timestamp": "2026-11-25T15:00:09Z"
+}

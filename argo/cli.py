@@ -543,6 +543,53 @@ def sess_show(session: str = typer.Argument(...), workspace: Optional[str] = typ
 
 
 @app.command()
+def trace(session: str = typer.Argument(..., help="Session id (see `argo session list`)."),
+          limit: int = typer.Option(200, "--limit", help="Show the last N events."),
+          workspace: Optional[str] = typer.Option(None, "--workspace")) -> None:
+    """Render a session transcript as a timeline (tools, usage, compactions)."""
+    from .core.observability import load_events, render_trace
+
+    cfg = _cfg(None, None, workspace)
+    path = Path(cfg.session_dir) / f"{session}.jsonl"
+    if not path.exists():
+        err_console.print(f"[red]session {session!r} not found[/] ({path})")
+        raise typer.Exit(1)
+    for line in render_trace(load_events(path), limit=limit):
+        console.print(line, markup=False, highlight=False)
+
+
+@app.command()
+def metrics(dir: Optional[str] = typer.Option(None, "--dir", help="Directory of session JSONL files."),
+            limit: int = typer.Option(500, "--limit", help="Most recent N sessions."),
+            workspace: Optional[str] = typer.Option(None, "--workspace"),
+            json_out: bool = typer.Option(False, "--json", help="Print raw JSON.")) -> None:
+    """Aggregate tokens, tool error rate, slowest tools, and stop reasons across sessions."""
+    from .core.observability import summarize
+
+    cfg = _cfg(None, None, workspace)
+    root = Path(dir) if dir else Path(cfg.session_dir)
+    paths = sorted(root.glob("*.jsonl"), key=lambda x: -x.stat().st_mtime)[:limit] if root.exists() else []
+    stats = summarize(paths)
+    if json_out:
+        console.print_json(data=stats)
+        return
+    console.print(f"[bold]sessions[/] {stats['sessions']} · [bold]runs[/] {stats['runs']} · "
+                  f"[bold]tokens[/] {stats['tokens']['total']:,} "
+                  f"(mean/run {stats['tokens_per_run']['mean']:,}, max {stats['tokens_per_run']['max']:,})")
+    tools = stats["tools"]
+    console.print(f"[bold]tool calls[/] {tools['calls']} · [bold]errors[/] {tools['errors']} "
+                  f"({tools['error_rate'] * 100:.1f}%) · [bold]compactions[/] {stats['compactions']} · "
+                  f"[bold]resets[/] {stats['resets']}")
+    if tools["slowest"]:
+        table = Table("slowest tool", "max seconds", "calls")
+        for name, seconds, calls in tools["slowest"]:
+            table.add_row(name, f"{seconds:.2f}", str(calls))
+        console.print(table)
+    if stats["stop_reasons"]:
+        console.print("[bold]stop reasons[/] " + ", ".join(f"{k}={v}" for k, v in stats["stop_reasons"].items()))
+
+
+@app.command()
 def doctor(model: Optional[str] = typer.Option(None, "--model"), workspace: Optional[str] = typer.Option(None, "--workspace")) -> None:
     """Verify provider, models, tools, and retrieval end to end."""
     cfg = _cfg(model, None, workspace)

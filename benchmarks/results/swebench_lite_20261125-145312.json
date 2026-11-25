@@ -1,0 +1,26 @@
+{
+  "benchmark": "swebench-lite-local",
+  "dataset": "princeton-nlp/SWE-bench_Lite",
+  "predictions": "benchmarks/results/swebench_lite_preds_20261125-145312.jsonl",
+  "rows": [
+    {
+      "instance_id": "sympy__sympy-16988",
+      "repo": "sympy/sympy",
+      "base_commit": "e727339af6dc22321b00f52d971cda39e4ce89fb",
+      "tests_protected": [
+        "sympy/sets/tests/test_sets.py"
+      ],
+      "stop_reason": "no_progress",
+      "iterations": 22,
+      "tokens": 464315,
+      "session_id": "20261125-143752-9aae34",
+      "output": "## Summary\n\n**Files changed:** `sympy/sets/sets.py` \u2014 one line in `Intersection.__new__` (line ~1263).\n\n**Change:**\n```python\n# before\nargs = _sympify(args)\n# after\nargs = list(ordered(set(_sympify(args))))\n```\n\n**Why this fixes it:** `Intersection` is a `LatticeOp`, so it is idempotent \u2014 `Intersection(A, A, B)` must equal `Intersection(A, B)`. The old code passed the raw argument list (duplicates included) into `simplify_intersection`, whose `_handle_finite_sets` helper picks the *smallest* `FiniteSet` as the base set and then tests its elements against the remaining args. With `{1}, {1}, {x}` the base set was `{1}`, and the duplicate `{1}` was treated as an \"other\" set; the symbolic-element bookkeeping then dropped `1` from the unknown list, yielding `EmptySet()`. Deduplicating (and cano",
+      "patch_chars": 470,
+      "patch_files": 1,
+      "tampered_tests": false,
+      "patch": "diff --git a/sympy/sets/sets.py b/sympy/sets/sets.py\nindex 03cf57a30b..e4d240919f 100644\n--- a/sympy/sets/sets.py\n+++ b/sympy/sets/sets.py\n@@ -1260,7 +1260,7 @@ def __new__(cls, *args, **kwargs):\n         evaluate = kwargs.get('evaluate', global_evaluate[0])\n \n         # flatten inputs to merge intersections and iterables\n-        args = _sympify(args)\n+        args = list(ordered(set(_sympify(args))))\n \n         # Reduce sets using known rules\n         if evaluate:",
+      "seconds": 919.5
+    }
+  ],
+  "timestamp": "2026-11-25T14:53:12Z"
+}

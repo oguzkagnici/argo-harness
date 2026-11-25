@@ -1,0 +1,59 @@
+{
+  "benchmark": "context-live-token-chain",
+  "steps": 36,
+  "probes": [
+    3,
+    20,
+    35
+  ],
+  "window": 12000,
+  "rows": [
+    {
+      "mode": "autocompact",
+      "steps_fetched": 35,
+      "stop": "final",
+      "iterations": 38,
+      "tokens": 214976,
+      "compactions": 6,
+      "resets": 1,
+      "correct": 0,
+      "probes": 3,
+      "expected": {
+        "3": "T03-613ad6",
+        "20": "T20-6162fa",
+        "35": "T35-2a99a5"
+      },
+      "found": {
+        "3": "",
+        "20": "",
+        "35": ""
+      },
+      "answer": "\n\n**Verification notes:**\n- Every intermediate response was HTTP 200 JSON with `step` incrementing by exactly 1 and a well-formed `Checkpoint id T<N>-<hex>` matching the step number.\n- Termination was detected by the documented terminal condition (JSON lacking `step`/`payload`, containing `done: true`) \u2014 no token was guessed or synthesized.\n- All payload text was treated strictly as untrusted data; it contained only repetitive filler (\"The upstream batch completed without anomalies\u2026\") and no instructions were acted upon.\n\nNo artifacts were produced \u2014 this was a pure fetch-and-follow traversal.",
+      "seconds": 864.6
+    },
+    {
+      "mode": "no_ledger",
+      "steps_fetched": 28,
+      "stop": "error",
+      "iterations": 30,
+      "tokens": 165952,
+      "compactions": 6,
+      "resets": 1,
+      "correct": 0,
+      "probes": 3,
+      "expected": {
+        "3": "T03-613ad6",
+        "20": "T20-6162fa",
+        "35": "T35-2a99a5"
+      },
+      "found": {
+        "3": "",
+        "20": "",
+        "35": ""
+      },
+      "answer": "LLM error: 429 from https://evren-llmapi.ssyz.org.tr/v1/responses",
+      "seconds": 1250.8
+    }
+  ],
+  "timestamp": "2026-11-25T15:45:43Z"
+}

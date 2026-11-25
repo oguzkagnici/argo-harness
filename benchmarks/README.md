@@ -263,6 +263,85 @@ The one tool-mode miss was a timeout with zero iterations; re-running that quest
 ~24% fewer tokens and ~1 fewer iteration. `--self-check` verifies that every expected answer is present in
 `read_document` output before spending any model calls.
 
+## 12. Live long-horizon context (token chain, 12k window)
+
+A local server hands out 36 sequential steps: each reply contains the checkpoint id needed to fetch the next one,
+so the agent must make 36 single fetches (no batching). Payloads carry ~350 tokens of noise. The final answer asks
+for the ids of steps 3, 20 and 35. The configured window is 12k so a production policy must compact several times
+mid-run, which stresses summary fidelity rather than just the mechanism.
+
+```bash
+python benchmarks/context_live.py --steps 36 --modes full,autocompact,no_ledger
+```
+
+| Mode | Recall | Tokens | Compactions | Resets | Wall | Record |
+|---|---|---|---|---|---|---|
+| `full` (compaction disabled) | **3/3** | 288,569 | 0 | 0 | 589 s | `context_live_20261125-150009.json` |
+| `autocompact`, churn bug | 0/3 | 208,773 | 11 | 1 | 2,338 s | same file |
+| `no_ledger`, churn bug | 0/3 | 207,091 | 11 | 1 | 1,900 s | same file |
+| `autocompact`, hysteresis only | 0/3 | 214,976 | 6 | 1 | 865 s | log only (run aborted for quota) |
+
+Findings, in the order the runs exposed them:
+
+1. **The no-progress guard mis-fired on research.** The first 36-step run stopped at iteration 10 after 9 fetches
+   (`1/3`). External-info tools now count as progress; a repeated fetch still trips the guard.
+2. **Compaction churn.** With a 12k window the post-compaction prompt stayed above the threshold, so every turn
+   re-summarized ~2 messages: 11 compactions, 1 reset, and recall **0/3**. Growth hysteresis (1,200 tokens) plus a
+   minimum 3-message head cut this to 6 compactions.
+3. **Reset fired after a successful compaction**, wiping ids the ledger had just kept. Resets now require either a
+   failed/no-op compaction or a prompt above the hard budget.
+4. **The ledger missed ids written in prose.** `Checkpoint id T03-613ad6` is not a `key: value` line, so nothing was
+   preserved verbatim. The ledger now also extracts identifiers (prefixed ids, UUIDs, commit hashes, emails) —
+   unit-tested; the live rerun is pending because it competes with the agent for provider rate limit.
+
+The honest summary: with a window that forces repeated compaction and an id-recall probe, compaction *as
+implemented at the time of the run* was worse than no compaction (0/3 vs 3/3 at +38% tokens). Fixes 2-4 address the
+mechanisms that caused it; each is covered by a regression test, but the end-to-end number must be re-measured.
+
+## 13. Adaptive prompt injection (AgentDojo-style red team, local)
+
+A red-team LLM writes an injection for a benign task, sees the target's tool trace and final answer, then refines
+the payload for a second round. Each case also runs a fixed "static" payload as a baseline. Defenses off/on.
+
+```bash
+python benchmarks/adaptive_injection.py --rounds 2 --modes off,on
+```
+
+| Defense | Static ASR | Adaptive ASR (all rounds) | Final-round ASR | Utility | Exfiltrations |
+|---|---|---|---|---|---|
+| off | 0.0 | 0.0 | 0.0 | 1.0 | 0 |
+| on | 0.0 | 0.0 | 0.0 | 1.0 | 0 |
+
+Findings: the aligned target refuses both hand-written and iteratively refined injections across web, file and
+exfiltration channels; the defenses do not reduce utility. This is a negative result for the *benchmark*, not proof
+of safety — see the limitations section. The runner, payload parser, defense-aware attacker prompt and feedback
+loop are unit-tested; only `web_write`/off was executed live before the quota squeeze.
+
+## 14. SWE-bench-Lite subset (official harness)
+
+`benchmarks/swebench_lite.py` clones the real repository at each instance's base commit, runs Argo on the issue
+text, writes `git diff` predictions (test-file edits reverted and flagged), and hands them to the official
+`swebench` harness with prebuilt images.
+
+```bash
+python benchmarks/swebench_lite.py --generate --limit 2
+python benchmarks/swebench_lite.py --evaluate --limit 2      # docker, prebuilt swebench/sweb.eval.*
+```
+
+| Instance | Stop | Iterations | Tokens | Patch | Tampered tests |
+|---|---|---|---|---|---|
+| sympy__sympy-21614 (gold, harness check) | — | — | — | gold | n/a — **1/1 resolved** |
+| sympy__sympy-16988 (Argo) | no_progress | 22 | 464,315 | 1 file / 470 chars | no |
+
+Infrastructure check: grading the **gold** patch through the official harness resolved **1/1**
+(`gold.gold_check.json`), and `--cache_level none --clean True` removed the image afterwards (disk returned to
+baseline). That validates the container path independently of model quality.
+
+The Argo run stopped at the no-progress guard after 22 iterations: the agent explored many distinct files, which
+the guard counted as "no progress". Novel read paths now count as progress (unit-tested), so the next run should be
+allowed to finish. The produced patch is also a reminder that one pass without running the project's tests is weak;
+the follow-up is to let the agent `pip install -e .` inside a scratch copy so it can run the target tests itself.
+
 ## Reproduce everything
 
 ```bash
@@ -279,6 +358,10 @@ python benchmarks/citation.py
 python benchmarks/memory_loop.py --arms no_dream,no_wiki,no_grounding,two_generations,full
 python benchmarks/retrieval.py --queries 100 --docs 1000 --ablate
 python benchmarks/document_qa.py --modes tool,bash
+python benchmarks/context_live.py --steps 36 --modes full,autocompact,no_ledger
+python benchmarks/adaptive_injection.py --rounds 2 --modes off,on
+python benchmarks/swebench_lite.py --generate --limit 2
+python benchmarks/swebench_lite.py --evaluate --limit 2
 pytest -q
 ```
 

@@ -12,6 +12,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+import re
 import time
 import uuid
 from dataclasses import dataclass, field
@@ -40,6 +41,12 @@ ApprovalFn = Callable[[Any, dict[str, Any], str], Awaitable[bool] | bool]
 PROGRESS_TOOLS = {"write_file", "edit_file", "apply_patch", "create_document", "make_dir", "delete_path",
                   "remember", "forget", "save_workflow", "run_workflow", "index_workspace", "update_plan",
                   "spawn_subagent", "notify"}
+# Read-only tools whose every non-duplicate call returns new external information. Treating them as progress
+# keeps the no-progress guard aimed at "verify my own artifact in a loop" rather than legitimate long research
+# chains (e.g. 36 sequential fetches); exact repeats are already blocked by the duplicate-call guard.
+EXTERNAL_INFO_TOOLS = {"web_search", "fetch_url", "wikipedia_search", "arxiv_search"}
+# Local read tools whose *first* visit to a path is real exploration (a novel source of information).
+READ_PATH_TOOLS = {"read_file", "read_document", "list_dir", "glob_files", "grep_files"}
 
 LOOP_NUDGE = ("You are repeating checks without making progress. Stop inspecting now. If the artifact exists "
               "and the last check passed, move to the remaining deliverables. Use at most ONE verification per "
@@ -122,9 +129,11 @@ class Agent:
         self.last_usage = Usage()
         self.iterations = 0
         self._sig_counts: dict[str, int] = {}
+        self._seen_reads: set[str] = set()
         self._no_progress = 0
         self._nudges = 0
         self.mcp: Any = None
+        self._session_unsub: Any = None
 
     # ------------------------------------------------------------- lifecycle
     async def __aenter__(self) -> "Agent":
@@ -278,18 +287,21 @@ class Agent:
     def _register_subagent(self, reg: ToolRegistry) -> None:
         async def spawn(ctx: ToolContext, task: str, allowed_tools: list[str] | None = None,
                         max_iterations: int = 18, isolate: bool = False,
-                        keep_worktree: bool = True) -> ToolResult:
+                        keep_worktree: bool = True, review_changes: bool = False) -> ToolResult:
             import copy
 
             child_cfg = self.cfg
             worktree: Path | None = None
             branch: str | None = None
             repo_root: Path | None = None
+            base_sha: str | None = None
             if isolate:
                 from .worktree import create_worktree
                 try:
                     worktree, branch, repo_root = await create_worktree(
                         Path(self.cfg.workspace), task[:40], Path(self.cfg.data_dir))
+                    from .worktree import _git as _wt_git
+                    base_sha = await _wt_git(worktree, "rev-parse", "HEAD")
                 except Exception as exc:  # noqa: BLE001
                     return ToolResult(f"Could not isolate subagent: {exc}", is_error=True)
                 child_cfg = copy.copy(self.cfg)
@@ -320,6 +332,14 @@ class Agent:
                          f"Changed files: {', '.join(files) or 'none'}\n"
                          f"The parent workspace was NOT modified. To adopt: review the diff, then "
                          f"`git -C {repo_root} merge {branch}` (or cherry-pick).\n")
+                if review_changes and files:
+                    review = await self._review_worktree_diff(worktree, files, task, base_sha)
+                    meta.update({"review_verdict": review["verdict"], "review_pass": review["pass"],
+                                 "review": review["text"][:6000], "reviewer_session": review["session"]})
+                    body += (f"INDEPENDENT DIFF REVIEW: {review['verdict']} ({review['tokens']} tokens)\n"
+                             f"{review['text'][:2500]}\n"
+                             + ("Adoption is recommended after the fixes above.\n" if not review["pass"]
+                                else "No blocking defects found; the branch is ready to adopt.\n"))
                 if not keep_worktree:
                     await remove_worktree(repo_root, worktree, branch)
                     body += "Worktree and branch were removed (keep_worktree=false).\n"
@@ -340,10 +360,77 @@ class Agent:
                 "isolate": {"type": "boolean",
                             "description": "Run in a fresh git worktree + branch so the parent tree is untouched."},
                 "keep_worktree": {"type": "boolean",
-                                  "description": "Keep the worktree/branch after the run (default true)."}},
+                                  "description": "Keep the worktree/branch after the run (default true)."},
+                "review_changes": {"type": "boolean",
+                                   "description": "With isolate=true, run an independent read-only review of the "
+                                                  "diff before you consider merging it (default false)."}},
              "required": ["task"]},
             spawn, read_only=False, timeout=1800, max_output=30_000,
         )
+
+    async def _review_worktree_diff(self, worktree: Path, files: list[str], task: str,
+                                    base_sha: str | None = None,
+                                    max_iterations: int = 5) -> dict[str, Any]:
+        """Review a child's diff before the parent adopts it (generator/evaluator split applied to merges).
+
+        The reviewer runs read-only inside the worktree, so it sees the real files, and receives the diff
+        inline. A FAIL keeps the branch and tells the parent exactly what to fix before merging.
+        """
+        import copy
+
+        from .worktree import _git
+
+        # Diff against the fork point, not HEAD: children often `git commit` their work, and both
+        # committed and uncommitted changes must be visible to the reviewer.
+        tracked = ""
+        for spec in ([f"{base_sha}..HEAD"] if base_sha else []) + ["HEAD"]:
+            try:
+                part = await _git(worktree, "diff", spec, "--", *files)
+            except Exception:
+                part = ""
+            if part and part not in tracked:
+                tracked += ("\n" if tracked else "") + f"# diff {spec}\n" + part
+        diff = tracked
+        try:
+            untracked = await _git(worktree, "ls-files", "--others", "--exclude-standard")
+        except Exception:
+            untracked = ""
+        diff = (diff + (f"\nNEW FILES: {untracked}" if untracked else ""))[:60_000]
+        criteria = (
+            f"The subagent was asked to: {task[:800]}\n"
+            "Judge the diff against these checks:\n"
+            "1. It implements the requested change and nothing unrelated (no drive-by edits).\n"
+            "2. It does not delete or weaken tests, and behavior changes come with test updates.\n"
+            "3. It contains no secrets, credentials, debug prints, or leftover TODOs.\n"
+            "4. It does not introduce an obviously broken path (syntax/logic) visible from the files.\n"
+            "5. File scope matches the stated task.")
+        child_cfg = copy.copy(self.cfg)
+        child_cfg.workspace = worktree
+        readonly = {"read_file", "list_dir", "grep_files", "glob_files"}
+        brief = (
+            "You are an independent code reviewer deciding whether a branch may be merged.\n\n"
+            f"ACCEPTANCE CRITERIA:\n{criteria}\n\n"
+            f"CHANGED FILES: {', '.join(files)}\n\n"
+            f"DIFF:\n```diff\n{diff or '(empty diff)'}\n```\n\n"
+            "You may read files for context with read_file/list_dir/grep_files; do not attempt writes.\n"
+            "Start your reply with exactly one line: 'VERDICT: PASS' or 'VERDICT: FAIL', then list concrete "
+            "defects with file:line and the minimum fixes needed.")
+        child = Agent(child_cfg, llm=self._llm, memory=self.memory, events=self.events,
+                      approvals=self.approvals, max_iterations=max_iterations, depth=self.depth + 1,
+                      allow_tools=readonly)
+        child.session = Session.create(self.cfg, self.memory,
+                                       session_id=f"{self.session.id if self.session else 's'}-wtrev-"
+                                                  f"{uuid.uuid4().hex[:4]}")
+        try:
+            result = await child.run(brief)
+        finally:
+            await child.close()
+        text = result.output or ""
+        verdict = "PASS" if re.search(r"VERDICT:\s*PASS", text, re.I) else "FAIL"
+        self.events.emit("worktree_review_end", verdict=verdict, files=len(files),
+                         tokens=result.usage.total_tokens)
+        return {"verdict": verdict, "pass": verdict == "PASS", "text": text,
+                "tokens": result.usage.total_tokens, "session": result.session_id}
 
     def _register_review(self, reg: ToolRegistry) -> None:
         async def review(ctx: ToolContext, criteria: str, paths: list[str] | None = None,
@@ -529,6 +616,9 @@ class Agent:
         self.messages.append(user_msg)
         self.session.log_message(user_msg)
         self.session.record("run_start", task=task, depth=self.depth)
+        if self._session_unsub is not None:
+            self._session_unsub()
+        self._session_unsub = self.events.subscribe(self._mirror_event)
 
         use_stream = stream if stream is not None else (self.on_delta is not None)
         start_usage = Usage(prompt_tokens=self.last_usage.prompt_tokens,
@@ -593,7 +683,8 @@ class Agent:
                 self.messages.append(tool_msg)
                 if res.metadata.get("image"):
                     images.append(res.metadata["image"])
-                self.session.log_tool(tc.name, tc.args(), res.content, res.is_error)
+                self.session.log_tool(tc.name, tc.args(), res.content, res.is_error,
+                                      duration_s=res.metadata.get("duration_s"))
                 for key in ("path", "screenshot", "spool"):
                     if res.metadata.get(key) and tc.name not in ("recall",):
                         self.session.touch_file(str(res.metadata[key]))
@@ -605,11 +696,17 @@ class Agent:
                 self.messages.append(Message(role="user", images=images,
                                              content="Screenshot(s) from the last computer action."))
 
-            made_progress = any(tc.name in PROGRESS_TOOLS and not res.is_error for tc, res in results)
-            if made_progress:
+            mutating_progress = any(tc.name in PROGRESS_TOOLS and not res.is_error for tc, res in results)
+            external_progress = any(
+                tc.name in EXTERNAL_INFO_TOOLS and not res.is_error and not res.metadata.get("duplicate")
+                for tc, res in results)
+            read_progress = any(res.metadata.get("novel_read") for _tc, res in results)
+            if mutating_progress or external_progress or read_progress:
                 self._no_progress = 0
+            if mutating_progress:
                 self._sig_counts.clear()
-            else:
+                self._seen_reads.clear()  # after an edit, re-reading a file is legitimate verification
+            if not (mutating_progress or external_progress or read_progress):
                 self._no_progress += 1
                 limit = max(2, int(getattr(self.cfg, "no_progress_limit", 10) or 10))
                 nudge_at = {max(2, int(limit * 0.4)), max(3, int(limit * 0.7))}
@@ -662,6 +759,20 @@ class Agent:
         )
 
     # ---------------------------------------------------------- tool execution
+    def _mirror_event(self, ev: Any) -> None:
+        """Persist lifecycle events that only exist on the bus (compaction, loop guard) to the session."""
+        if self.session is None or ev.type in self._MIRRORED_SKIP:
+            return
+        if ev.type in self._MIRRORED_TYPES:
+            try:
+                self.session.record(ev.type, **ev.data)
+            except Exception:
+                pass
+
+    _MIRRORED_TYPES = {"context_compacted", "context_reset", "context_compact_disabled",
+                       "loop_stop", "loop_nudge", "tool_duplicate", "error"}
+    _MIRRORED_SKIP: set[str] = set()
+
     @staticmethod
     def _sig(tc: ToolCall) -> str:
         return tc.name + ":" + hashlib.sha1((tc.arguments or "{}").encode("utf-8")).hexdigest()
@@ -701,8 +812,15 @@ class Agent:
         for i, tc in enumerate(calls):
             if i in blocked:
                 out.append((tc, blocked[i]))
-            else:
-                out.append((tc, by_index[i]))
+                continue
+            res = by_index[i]
+            if tc.name in READ_PATH_TOOLS and not res.is_error:
+                args = tc.args()
+                key = f"{tc.name}:{args.get('path') or args.get('pattern') or args.get('url') or ''}"
+                if key not in self._seen_reads:
+                    self._seen_reads.add(key)
+                    res.metadata["novel_read"] = True
+            out.append((tc, res))
         return out
 
 

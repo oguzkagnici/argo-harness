@@ -1,0 +1,221 @@
+"""Official SWE-bench-Lite subset: generate Argo patches and optionally grade them with the real harness.
+
+Two stages, so patch generation and grading can run separately:
+
+  --generate   clone each instance's repo at its base commit, run the Argo agent on the issue text, and write
+               a SWE-bench-compatible predictions JSONL (``git diff``, test-file edits reverted).
+  --evaluate   call ``python -m swebench.harness.run_evaluation`` with prebuilt images
+               (``--namespace swebench``) for the same instance ids.
+
+This machine has ~9 GB disk and ~4 GB free RAM, so the default subset is two small sympy instances and grading
+runs one instance at a time with images removed afterwards. Use ``--instance-ids`` to pick others.
+
+Usage:
+  python benchmarks/swebench_lite.py --generate --limit 2
+  python benchmarks/swebench_lite.py --evaluate --limit 2
+"""
+from __future__ import annotations
+
+import argparse
+import asyncio
+import json
+import os
+import shutil
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+
+from argo.config import load_config  # noqa: E402
+from argo.core.agent import Agent  # noqa: E402
+
+RESULTS = Path(__file__).resolve().parent / "results"
+WORK = Path("/tmp/argo_swebench")
+DATASET = "princeton-nlp/SWE-bench_Lite"
+DEFAULT_IDS = ["sympy__sympy-21614", "sympy__sympy-16988"]
+MAX_PATCH_CHARS = 40_000
+
+PROMPT = """You are fixing a real bug in the repository at {repo}.
+
+ISSUE:
+{problem}
+
+Work directly in the repository. Read the relevant source, find the root cause, and edit the code so the issue is
+fixed. Do not modify, delete, or weaken any test files. Prefer the minimal correct change; do not reformat unrelated
+code. You may use bash to search (grep/ripgrep) and to run `python -c` syntax checks; project test suites are not
+installed here, so do not spend many turns trying to run them.
+
+When done, finish with a short summary: files changed and why the fix is correct."""
+
+
+def load_instances(ids: list[str], limit: int, offset: int = 0) -> list[dict]:
+    from datasets import load_dataset
+    ds = load_dataset(DATASET, split="test")
+    wanted = set(ids)
+    rows = [r for r in ds if (not ids or r["instance_id"] in wanted)]
+    if offset:
+        rows = rows[offset:]
+    return rows[:limit] if limit else rows
+
+
+def sh(*args: str, cwd: Path | None = None, check: bool = True) -> str:
+    proc = subprocess.run(args, cwd=str(cwd) if cwd else None, capture_output=True, text=True)
+    if check and proc.returncode != 0:
+        raise RuntimeError(f"{' '.join(args)} failed: {proc.stderr.strip()[:400]}")
+    return proc.stdout.strip()
+
+
+def prepare_repo(inst: dict, root: Path) -> Path:
+    ws = root / "repos" / inst["instance_id"]
+    if (ws / ".git").exists():
+        sh("git", "-C", str(ws), "checkout", "-q", "--", ".", check=False)
+        sh("git", "-C", str(ws), "clean", "-qfd", check=False)
+        return ws
+    ws.parent.mkdir(parents=True, exist_ok=True)
+    url = f"https://github.com/{inst['repo']}.git"
+    sh("git", "clone", "-q", "--filter=blob:none", "--no-checkout", url, str(ws))
+    sh("git", "-C", str(ws), "checkout", "-q", inst["base_commit"])
+    (ws / ".git" / "info").mkdir(exist_ok=True)
+    exclude = ws / ".git" / "info" / "exclude"
+    exclude.write_text((exclude.read_text() if exclude.exists() else "") + "\n.argo/\n__pycache__/\n*.pyc\n")
+    return ws
+
+
+def test_files(inst: dict) -> set[str]:
+    """Files touched by the official test patch: the agent must not edit them."""
+    patch = inst.get("test_patch") or ""
+    files = set()
+    for line in patch.splitlines():
+        if line.startswith("+++ b/"):
+            files.add(line[6:].strip())
+        elif line.startswith("diff --git "):
+            parts = line.split()
+            if len(parts) >= 4:
+                files.add(parts[3].removeprefix("b/"))
+    return {f for f in files if f}
+
+
+def make_patch(ws: Path, inst: dict) -> tuple[str, bool]:
+    protected = test_files(inst)
+    tampered = False
+    for rel in protected:
+        target = ws / rel
+        if target.exists():
+            before = sh("git", "-C", str(ws), "diff", "--", rel)
+            if before:
+                tampered = True
+    if tampered:  # restore official tests; eval applies test_patch itself
+        sh("git", "-C", str(ws), "checkout", "--", *sorted(protected), check=False)
+    sh("git", "-C", str(ws), "add", "-N", ".", check=False)
+    diff = sh("git", "-C", str(ws), "diff", "--", ".", ":(exclude).argo", check=False)
+    return diff[:MAX_PATCH_CHARS], tampered
+
+
+def build_cfg(ws: Path, state: Path):
+    cfg = load_config({"workspace": str(ws), "data_dir": str(state)})
+    cfg.session_dir = state / "sessions"
+    cfg.index_dir = state / "index"
+    cfg.workflow_dir = state / "workflows"
+    cfg.skill_dir = state / "skills"
+    cfg.spool_dir = state / "spool"
+    cfg.ensure_dirs()
+    return cfg
+
+
+async def generate_one(inst: dict, args) -> dict:
+    ws = prepare_repo(inst, WORK)
+    state = WORK / "state" / inst["instance_id"]
+    cfg = build_cfg(ws, state)
+    started = time.monotonic()
+    row = {"instance_id": inst["instance_id"], "repo": inst["repo"],
+           "base_commit": inst["base_commit"], "tests_protected": sorted(test_files(inst))[:10]}
+    try:
+        async with Agent(cfg, max_iterations=args.max_iterations) as agent:
+            result = await asyncio.wait_for(
+                agent.run(PROMPT.format(repo=inst["repo"], problem=inst["problem_statement"])),
+                timeout=args.timeout)
+        row.update({"stop_reason": result.stop_reason, "iterations": result.iterations,
+                    "tokens": result.usage.total_tokens, "session_id": result.session_id,
+                    "output": result.output[:800]})
+    except asyncio.TimeoutError:
+        row.update({"stop_reason": "timeout", "iterations": 0, "tokens": 0, "output": ""})
+    patch, tampered = make_patch(ws, inst)
+    row.update({"patch_chars": len(patch), "patch_files": patch.count("diff --git"),
+                "tampered_tests": tampered, "patch": patch,
+                "seconds": round(time.monotonic() - started, 1)})
+    print(f"{inst['instance_id']:<24} stop={row['stop_reason']:<12} iter={row['iterations']:<3} "
+          f"tok={row['tokens']:<7} files={row['patch_files']:<2} patch={len(patch):>6}c "
+          f"tampered={tampered} {row['seconds']:>6.0f}s", flush=True)
+    return row
+
+
+async def generate(args) -> int:
+    ids = [s.strip() for s in args.instance_ids.split(",") if s.strip()] or DEFAULT_IDS
+    insts = load_instances(ids, args.limit, args.offset)
+    print(f"instances: {', '.join(i['instance_id'] for i in insts)}", flush=True)
+    rows = []
+    for inst in insts:
+        rows.append(await generate_one(inst, args))
+    RESULTS.mkdir(parents=True, exist_ok=True)
+    stamp = time.strftime("%Y%m%d-%H%M%S")
+    preds = RESULTS / f"swebench_lite_preds_{stamp}.jsonl"
+    with preds.open("w", encoding="utf-8") as fh:
+        for r in rows:
+            if r["patch"]:
+                fh.write(json.dumps({"instance_id": r["instance_id"],
+                                     "model_name_or_path": f"argo-{os.environ.get('ARGO_MODEL', 'deepseek')}",
+                                     "model_patch": r["patch"]}) + "\n")
+    record = RESULTS / f"swebench_lite_{stamp}.json"
+    record.write_text(json.dumps({"benchmark": "swebench-lite-local", "dataset": DATASET,
+                                  "predictions": str(preds.relative_to(ROOT)), "rows": rows,
+                                  "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}, indent=2))
+    print(f"\npredictions: {preds.relative_to(ROOT)}\nrecord: {record.relative_to(ROOT)}")
+    return 0
+
+
+def evaluate(args) -> int:
+    ids = [s.strip() for s in args.instance_ids.split(",") if s.strip()] or DEFAULT_IDS
+    preds = args.predictions
+    if not preds:
+        found = sorted(RESULTS.glob("swebench_lite_preds_*.jsonl"))
+        if not found:
+            print("no predictions file; run --generate first", file=sys.stderr)
+            return 2
+        preds = str(found[-1])
+    run_id = f"argo_{time.strftime('%Y%m%d%H%M%S')}"
+    cmd = [sys.executable, "-m", "swebench.harness.run_evaluation",
+           "--dataset_name", "SWE-bench/SWE-bench_Lite", "--split", "test",
+           "--predictions_path", preds, "--instance_ids", *ids,
+           "--max_workers", "1", "--namespace", "swebench", "--cache_level", "none",
+           "--clean", "True", "--timeout", str(args.test_timeout), "--run_id", run_id]
+    print(" ".join(cmd), flush=True)
+    proc = subprocess.run(cmd, cwd=str(ROOT))
+    print(f"\nharness exit={proc.returncode}; report dir: {ROOT / 'logs' / 'run_evaluation' / run_id}")
+    return proc.returncode
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--generate", action="store_true")
+    ap.add_argument("--evaluate", action="store_true")
+    ap.add_argument("--instance-ids", default="")
+    ap.add_argument("--limit", type=int, default=2)
+    ap.add_argument("--offset", type=int, default=0)
+    ap.add_argument("--max-iterations", type=int, default=40)
+    ap.add_argument("--timeout", type=float, default=1500.0)
+    ap.add_argument("--test-timeout", type=int, default=1800)
+    ap.add_argument("--predictions", default="")
+    args = ap.parse_args()
+    if args.generate:
+        return asyncio.run(generate(args))
+    if args.evaluate:
+        return evaluate(args)
+    ap.print_help()
+    return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
