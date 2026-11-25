@@ -277,9 +277,11 @@ python benchmarks/context_live.py --steps 36 --modes full,autocompact,no_ledger
 | Mode | Recall | Tokens | Compactions | Resets | Wall | Record |
 |---|---|---|---|---|---|---|
 | `full` (compaction disabled) | **3/3** | 288,569 | 0 | 0 | 589 s | `context_live_20261125-150009.json` |
-| `autocompact`, churn bug | 0/3 | 208,773 | 11 | 1 | 2,338 s | same file |
-| `no_ledger`, churn bug | 0/3 | 207,091 | 11 | 1 | 1,900 s | same file |
-| `autocompact`, hysteresis only | 0/3 | 214,976 | 6 | 1 | 865 s | log only (run aborted for quota) |
+| `autocompact`, before fixes | 0/3 | 208,773 | 11 | 1 | 2,338 s | same file |
+| `autocompact`, hysteresis only | 0/3 | 214,976 | 6 | 1 | 865 s | log only |
+| `autocompact`, identifiers + reset gating | 0/3 | 233,453 | 7 | 1 | 1,312 s | log only |
+| **`autocompact`, all fixes** | **3/3** | **275,722** | **3** | **0** | **532 s** | `context_live_20261125-201825.json` |
+| `no_ledger`, all fixes | pending | — | — | — | — | rerun in progress |
 
 Findings, in the order the runs exposed them:
 
@@ -294,9 +296,15 @@ Findings, in the order the runs exposed them:
    preserved verbatim. The ledger now also extracts identifiers (prefixed ids, UUIDs, commit hashes, emails) —
    unit-tested; the live rerun is pending because it competes with the agent for provider rate limit.
 
-The honest summary: with a window that forces repeated compaction and an id-recall probe, compaction *as
-implemented at the time of the run* was worse than no compaction (0/3 vs 3/3 at +38% tokens). Fixes 2-4 address the
-mechanisms that caused it; each is covered by a regression test, but the end-to-end number must be re-measured.
+The honest summary: compaction as originally implemented was **worse than no compaction** in this setting (0/3 vs
+3/3). Four mechanism bugs were found and fixed in sequence — guard scope, hysteresis, identifier capture in the
+ledger, reset gating/handoff — and the final run reaches **3/3 with 3 compactions, 0 resets, and ~4% fewer tokens**
+than the unmanaged baseline. Each fix has a regression test; the intermediate rows above are kept because they show
+which mechanism actually mattered.
+
+A caveat on interpretation: a 12k window for a 36-step task is deliberately hostile (the system prompt + tool
+schemas are ~3k). It is a stress test of the *policy*, not a typical deployment; with a 24k+ window the same run
+barely compacts.
 
 ## 13. Adaptive prompt injection (AgentDojo-style red team, local)
 

@@ -287,7 +287,8 @@ class Agent:
     def _register_subagent(self, reg: ToolRegistry) -> None:
         async def spawn(ctx: ToolContext, task: str, allowed_tools: list[str] | None = None,
                         max_iterations: int = 18, isolate: bool = False,
-                        keep_worktree: bool = True, review_changes: bool = False) -> ToolResult:
+                        keep_worktree: bool = True, review_changes: bool = False,
+                        repair_attempts: int = 0) -> ToolResult:
             import copy
 
             child_cfg = self.cfg
@@ -307,18 +308,27 @@ class Agent:
                 child_cfg = copy.copy(self.cfg)
                 child_cfg.workspace = worktree
                 self.events.emit("worktree_created", path=str(worktree), branch=branch)
-            child = Agent(child_cfg, llm=self._llm, memory=self.memory, events=self.events,
-                          approvals=self.approvals, max_iterations=min(max_iterations, 40),
-                          depth=self.depth + 1, allow_tools=set(allowed_tools) if allowed_tools else None)
-            child.session = Session.create(self.cfg, self.memory,
-                                           session_id=f"{self.session.id if self.session else 's'}-sub-"
-                                                      f"{uuid.uuid4().hex[:4]}")
-            self.events.emit("subagent_start", task=task[:200], depth=self.depth + 1,
-                             worktree=str(worktree) if worktree else None)
-            try:
-                result = await child.run(task)
-            finally:
-                await child.close()
+            async def run_child(prompt: str, extra_tokens: list[int] | None = None) -> Any:
+                child = Agent(child_cfg, llm=self._llm, memory=self.memory, events=self.events,
+                              approvals=self.approvals, max_iterations=min(max_iterations, 40),
+                              depth=self.depth + 1,
+                              allow_tools=set(allowed_tools) if allowed_tools else None)
+                child.session = Session.create(self.cfg, self.memory,
+                                               session_id=f"{self.session.id if self.session else 's'}-sub-"
+                                                          f"{uuid.uuid4().hex[:4]}")
+                self.events.emit("subagent_start", task=prompt[:200], depth=self.depth + 1,
+                                 worktree=str(worktree) if worktree else None)
+                try:
+                    out = await child.run(prompt)
+                finally:
+                    await child.close()
+                self.events.emit("subagent_end", stop=out.stop_reason, tokens=out.usage.total_tokens)
+                if extra_tokens is not None:
+                    extra_tokens.append(out.usage.total_tokens)
+                return out
+
+            result = await run_child(task)
+            total_tokens = result.usage.total_tokens
             self.events.emit("subagent_end", stop=result.stop_reason, tokens=result.usage.total_tokens)
             body = (f"Subagent finished ({result.brief()}).\n"
                     f"Files touched: {', '.join(result.files) or 'none'}\n")
@@ -334,9 +344,25 @@ class Agent:
                          f"`git -C {repo_root} merge {branch}` (or cherry-pick).\n")
                 if review_changes and files:
                     review = await self._review_worktree_diff(worktree, files, task, base_sha)
+                    rounds = 0
+                    max_rounds = max(0, min(3, int(repair_attempts or 0)))
+                    while not review["pass"] and rounds < max_rounds:
+                        rounds += 1
+                        fix_prompt = (
+                            f"{task}\n\nAn independent reviewer audited the changes you already made in this "
+                            f"working tree and found blocking issues. Fix them now in place; do not revert "
+                            f"unrelated work and do not modify tests.\n\nREVIEW:\n{review['text'][:4000]}")
+                        self.events.emit("subagent_repair", round=rounds)
+                        repair = await run_child(fix_prompt)
+                        total_tokens += repair.usage.total_tokens
+                        files = await changed_files(worktree, repo_root, branch)
+                        review = await self._review_worktree_diff(worktree, files, task, base_sha)
                     meta.update({"review_verdict": review["verdict"], "review_pass": review["pass"],
-                                 "review": review["text"][:6000], "reviewer_session": review["session"]})
-                    body += (f"INDEPENDENT DIFF REVIEW: {review['verdict']} ({review['tokens']} tokens)\n"
+                                 "review": review["text"][:6000], "reviewer_session": review["session"],
+                                 "repair_rounds": rounds, "changed_files": files,
+                                 "subagent_tokens": total_tokens})
+                    body += (f"INDEPENDENT DIFF REVIEW: {review['verdict']} ({review['tokens']} tokens"
+                             + (f", after {rounds} repair round(s)" if rounds else "") + ")\n"
                              f"{review['text'][:2500]}\n"
                              + ("Adoption is recommended after the fixes above.\n" if not review["pass"]
                                 else "No blocking defects found; the branch is ready to adopt.\n"))
@@ -363,7 +389,10 @@ class Agent:
                                   "description": "Keep the worktree/branch after the run (default true)."},
                 "review_changes": {"type": "boolean",
                                    "description": "With isolate=true, run an independent read-only review of the "
-                                                  "diff before you consider merging it (default false)."}},
+                                                  "diff before you consider merging it (default false)."},
+                "repair_attempts": {"type": "integer", "default": 0,
+                                    "description": "With review_changes=true, let the child fix reviewer findings "
+                                                   "in place and re-review, up to 3 rounds."}},
              "required": ["task"]},
             spawn, read_only=False, timeout=1800, max_output=30_000,
         )

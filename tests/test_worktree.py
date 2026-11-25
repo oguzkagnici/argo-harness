@@ -175,3 +175,66 @@ async def test_diff_review_sees_committed_child_changes(tmp_path):
     assert llm.reviews, "reviewer was not invoked"
     diff_block = llm.reviews[0]
     assert "-one" in diff_block and "+two" in diff_block
+
+
+class RepairLoopLLM:
+    """First review FAILs, the repair round fixes the file, the second review PASSes."""
+
+    def __init__(self):
+        self.reviews = 0
+        self.repair_prompts = 0
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *exc):
+        return None
+
+    async def chat(self, messages, tools=None, **kwargs):
+        joined = "\n".join((m.content or "") for m in messages)
+        if "independent code reviewer" in joined:
+            self.reviews += 1
+            bad = "+deleted" in joined
+            return LLMResponse(message=Message(
+                role="assistant", content=("VERDICT: FAIL\napp.txt:1 value is wrong" if bad
+                                           else "VERDICT: PASS\nscoped and correct")), usage=Usage())
+        if "Fix them now in place" in joined:
+            if messages[-1].role == "tool":
+                return LLMResponse(message=Message(role="assistant", content="repair done"), usage=Usage())
+            self.repair_prompts += 1
+            return LLMResponse(message=Message(role="assistant", tool_calls=[ToolCall(
+                id="c9", name="edit_file",
+                arguments='{"path": "app.txt", "old_text": "deleted", "new_text": "two"}')]), usage=Usage())
+        if "ISOLATED_CHILD" in joined:
+            if any(m.role == "tool" for m in messages):
+                return LLMResponse(message=Message(role="assistant", content="child finished"), usage=Usage())
+            return LLMResponse(message=Message(role="assistant", tool_calls=[ToolCall(
+                id="c2", name="edit_file",
+                arguments='{"path": "app.txt", "old_text": "one", "new_text": "deleted"}')]), usage=Usage())
+        if any(m.role == "tool" for m in messages):
+            return LLMResponse(message=Message(role="assistant", content="parent done"), usage=Usage())
+        return LLMResponse(message=Message(role="assistant", tool_calls=[ToolCall(
+            id="c1", name="spawn_subagent",
+            arguments='{"task": "ISOLATED_CHILD: change app.txt", "isolate": true, '
+                      '"review_changes": true, "repair_attempts": 1}')]), usage=Usage())
+
+    async def embed(self, texts):
+        return [[0.0] * 8 for _ in texts]
+
+    async def rerank(self, query, docs, top_n=None):
+        return [(float(len(docs) - i), i) for i in range(len(docs))][: top_n or len(docs)]
+
+
+@pytest.mark.asyncio
+async def test_review_failure_triggers_in_place_repair_and_recheck(tmp_path):
+    repo = init_repo(tmp_path)
+    cfg = load_config({"workspace": str(repo), "data_dir": str(tmp_path / "data")})
+    llm = RepairLoopLLM()
+    async with Agent(cfg, llm=llm, max_iterations=6) as agent:
+        await agent.run("delegate a child task")
+
+    tool_msg = next(m for m in agent.messages if m.role == "tool" and "WORKTREE ISOLATED" in (m.content or ""))
+    assert "after 1 repair round(s)" in tool_msg.content
+    assert "INDEPENDENT DIFF REVIEW: PASS" in tool_msg.content
+    assert llm.reviews == 2 and llm.repair_prompts == 1
+    assert (repo / "app.txt").read_text() == "one\n"  # still isolated from the parent

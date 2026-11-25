@@ -257,3 +257,76 @@ async def test_successful_compaction_does_not_trigger_reset():
     assert cm.stats.compactions == 1
     assert cm.stats.resets == 0, "reset fired right after a successful compaction"
     assert any("compacted_context" in (m.content or "") for m in out if m.role == "system")
+
+
+async def test_hysteresis_never_causes_reset():
+    """Live regression: between threshold and budget, deferring compaction must not reset the context."""
+    cfg = churn_cfg()
+    cfg.reset_threshold = 0.5
+    cfg.compact_min_growth_tokens = 10_000_000  # hysteresis blocks compaction entirely
+    cm = ContextManager(cfg, llm=CountingLLM())
+    msgs = [Message(role="system", content="sys")] + [Message(role="user", content="w " * 3000)] * 4
+    out = await cm.manage(msgs)
+    assert out == msgs and cm.stats.resets == 0 and cm.stats.compactions == 0
+
+
+async def test_over_budget_forces_compaction_inside_hysteresis():
+    cfg = churn_cfg()
+    cfg.compact_min_growth_tokens = 10_000_000
+    llm = CountingLLM()
+    cm = ContextManager(cfg, llm=llm)
+    cm._last_usage = None
+    # budget = 8k-1k = 7k; make the estimate exceed it
+    msgs = [Message(role="system", content="sys")] + [Message(role="user", content="w " * 3000)] * 8
+    out = await cm.manage(msgs)
+    assert cm.stats.compactions == 1 and llm.calls == 1
+    assert out is not msgs
+
+
+def test_ledger_captures_all_benchmark_checkpoint_ids():
+    """The live benchmark's payloads only mention ids in prose; the ledger must still keep all of them."""
+    import sys
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "benchmarks"))
+    from argo.core.context import extract_fact_lines
+    from context_live import build_steps
+
+    steps = build_steps(36)
+    ledger = extract_fact_lines([Message(role="tool", name="fetch_url", content=s["payload"]) for s in steps])
+    assert len(ledger) < 2000
+    missing = [s["token"] for s in steps if s["token"] not in ledger]
+    assert not missing, f"ledger dropped {len(missing)} ids"
+
+
+async def test_handoff_includes_verbatim_ledger(tmp_path):
+    cfg = churn_cfg()
+    cfg.session_dir = tmp_path
+    cfg.compact_fact_ledger = True
+    cm = ContextManager(cfg, llm=FakeLLM())
+    convo = [Message(role="tool", name="fetch_url", content="Step 3 checkpoint id T03-613ad6. Done."),
+             Message(role="user", content="continue")]
+    handoff, out = await cm.make_handoff(convo, state_summary="keep going")
+    assert "VERBATIM FACTS" in handoff and "T03-613ad6" in handoff
+    written = max(tmp_path.glob("handoff_*.md"), key=lambda p: p.stat().st_mtime).read_text()
+    assert "T03-613ad6" in written  # the on-disk handoff keeps the ledger too
+
+
+async def test_ineffective_compaction_disables_further_compaction():
+    cfg = churn_cfg()
+    cfg.compact_min_growth_tokens = 0
+    cm = ContextManager(cfg, llm=CountingLLM())
+    calls = {"n": 0}
+
+    async def fake_compact(messages, keep_recent_tokens=None):
+        calls["n"] += 1
+        cm.stats.compactions += 1
+        return list(messages)  # "succeeds" but leaves the context just as large
+
+    cm.compact = fake_compact  # type: ignore[method-assign]
+    msgs = [Message(role="system", content="sys")] + [Message(role="user", content="w " * 2000)] * 6
+    for _ in range(3):
+        msgs = await cm.manage(msgs)
+
+    assert cm._compact_disabled, "churn breaker did not fire"
+    assert calls["n"] == 2

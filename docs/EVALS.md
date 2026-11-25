@@ -7,7 +7,7 @@ backed by these checks, the benchmark suite, or cited literature.
 
 ```bash
 pytest -q
-# 101 passed
+# 112 passed
 ```
 
 | Area | Checks |
@@ -110,6 +110,7 @@ Tool calling was verified separately: the model returned a valid `tool_calls` pa
 | Memory export with `--git` | Passed; markdown + frontmatter + `_dashboard.md`, git commit |
 | Live 36-step token chain (12k window) | `full` (unmanaged), `autocompact` (0.75 + ledger), `no_ledger`; 36 sequential HTTP fetches with probe recall at steps 3/20/35 — see `benchmarks/results/context_live_*.json` |
 | Adaptive injection (local) | Red-team LLM writes and refines injections against the target over two rounds, defense off/on; static payload as baseline — see `benchmarks/results/adaptive_injection_*.json` |
+| Provider limits | concurrency cap (env), jittered backoff honoring Retry-After, 429→success retry, exhaustion raises after 6 attempts |
 | Observability | `argo metrics` and `argo trace` verified on a real 10-iteration session (tool calls, stop reason, per-tool durations after the change) |
 
 ## 5. What these checks do *not* prove

@@ -7,6 +7,8 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
+import random
 import time
 import uuid
 from typing import Any, AsyncIterator, Sequence
@@ -15,6 +17,42 @@ import httpx
 
 from ..config import ArgoConfig
 from ..core.types import LLMResponse, Message, ToolCall, Usage
+
+
+_SEMAPHORES: dict[tuple[int, int], asyncio.Semaphore] = {}
+
+
+def provider_concurrency() -> int:
+    """Max in-flight provider requests per event loop (``ARGO_MAX_CONCURRENCY``, default 2).
+
+    The harness and an interactive session often share one rate-limited key; a hard cap plus jittered
+    backoff is what keeps one process from starving the other (429 storms observed in practice).
+    """
+    try:
+        return max(1, int(os.environ.get("ARGO_MAX_CONCURRENCY", "2")))
+    except ValueError:
+        return 2
+
+
+def _limiter() -> asyncio.Semaphore:
+    limit = provider_concurrency()
+    key = (id(asyncio.get_running_loop()), limit)
+    sem = _SEMAPHORES.get(key)
+    if sem is None:
+        sem = asyncio.Semaphore(limit)
+        _SEMAPHORES[key] = sem
+    return sem
+
+
+def backoff_delay(attempt: int, retry_after: str | None = None) -> float:
+    """Honor Retry-After when present, else exponential backoff with jitter (capped at 60 s)."""
+    if retry_after:
+        try:
+            return min(max(float(retry_after), 0.5), 60.0)
+        except ValueError:
+            pass
+    base = min(60.0, float(2 ** attempt))
+    return min(60.0, base * (0.75 + random.random() * 0.5))
 
 
 class LLMError(RuntimeError):
@@ -157,15 +195,15 @@ class LLMClient:
     def _headers(self) -> dict[str, str]:
         return self.cfg.provider.headers
 
-    async def _post(self, path: str, payload: dict[str, Any], retries: int = 4) -> dict[str, Any]:
+    async def _post(self, path: str, payload: dict[str, Any], retries: int = 6) -> dict[str, Any]:
         url = f"{self.cfg.provider.base_url}{path}"
         last: Exception | None = None
         for attempt in range(retries):
             try:
-                resp = await self.client.post(url, headers=self._headers(), json=payload)
+                async with _limiter():
+                    resp = await self.client.post(url, headers=self._headers(), json=payload)
                 if resp.status_code in (429, 500, 502, 503, 504) and attempt < retries - 1:
-                    delay = float(resp.headers.get("retry-after") or (2 ** attempt))
-                    await asyncio.sleep(min(delay, 30))
+                    await asyncio.sleep(backoff_delay(attempt, resp.headers.get("retry-after")))
                     continue
                 if resp.status_code >= 400:
                     raise LLMError(f"{resp.status_code} from {url}", resp.status_code, resp.text[:2000])
@@ -268,13 +306,14 @@ class LLMClient:
         completed: dict[str, Any] | None = None
         model = payload["model"]
 
-        for attempt in range(4):
+        for attempt in range(6):
             try:
-                async with self.client.stream("POST", url, headers=self._headers(), json=payload) as resp:
+                async with _limiter(), self.client.stream("POST", url, headers=self._headers(),
+                                                          json=payload) as resp:
                     if resp.status_code >= 400:
                         body = (await resp.aread()).decode("utf-8", "replace")[:2000]
-                        if resp.status_code in (429, 500, 502, 503, 504) and attempt < 3:
-                            await asyncio.sleep(2 ** attempt)
+                        if resp.status_code in (429, 500, 502, 503, 504) and attempt < 5:
+                            await asyncio.sleep(backoff_delay(attempt, resp.headers.get("retry-after")))
                             continue
                         raise LLMError(f"{resp.status_code} from {url}", resp.status_code, body)
                     async for line in resp.aiter_lines():
@@ -319,11 +358,11 @@ class LLMClient:
                             model = completed.get("model", model)
                     break
             except (httpx.TimeoutException, httpx.TransportError) as exc:
-                if attempt < 3:
+                if attempt < 5:
                     text_parts.clear()
                     reason_parts.clear()
                     calls.clear()
-                    await asyncio.sleep(2 ** attempt)
+                    await asyncio.sleep(backoff_delay(attempt))
                     continue
                 raise LLMError(f"transport error: {exc}") from exc
 
@@ -369,13 +408,14 @@ class LLMClient:
         finish = "stop"
         model = payload["model"]
 
-        for attempt in range(4):
+        for attempt in range(6):
             try:
-                async with self.client.stream("POST", url, headers=self._headers(), json=payload) as resp:
+                async with _limiter(), self.client.stream("POST", url, headers=self._headers(),
+                                                          json=payload) as resp:
                     if resp.status_code >= 400:
                         body = (await resp.aread()).decode("utf-8", "replace")[:2000]
-                        if resp.status_code in (429, 500, 502, 503, 504) and attempt < 3:
-                            await asyncio.sleep(2 ** attempt)
+                        if resp.status_code in (429, 500, 502, 503, 504) and attempt < 5:
+                            await asyncio.sleep(backoff_delay(attempt, resp.headers.get("retry-after")))
                             continue
                         raise LLMError(f"{resp.status_code} from {url}", resp.status_code, body)
                     async for line in resp.aiter_lines():

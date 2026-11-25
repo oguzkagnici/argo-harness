@@ -153,6 +153,7 @@ class ContextManager:
         self._compact_disabled = False
         self._compact_insufficient = False
         self._compact_after = 0  # tokens right after the last successful compaction (hysteresis)
+        self._ineffective_compactions = 0
         self.cache_evictions = 0
 
     def budget(self) -> int:
@@ -311,6 +312,10 @@ class ContextManager:
             handoff = ""
         if not handoff:
             handoff = state_summary or "Continue the task from the recent messages."
+        facts = extract_fact_lines(convo) if getattr(self.cfg, "compact_fact_ledger", True) else ""
+        if facts:
+            handoff += ("\n\n## VERBATIM FACTS (authoritative; copied from raw history, do not paraphrase)\n"
+                        + facts)
         path = Path(self.cfg.session_dir) / f"handoff_{int(time.time())}.md"
         path.write_text(handoff, encoding="utf-8")
         keep = convo[-4:] if convo else []
@@ -332,7 +337,9 @@ class ContextManager:
         self.evict_cached_prefix(messages)
         tokens = self.tokens(messages)
         growth = int(getattr(self.cfg, "compact_min_growth_tokens", 1200))
-        if tokens < threshold or tokens < self._compact_after + growth:
+        over_budget = tokens >= limit  # hard ceiling: act even inside the hysteresis window
+        rearm = max(threshold, self._compact_after + growth)
+        if not over_budget and tokens < rearm:
             self._last_activity = time.time()
             return messages
         # 1) reclaim space cheaply
@@ -349,6 +356,9 @@ class ContextManager:
         before = messages
         self._compact_insufficient = False
         messages = await self.compact(messages)
+        if messages is before and over_budget and not self._compact_insufficient:
+            # still full and nothing summarized: shrink the retained tail before giving up
+            messages = await self.compact(before, keep_recent_tokens=max(600, int(self.cfg.keep_recent_tokens // 2)))
         if messages is before:
             if not self._compact_insufficient:  # a real failure (empty summary), not "nothing to compact"
                 self._compact_failures += 1
@@ -358,14 +368,20 @@ class ContextManager:
         else:
             self._compact_failures = 0
             self._compact_after = estimate_messages(messages) + self.tool_tokens
+            if self._compact_after >= threshold:
+                # Compaction did not get below the trigger: one more is fine, endless churn is not.
+                self._ineffective_compactions += 1
+                if self._ineffective_compactions >= 2:
+                    self._compact_disabled = True
+                    self._emit("context_compact_ineffective", after=self._compact_after, threshold=threshold)
+            else:
+                self._ineffective_compactions = 0
         self._last_usage = None
         tokens = estimate_messages(messages) + self.tool_tokens
-        # 3) clean-slate reset only when compaction did not help, or the prompt would exceed the window.
-        # A successful compaction that lands between reset_threshold and the budget must NOT reset: the live
-        # 12k benchmark reset once per run, wiping ids that the ledger had just preserved.
-        compacted_now = messages is not before
-        reset_at = int(limit * self.cfg.reset_threshold)
-        if tokens > limit or (tokens > reset_at and not compacted_now):
+        # 3) Reset is a last resort: only when the prompt is still above the hard budget after compaction.
+        # The live 12k run reset whenever the prompt crossed reset_threshold — including turns where compaction
+        # was deliberately deferred by hysteresis — and that discarded recall.
+        if tokens > limit:
             _handoff, tail = await self.make_handoff(messages, state_summary)
             system = [m for m in messages if m.role == "system"][:1]
             messages = system + tail

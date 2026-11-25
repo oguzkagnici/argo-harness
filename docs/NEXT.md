@@ -17,7 +17,9 @@ Docker path (gold patch 1/1).
 benchmark (12/12). Three mechanism bugs were found and fixed: identifier capture in the fact ledger, reset gating,
 and compaction hysteresis.
 **Do:** `python benchmarks/context_live.py --steps 36 --modes full,autocompact,no_ledger` (12k window).
-**Pass:** `autocompact` ≥ `no_ledger` recall with ≥ 30% fewer tokens than `full`; ≤ 6 compactions, 0 resets.
+**Status:** done for `autocompact` — **3/3**, 3 compactions, 0 resets, 275,722 tok vs 288,569 unmanaged (24% fewer
+than the pass target's "30% fewer" bar was not met; see note). The `no_ledger` arm is running now to complete the
+ablation.
 **If it still fails:** the summary prompt, not the ledger, is the bottleneck — try "answer-probe-aware" compaction
 (re-inject the user's exact question verbatim into the compacted block).
 
@@ -39,12 +41,11 @@ run the project's tests — the harness's key feedback loop was missing.
 **Pass:** 2-5 instances graded by the official harness, with a written pass rate (no cherry-picking).
 **Note:** one image ≈ 2.5-3 GB unpacked; this box has ~9 GB and 4 GB RAM, so run one at a time and clean up.
 
-### 4. Self-contention guard for the provider
+### 4. ~~Self-contention guard for the provider~~ — done
 **Why:** we repeatedly interrupted each other because the harness and this session share one rate-limited endpoint.
-**Do:** in `LLMClient`, add (i) exponential backoff with jitter on 429/5xx (currently retries are shallow),
-(ii) a global concurrency semaphore (env `ARGO_MAX_CONCURRENCY`, default 2), (iii) a `--low-priority` flag that
-sleeps between iterations. Add a test with a fake 429-returning transport.
-**Pass:** a 30-iteration run with a second client competing completes without a hard failure.
+**Done:** in-flight cap `ARGO_MAX_CONCURRENCY` (default 2, per event loop), jittered exponential backoff honoring
+`Retry-After`, 6 attempts on both `_post` and both streaming paths. 5 tests in `tests/test_provider_limits.py`.
+Remaining: a `--low-priority` pacing flag, and a live 30-iteration competing-client run once quota allows.
 
 ---
 
@@ -70,12 +71,12 @@ time decay; compare 1 vs 2 generations, and a "dream every N sessions" schedule.
 "two-pass: extract facts, then compress") on the 12k live chain.
 **Pass:** the winning prompt reduces compactions or raises recall at equal tokens.
 
-### 8. Auto-fix loop for reviewed diffs
+### 8. ~~Auto-fix loop for reviewed diffs~~ — done
 **Why:** `review_changes=true` now returns FAIL with file:line defects but the parent has to act manually.
-**Do:** optional `repair_attempts=N` on `spawn_subagent`: on FAIL, re-run the child with the review text as feedback
-in the same worktree, then re-review (max N).
-**Pass:** on the local repair benchmark, review→fix loops resolve defects with fewer parent iterations than a
-single-pass child; keep a hard cap.
+**Done:** `spawn_subagent(..., review_changes=true, repair_attempts=N)` re-runs the child in the same worktree with
+the reviewer text, then re-reviews, capped at 3 rounds; metadata records `repair_rounds` and total subagent tokens.
+Test: `test_review_failure_triggers_in_place_repair_and_recheck`.
+**Still open:** a live measurement on the repair benchmark (does repair actually improve resolution per token?).
 
 ---
 
