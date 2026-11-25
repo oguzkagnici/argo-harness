@@ -32,3 +32,17 @@ def test_recency_and_cosine():
     assert recency_score(now, now) > recency_score(now - 60 * 86400, now)
     assert cosine([1, 0], [1, 0]) == 1.0
     assert cosine([1, 0], [0, 1]) == 0.0
+
+
+def test_rrf_weights_and_k_are_honoured():
+    from argo.memory.retrieval import rrf
+    a = [(0, 1.0), (1, 0.9), (2, 0.8)]
+    b = [(2, 1.0), (1, 0.9), (0, 0.8)]
+    lexical_only = rrf([a, b], k=60, weights=[1.0, 0.0])
+    assert [i for i, _ in lexical_only] == [0, 1, 2]
+    dense_only = rrf([a, b], k=60, weights=[0.0, 1.0])
+    assert [i for i, _ in dense_only] == [2, 1, 0]
+    # a smaller k makes the top rank dominate more strongly
+    sharp = rrf([a, b], k=1, weights=[1.0, 1.0])
+    flat = rrf([a, b], k=100, weights=[1.0, 1.0])
+    assert sharp[0][1] > flat[0][1]

@@ -138,6 +138,9 @@ class ArgoConfig:
     memory_inject_chars: int = 6000        # always-loaded memory budget
     no_progress_limit: int = 10            # stop a run stuck in verify-only loops
     plan_mode: bool = False                # read-only exploration until a plan is approved
+    rrf_k: int = 60                        # RRF rank discount; SciFact ablation favoured 10
+    rrf_lexical_weight: float = 0.8        # BM25 weight in fusion
+    rrf_dense_weight: float = 1.2          # dense weight in fusion
 
     def ensure_dirs(self) -> None:
         for d in (self.data_dir, self.session_dir, self.index_dir,
@@ -269,6 +272,9 @@ def load_config(overrides: dict[str, Any] | None = None) -> ArgoConfig:
         keep_recent_tokens=int(user.get("keep_recent_tokens", 12_000)),
         daily_token_budget=int(user.get("daily_token_budget", 0)),
         plan_mode=bool(overrides.get("plan_mode", user.get("plan_mode", False))),
+        rrf_k=int(overrides.get("rrf_k", user.get("rrf_k", 60))),
+        rrf_lexical_weight=float(overrides.get("rrf_lexical_weight", user.get("rrf_lexical_weight", 0.8))),
+        rrf_dense_weight=float(overrides.get("rrf_dense_weight", user.get("rrf_dense_weight", 1.2))),
     )
     cfg.ensure_dirs()
     return cfg

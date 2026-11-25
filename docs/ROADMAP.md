@@ -71,6 +71,8 @@ restrictions. Cache snapshots and record retrieval timestamps to make runs repro
 | 6 | ~~**Worktree isolation for subagents**~~ — done: `argo/core/worktree.py` | 3 tests (isolation, non-git, agent spawn) + live run: branch `argo/...` created, parent tree clean | Next: auto-review of `changed_files` before merge |
 | 7 | ~~**Plan mode + batch approval**~~ — done: `--plan`, `propose_plan` | 3 tests + live run (7 iter / 45.9k tok, no write before approval) | Next: persist approved plan across sessions |
 | 8 | ~~**Background tasks**~~ — done: `start_background`/`check_background` | 2 tests + live runs; wait-based check cut 10 iter/71,428 tok → **3/19,284** | Next: observability (per-tool latency/token, session replay) |
+| 9a | ~~**Memory ablations**~~ — done: `--arms` on `benchmarks/memory_loop.py` | no-dream 1.00→0.00 correct; wiki pages cut stale mentions 0.67→0.50; two generations = no gain at 2.2× cost | Next: multi-generation policy test at scale |
+| 9b | ~~**Retrieval ablations**~~ — done: `--ablate` on `benchmarks/retrieval.py` | rerank-20 knee; k=10 and dense-heavy +2 nDCG on SciFact; knobs added to config | Next: NFCorpus replication before changing defaults |
 | 9 | **Deep research implementation** — R1+R2 done (`argo/research/`) | false-support 1.000 → 0.000, supported retention 1.000 on a 12-claim local set | Next: R3 adaptive search, R4 report pipeline, GAIA subset |
 
 ## 4. Non-goals (for now)

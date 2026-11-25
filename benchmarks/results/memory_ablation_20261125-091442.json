@@ -1,0 +1,611 @@
+{
+  "benchmark": "memory-learning-loop-ablation",
+  "lessons": 6,
+  "k": 3,
+  "arms": [
+    {
+      "arm": "no_dream",
+      "dream": [],
+      "seconds": 0.0,
+      "before": {
+        "stale_rate": 1.0,
+        "stale_mention_rate": 1.0,
+        "correct_rate": 0.0
+      },
+      "after": {
+        "stale_rate": 1.0,
+        "stale_mention_rate": 1.0,
+        "correct_rate": 0.0
+      },
+      "memory_stats": {
+        "generation": 0,
+        "layers": {
+          "note": {
+            "active": 6
+          }
+        },
+        "transcripts": 12,
+        "chunks": 0,
+        "dreams": 0,
+        "path": "/tmp/argo_mem_no_dream_pet771st/memory.sqlite"
+      },
+      "items": [
+        "Primary analytics warehouse is in us-east-1",
+        "Enterprise API rate limit is 500 requests per minute",
+        "Billing service on-call owner is team Atlas",
+        "Deploy freeze runs Friday 12:00 to 14:00 UTC",
+        "Batch summarization uses model-summarizer-v1",
+        "Staging database host is db1.internal"
+      ],
+      "per_lesson_after": [
+        {
+          "stale": true,
+          "stale_mention": true,
+          "correct": false,
+          "top": [
+            "Staging database host is db1.internal\nStaging database host is db1.internal",
+            "Primary analytics warehouse is in us-east-1\nPrimary analytics warehouse is in us-east-1",
+            "Deploy freeze runs Friday 12:00 to 14:00 UTC\nDeploy freeze runs Friday 12:00 to 14:00 UTC"
+          ]
+        },
+        {
+          "stale": true,
+          "stale_mention": true,
+          "correct": false,
+          "top": [
+            "Batch summarization uses model-summarizer-v1\nBatch summarization uses model-summarizer-v1",
+            "Deploy freeze runs Friday 12:00 to 14:00 UTC\nDeploy freeze runs Friday 12:00 to 14:00 UTC",
+            "Primary analytics warehouse is in us-east-1\nPrimary analytics warehouse is in us-east-1"
+          ]
+        },
+        {
+          "stale": true,
+          "stale_mention": true,
+          "correct": false,
+          "top": [
+            "Deploy freeze runs Friday 12:00 to 14:00 UTC\nDeploy freeze runs Friday 12:00 to 14:00 UTC",
+            "Primary analytics warehouse is in us-east-1\nPrimary analytics warehouse is in us-east-1",
+            "Staging database host is db1.internal\nStaging database host is db1.internal"
+          ]
+        },
+        {
+          "stale": true,
+          "stale_mention": true,
+          "correct": false,
+          "top": [
+            "Billing service on-call owner is team Atlas\nBilling service on-call owner is team Atlas",
+            "Deploy freeze runs Friday 12:00 to 14:00 UTC\nDeploy freeze runs Friday 12:00 to 14:00 UTC",
+            "Primary analytics warehouse is in us-east-1\nPrimary analytics warehouse is in us-east-1"
+          ]
+        },
+        {
+          "stale": true,
+          "stale_mention": true,
+          "correct": false,
+          "top": [
+            "Enterprise API rate limit is 500 requests per minute\nEnterprise API rate limit is 500 requ",
+            "Deploy freeze runs Friday 12:00 to 14:00 UTC\nDeploy freeze runs Friday 12:00 to 14:00 UTC",
+            "Primary analytics warehouse is in us-east-1\nPrimary analytics warehouse is in us-east-1"
+          ]
+        },
+        {
+          "stale": true,
+          "stale_mention": true,
+          "correct": false,
+          "top": [
+            "Primary analytics warehouse is in us-east-1\nPrimary analytics warehouse is in us-east-1",
+            "Deploy freeze runs Friday 12:00 to 14:00 UTC\nDeploy freeze runs Friday 12:00 to 14:00 UTC",
+            "Staging database host is db1.internal\nStaging database host is db1.internal"
+          ]
+        }
+      ]
+    },
+    {
+      "arm": "no_wiki",
+      "dream": [
+        {
+          "status": "applied",
+          "generation": "0->1",
+          "added": 6,
+          "superseded": 6,
+          "merged": 6,
+          "archived": 0,
+          "wiki": 0,
+          "insights": 2,
+          "procedures": 0,
+          "unverified": 0,
+          "warnings": 0
+        }
+      ],
+      "seconds": 147.8,
+      "before": {
+        "stale_rate": 1.0,
+        "stale_mention_rate": 1.0,
+        "correct_rate": 0.0
+      },
+      "after": {
+        "stale_rate": 0.0,
+        "stale_mention_rate": 0.6667,
+        "correct_rate": 1.0
+      },
+      "memory_stats": {
+        "generation": 1,
+        "layers": {
+          "note": {
+            "active": 14,
+            "superseded": 6
+          }
+        },
+        "transcripts": 12,
+        "chunks": 0,
+        "dreams": 1,
+        "path": "/tmp/argo_mem_no_wiki_we_6hzfl/memory.sqlite"
+      },
+      "items": [
+        "Primary analytics warehouse is in eu-central-1 (migrated from us-east-1).\n\nEvidence: \u201cPrimary analytics warehouse was migrated to eu-central-1.\u201d",
+        "Enterprise API rate limit is 2000 requests per minute (raised from 500).\n\nEvidence: \u201cEnterprise API rate limit was raised to 2000 requests per minute.\u201d",
+        "Billing service on-call ownership is team Beacon (moved from team Atlas).\n\nEvidence: \u201cBilling service on-call ownership moved from team Atlas to team Beacon.\u201d",
+        "Deploy freeze window is Friday 16:00 to 18:00 UTC (previously 12:00-14:00 UTC).\n\nEvidence: \u201cThe deploy freeze window is now Friday 16:00 to 18:00 UTC.\u201d",
+        "Batch summarization uses model-summarizer-v3 (upgraded from model-summarizer-v1).\n\nEvidence: \u201cWe upgraded batch summarization to model-summarizer-v3 last week.\u201d",
+        "Staging database host is db2.internal (moved from db1.internal after the migration).\n\nEvidence: \u201cThe staging database moved to db2.internal after the migration.\u201d",
+        "Primary analytics warehouse is in eu-central-1 (migrated from us-east-1).",
+        "Enterprise API rate limit is 2000 requests per minute (raised from 500).",
+        "Billing service on-call ownership is team Beacon (moved from team Atlas).",
+        "Deploy freeze window is Friday 16:00 to 18:00 UTC (previously 12:00-14:00 UTC).",
+        "Batch summarization uses model-summarizer-v3 (upgraded from model-summarizer-v1).",
+        "Staging database host is db2.internal (moved from db1.internal after the migration).",
+        "Changes arrive as explicit, self-contained user statements of the form 'X moved/changed to Y', so superseding the old value (rather than appending) is the correct reconciliation strategy.\n\nBasis: All six updates in the session followed the same 'was changed to' phrasing.",
+        "Environment/config facts (hosts, model versions, regions, rate limits, ownership, schedules) are volatile: all six tracked facts changed within a single session. Store them with a source/date and expect to re-verify rather than treat them as permanent.\n\nBasis: Every one of the six stored config facts was superseded by an explicit user update in the same session."
+      ],
+      "per_lesson_after": [
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Staging database host is db2.internal (moved from db1.internal after the migrati\nStaging d",
+            "Staging database host is db2.internal (moved from db1.internal after the migrati\nStaging d",
+            "Primary analytics warehouse is in eu-central-1 (migrated from us-east-1).\nPrimary analytic"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Batch summarization uses model-summarizer-v3 (upgraded from model-summarizer-v1)\nBatch sum",
+            "Batch summarization uses model-summarizer-v3 (upgraded from model-summarizer-v1)\nBatch sum",
+            "Insight: Environment/config facts (hosts, model versions, regions, ra\nEnvironment/config f"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": false,
+          "correct": true,
+          "top": [
+            "Deploy freeze window is Friday 16:00 to 18:00 UTC (previously 12:00-14:00 UTC).\nDeploy fre",
+            "Deploy freeze window is Friday 16:00 to 18:00 UTC (previously 12:00-14:00 UTC).\nDeploy fre",
+            "Staging database host is db2.internal (moved from db1.internal after the migrati\nStaging d"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Billing service on-call ownership is team Beacon (moved from team Atlas).\nBilling service ",
+            "Billing service on-call ownership is team Beacon (moved from team Atlas).\nBilling service ",
+            "Deploy freeze window is Friday 16:00 to 18:00 UTC (previously 12:00-14:00 UTC).\nDeploy fre"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": false,
+          "correct": true,
+          "top": [
+            "Enterprise API rate limit is 2000 requests per minute (raised from 500).\nEnterprise API ra",
+            "Insight: Environment/config facts (hosts, model versions, regions, ra\nEnvironment/config f",
+            "Enterprise API rate limit is 2000 requests per minute (raised from 500).\nEnterprise API ra"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Primary analytics warehouse is in eu-central-1 (migrated from us-east-1).\nPrimary analytic",
+            "Primary analytics warehouse is in eu-central-1 (migrated from us-east-1).\nPrimary analytic",
+            "Staging database host is db2.internal (moved from db1.internal after the migrati\nStaging d"
+          ]
+        }
+      ]
+    },
+    {
+      "arm": "no_grounding",
+      "dream": [
+        {
+          "status": "applied",
+          "generation": "0->1",
+          "added": 7,
+          "superseded": 6,
+          "merged": 6,
+          "archived": 0,
+          "wiki": 3,
+          "insights": 2,
+          "procedures": 1,
+          "unverified": 0,
+          "warnings": 0
+        }
+      ],
+      "seconds": 236.3,
+      "before": {
+        "stale_rate": 1.0,
+        "stale_mention_rate": 1.0,
+        "correct_rate": 0.0
+      },
+      "after": {
+        "stale_rate": 0.0,
+        "stale_mention_rate": 0.5,
+        "correct_rate": 1.0
+      },
+      "memory_stats": {
+        "generation": 1,
+        "layers": {
+          "note": {
+            "active": 15,
+            "superseded": 6
+          },
+          "procedure": {
+            "active": 1
+          },
+          "wiki": {
+            "active": 3
+          }
+        },
+        "transcripts": 12,
+        "chunks": 0,
+        "dreams": 1,
+        "path": "/tmp/argo_mem_no_grounding_979rmvb2/memory.sqlite"
+      },
+      "items": [
+        "When to use: A user message states that a previously recorded fact has changed (new host, version, region, limit, owner, or schedule).\nSteps:\n1. Locate the existing memory item holding the old value.\n2. Emit a supersede action targeting that item ID with the new value as new_text.\n3. Preserve the prior value in parentheses for context when it aids interpretation.\n4. Do not create a second parallel note for the same fact.\n5. Update the relevant topic page so the wiki shows only the current value.",
+        "Primary analytics warehouse is in eu-central-1 (migrated from us-east-1).\n\nEvidence: \u201cPrimary analytics warehouse was migrated to eu-central-1.\u201d",
+        "Enterprise API rate limit is 2000 requests per minute (raised from 500).\n\nEvidence: \u201cEnterprise API rate limit was raised to 2000 requests per minute.\u201d",
+        "Billing service on-call ownership is team Beacon (previously team Atlas).\n\nEvidence: \u201cBilling service on-call ownership moved from team Atlas to team Beacon.\u201d",
+        "Deploy freeze window is Friday 16:00 to 18:00 UTC (previously 12:00-14:00 UTC).\n\nEvidence: \u201cThe deploy freeze window is now Friday 16:00 to 18:00 UTC.\u201d",
+        "Batch summarization uses model-summarizer-v3 (upgraded from v1).\n\nEvidence: \u201cWe upgraded batch summarization to model-summarizer-v3 last week.\u201d",
+        "Staging database host is db2.internal (moved from db1.internal after the migration).\n\nEvidence: \u201cThe staging database moved to db2.internal after the migration.\u201d",
+        "Hostnames, model versions, regions, rate limits, on-call owners and freeze windows are all perishable. In this cycle every one of six stored facts was superseded by an explicit user update. Prefer storing the fact plus its prior value (for context) and expect to supersede rather than append duplicates.",
+        "Billing service on-call ownership is team Beacon (previously team Atlas). Deploy freeze window is Friday 16:00 to 18:00 UTC (previously 12:00-14:00 UTC). Both are organizational facts that change by announcement rather than by code, so they should be refreshed from user updates rather than inferred.",
+        "Current verified environment facts. Regions: primary analytics warehouse is in eu-central-1 (migrated from us-east-1). Databases: staging DB host is db2.internal (moved from db1.internal after migration). Models: batch summarization uses model-summarizer-v3 (upgraded from v1). API: enterprise rate limit is 2000 requests per minute (raised from 500). These values change over time \u2014 treat any stored value as perishable and re-verify before relying on it.",
+        "Primary analytics warehouse is in eu-central-1 (migrated from us-east-1).",
+        "Enterprise API rate limit is 2000 requests per minute.",
+        "Billing service on-call owner is team Beacon (previously team Atlas).",
+        "Deploy freeze window is Friday 16:00 to 18:00 UTC.",
+        "Batch summarization uses model-summarizer-v3 (upgraded from v1).",
+        "Staging database host is db2.internal (moved from db1.internal after the migration).",
+        "The environment appears to be undergoing a coordinated migration (region move to eu-central-1, DB host move, model upgrade, rate-limit raise), so further related changes are likely in the near term.\n\nBasis: Four of six updates in one batch are migration/upgrade-shaped changes rather than routine edits.",
+        "Updates arrive as explicit, one-fact-per-message corrections ('Update for lesson N: ...'), each naming the old value and the new one. This format makes supersede-in-place the correct consolidation action rather than adding a second competing note.\n\nBasis: All six session messages follow the same 'Update for lesson N' pattern and each restates the prior value.",
+        "Infrastructure/config facts in memory decay quickly: all six stored environment facts were stale within one cycle and had to be replaced by explicit user updates.\n\nEvidence: \u201cUpdate for lesson 0: The staging database moved to db2.internal after the migration.\u201d"
+      ],
+      "per_lesson_after": [
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Staging database host is db2.internal (moved from db1.internal after the migrati\nStaging d",
+            "Staging database host is db2.internal (moved from db1.internal after the migrati\nStaging d",
+            "Environment & infrastructure facts\nCurrent verified environment facts. Regions: primary an"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": false,
+          "correct": true,
+          "top": [
+            "Environment & infrastructure facts\nCurrent verified environment facts. Regions: primary an",
+            "Batch summarization uses model-summarizer-v3 (upgraded from v1).\nBatch summarization uses ",
+            "Batch summarization uses model-summarizer-v3 (upgraded from v1).\nBatch summarization uses "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": false,
+          "correct": true,
+          "top": [
+            "Deploy freeze window is Friday 16:00 to 18:00 UTC (previously 12:00-14:00 UTC).\nDeploy fre",
+            "Deploy freeze window is Friday 16:00 to 18:00 UTC.\nDeploy freeze window is Friday 16:00 to",
+            "Service ownership & release process\nBilling service on-call ownership is team Beacon (prev"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Service ownership & release process\nBilling service on-call ownership is team Beacon (prev",
+            "Billing service on-call ownership is team Beacon (previously team Atlas).\nBilling service ",
+            "Billing service on-call owner is team Beacon (previously team Atlas).\nBilling service on-c"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": false,
+          "correct": true,
+          "top": [
+            "Environment & infrastructure facts\nCurrent verified environment facts. Regions: primary an",
+            "Enterprise API rate limit is 2000 requests per minute (raised from 500).\nEnterprise API ra",
+            "Enterprise API rate limit is 2000 requests per minute.\nEnterprise API rate limit is 2000 r"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Environment & infrastructure facts\nCurrent verified environment facts. Regions: primary an",
+            "Primary analytics warehouse is in eu-central-1 (migrated from us-east-1).\nPrimary analytic",
+            "Primary analytics warehouse is in eu-central-1 (migrated from us-east-1).\nPrimary analytic"
+          ]
+        }
+      ]
+    },
+    {
+      "arm": "two_generations",
+      "dream": [
+        {
+          "status": "applied",
+          "generation": "0->1",
+          "added": 6,
+          "superseded": 6,
+          "merged": 6,
+          "archived": 0,
+          "wiki": 2,
+          "insights": 1,
+          "procedures": 0,
+          "unverified": 0,
+          "warnings": 0
+        },
+        {
+          "status": "applied",
+          "generation": "1->2",
+          "added": 2,
+          "superseded": 0,
+          "merged": 12,
+          "archived": 2,
+          "wiki": 2,
+          "insights": 1,
+          "procedures": 0,
+          "unverified": 0,
+          "warnings": 0
+        }
+      ],
+      "seconds": 114.0,
+      "before": {
+        "stale_rate": 1.0,
+        "stale_mention_rate": 1.0,
+        "correct_rate": 0.0
+      },
+      "after": {
+        "stale_rate": 0.0,
+        "stale_mention_rate": 0.5,
+        "correct_rate": 1.0
+      },
+      "memory_stats": {
+        "generation": 2,
+        "layers": {
+          "note": {
+            "active": 5,
+            "superseded": 12
+          },
+          "wiki": {
+            "active": 2,
+            "archived": 2
+          }
+        },
+        "transcripts": 12,
+        "chunks": 0,
+        "dreams": 2,
+        "path": "/tmp/argo_mem_two_generations_qju14u5w/memory.sqlite"
+      },
+      "items": [
+        "Deploy freeze window is Friday 16:00-18:00 UTC (previously 12:00-14:00 UTC).",
+        "Current platform values: primary analytics warehouse region eu-central-1 (migrated from us-east-1); batch summarization on model-summarizer-v3 (upgraded from v1); staging database host db2.internal (moved from db1.internal after migration). Treat pre-migration/pre-upgrade values as stale.",
+        "Current release/access policy values: deploy freeze window Friday 16:00-18:00 UTC (was 12:00-14:00 UTC); Enterprise API rate limit 2000 req/min (was 500); billing service on-call owner team Beacon (was team Atlas). All values are post-change; older values are stale.",
+        "Memory accumulated exact duplicate notes for every fact in the update batch, suggesting the ingestion path writes both a per-lesson note and a re-ingested copy; dedupe on write would keep memory small.\n\nBasis: Six facts each appear twice with identical text and evidence in generation 1.",
+        "Environment/config facts (regions, hosts, model versions, rate limits, on-call owners, freeze windows) are volatile and should be re-confirmed against current config before being relied on.\n\nEvidence: \u201cThe deploy freeze window is now Friday 16:00 to 18:00 UTC.\u201d",
+        "Environment facts in this memory set (hosts, model versions, regions, limits, on-call owners, freeze windows) change over time and are frequently superseded; treat stored values as needing confirmation against current config before relying on them.\n\nBasis: All six stored facts were replaced by newer values in a single update session.",
+        "All six environment facts in memory were refreshed in a single update session; each new value supersedes an older one (region, rate limit, on-call owner, freeze window, model version, DB host).\n\nEvidence: \u201cUpdate for lesson 0: The staging database moved to db2.internal after the migration.\u201d"
+      ],
+      "per_lesson_after": [
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Data & ML platform facts\nCurrent platform values: primary analytics warehouse region eu-ce",
+            "Deploy freeze window is Friday 16:00-18:00 UTC (previously 12:00-14:00 UTC).\nDeploy freeze",
+            "All six environment facts in memory were refreshed in a single update session; e\nAll six e"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": false,
+          "correct": true,
+          "top": [
+            "Data & ML platform facts\nCurrent platform values: primary analytics warehouse region eu-ce",
+            "Insight: Memory accumulated exact duplicate notes for every fact in t\nMemory accumulated e",
+            "Environment/config facts (regions, hosts, model versions, rate limits, on-call o\nEnvironme"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": false,
+          "correct": true,
+          "top": [
+            "Deploy freeze window is Friday 16:00-18:00 UTC (previously 12:00-14:00 UTC).\nDeploy freeze",
+            "Environment/config facts (regions, hosts, model versions, rate limits, on-call o\nEnvironme",
+            "Release & access policies\nCurrent release/access policy values: deploy freeze window Frida"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Release & access policies\nCurrent release/access policy values: deploy freeze window Frida",
+            "Environment/config facts (regions, hosts, model versions, rate limits, on-call o\nEnvironme",
+            "Deploy freeze window is Friday 16:00-18:00 UTC (previously 12:00-14:00 UTC).\nDeploy freeze"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": false,
+          "correct": true,
+          "top": [
+            "Release & access policies\nCurrent release/access policy values: deploy freeze window Frida",
+            "Environment/config facts (regions, hosts, model versions, rate limits, on-call o\nEnvironme",
+            "Deploy freeze window is Friday 16:00-18:00 UTC (previously 12:00-14:00 UTC).\nDeploy freeze"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Data & ML platform facts\nCurrent platform values: primary analytics warehouse region eu-ce",
+            "Deploy freeze window is Friday 16:00-18:00 UTC (previously 12:00-14:00 UTC).\nDeploy freeze",
+            "Release & access policies\nCurrent release/access policy values: deploy freeze window Frida"
+          ]
+        }
+      ]
+    },
+    {
+      "arm": "full",
+      "dream": [
+        {
+          "status": "applied",
+          "generation": "0->1",
+          "added": 6,
+          "superseded": 6,
+          "merged": 6,
+          "archived": 0,
+          "wiki": 3,
+          "insights": 1,
+          "procedures": 0,
+          "unverified": 0,
+          "warnings": 0
+        }
+      ],
+      "seconds": 50.9,
+      "before": {
+        "stale_rate": 1.0,
+        "stale_mention_rate": 1.0,
+        "correct_rate": 0.0
+      },
+      "after": {
+        "stale_rate": 0.0,
+        "stale_mention_rate": 0.5,
+        "correct_rate": 1.0
+      },
+      "memory_stats": {
+        "generation": 1,
+        "layers": {
+          "note": {
+            "active": 13,
+            "superseded": 6
+          },
+          "wiki": {
+            "active": 3
+          }
+        },
+        "transcripts": 12,
+        "chunks": 0,
+        "dreams": 1,
+        "path": "/tmp/argo_mem_full_sc_ispx_/memory.sqlite"
+      },
+      "items": [
+        "Primary analytics warehouse is in eu-central-1 (migrated from us-east-1).\n\nEvidence: \u201cPrimary analytics warehouse was migrated to eu-central-1.\u201d",
+        "Enterprise API rate limit is 2000 requests per minute (raised from 500).\n\nEvidence: \u201cEnterprise API rate limit was raised to 2000 requests per minute.\u201d",
+        "Billing service on-call owner is team Beacon (previously team Atlas).\n\nEvidence: \u201cBilling service on-call ownership moved from team Atlas to team Beacon.\u201d",
+        "Deploy freeze window is Friday 16:00 to 18:00 UTC (previously 12:00-14:00 UTC).\n\nEvidence: \u201cThe deploy freeze window is now Friday 16:00 to 18:00 UTC.\u201d",
+        "Batch summarization uses model-summarizer-v3 (upgraded from v1).\n\nEvidence: \u201cWe upgraded batch summarization to model-summarizer-v3 last week.\u201d",
+        "Staging database host is db2.internal (moved from db1.internal after the migration).\n\nEvidence: \u201cThe staging database moved to db2.internal after the migration.\u201d",
+        "Deploy freeze runs Friday 16:00 to 18:00 UTC. Batch summarization runs on model-summarizer-v3.",
+        "Billing service on-call ownership is team Beacon (moved from team Atlas). Enterprise API rate limit is 2000 requests per minute (raised from 500).",
+        "Current environment facts: staging database host db2.internal; primary analytics warehouse region eu-central-1. Both changed from earlier values (db1.internal, us-east-1) after migrations, so older references should be treated as stale.",
+        "Primary analytics warehouse is in eu-central-1.",
+        "Enterprise API rate limit is 2000 requests per minute.",
+        "Billing service on-call owner is team Beacon (previously team Atlas).",
+        "Deploy freeze window is Friday 16:00 to 18:00 UTC.",
+        "Batch summarization uses model-summarizer-v3 (upgraded from v1).",
+        "Staging database host is db2.internal (moved from db1.internal after the migration).",
+        "All six core environment facts were revised in a single update cycle, suggesting these values are volatile and should be re-verified rather than trusted long-term.\n\nBasis: Every item in generation 0 was superseded by the bench session updates."
+      ],
+      "per_lesson_after": [
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Staging database host is db2.internal (moved from db1.internal after the migrati\nStaging d",
+            "Staging database host is db2.internal (moved from db1.internal after the migrati\nStaging d",
+            "Infrastructure & Environment Facts\nCurrent environment facts: staging database host db2.in"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": false,
+          "correct": true,
+          "top": [
+            "Batch summarization uses model-summarizer-v3 (upgraded from v1).\nBatch summarization uses ",
+            "Batch summarization uses model-summarizer-v3 (upgraded from v1).\nBatch summarization uses ",
+            "Deployment Process\nDeploy freeze runs Friday 16:00 to 18:00 UTC. Batch summarization runs "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": false,
+          "correct": true,
+          "top": [
+            "Deployment Process\nDeploy freeze runs Friday 16:00 to 18:00 UTC. Batch summarization runs ",
+            "Deploy freeze window is Friday 16:00 to 18:00 UTC (previously 12:00-14:00 UTC).\nDeploy fre",
+            "Deploy freeze window is Friday 16:00 to 18:00 UTC.\nDeploy freeze window is Friday 16:00 to"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Billing service on-call owner is team Beacon (previously team Atlas).\nBilling service on-c",
+            "Billing service on-call owner is team Beacon (previously team Atlas).\nBilling service on-c",
+            "Service Ownership & Limits\nBilling service on-call ownership is team Beacon (moved from te"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": false,
+          "correct": true,
+          "top": [
+            "Service Ownership & Limits\nBilling service on-call ownership is team Beacon (moved from te",
+            "Enterprise API rate limit is 2000 requests per minute (raised from 500).\nEnterprise API ra",
+            "Enterprise API rate limit is 2000 requests per minute.\nEnterprise API rate limit is 2000 r"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Infrastructure & Environment Facts\nCurrent environment facts: staging database host db2.in",
+            "Primary analytics warehouse is in eu-central-1 (migrated from us-east-1).\nPrimary analytic",
+            "Primary analytics warehouse is in eu-central-1.\nPrimary analytics warehouse is in eu-centr"
+          ]
+        }
+      ]
+    }
+  ],
+  "timestamp": "2026-11-25T09:14:42Z"
+}

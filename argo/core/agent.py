@@ -168,7 +168,10 @@ class Agent:
         if self.memory is None:
             self.memory = MemoryStore(self.cfg.memory_db, embed=self._llm.embed,
                                       rerank=lambda q, d, n: self._llm.rerank(q, d, top_n=n),
-                                      model=self.cfg.models.embedding_model or "default")
+                                      model=self.cfg.models.embedding_model or "default",
+                                      rrf_k=getattr(self.cfg, "rrf_k", 60),
+                                      rrf_weights=(getattr(self.cfg, "rrf_lexical_weight", 0.8),
+                                                   getattr(self.cfg, "rrf_dense_weight", 1.2)))
 
     @property
     def llm(self) -> LLMClient:

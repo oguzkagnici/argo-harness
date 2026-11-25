@@ -10,6 +10,14 @@ Metrics (top-k recall):
 
 Usage:
   python benchmarks/memory_loop.py --k 3
+  python benchmarks/memory_loop.py --arms no_dream,no_wiki,no_grounding,two_generations,full
+
+Ablation arms answer *why* the loop works:
+  no_dream          baseline: correction in a transcript, no consolidation
+  no_wiki           dream runs but may not create wiki pages or procedures
+  no_grounding      dream runs with the evidence check disabled (trust everything)
+  two_generations   dream applied twice (does a second pass help or add duplicates?)
+  full              default production behavior
 """
 from __future__ import annotations
 
@@ -70,65 +78,88 @@ async def probe(store: MemoryStore, lesson: dict, k: int) -> dict:
             "top": [h.text[:90] for h in hits]}
 
 
-async def main_async(args: argparse.Namespace) -> int:
-    cfg = load_config()
-    tmp = tempfile.TemporaryDirectory(prefix="argo_mem_bench_")
-    async with LLMClient(cfg) as llm:
-        store = MemoryStore(Path(tmp.name) / "memory.sqlite", embed=llm.embed,
-                            rerank=lambda q, d, n: llm.rerank(q, d, top_n=n), model=cfg.models.embedding_model or "default")
-        try:
-            for i, lesson in enumerate(LESSONS):
-                await store.add(lesson["stale"], layer="note", kind="fact", importance=0.75,
-                                confidence=0.9, source="bench:stale")
-                store.log("bench", "user", f"Update for lesson {i}: {lesson['correction']}")
-                store.log("bench", "assistant", f"Noted. {lesson['correction']}")
+def rate(rows, key):
+    return round(sum(1 for r in rows if r[key]) / len(rows), 4) if rows else 0.0
 
-            before = [await probe(store, lesson, args.k) for lesson in LESSONS]
+
+async def run_arm(arm: str, cfg, llm, k: int) -> dict:
+    import argo.memory.dream as dream_mod
+
+    tmp = tempfile.TemporaryDirectory(prefix=f"argo_mem_{arm}_")
+    store = MemoryStore(Path(tmp.name) / "memory.sqlite", embed=llm.embed,
+                        rerank=lambda q, d, n: llm.rerank(q, d, top_n=n),
+                        model=cfg.models.embedding_model or "default")
+    original_grounded = dream_mod._grounded
+    if arm == "no_grounding":
+        dream_mod._grounded = lambda evidence, corpus: True
+    try:
+        for i, lesson in enumerate(LESSONS):
+            await store.add(lesson["stale"], layer="note", kind="fact", importance=0.75,
+                            confidence=0.9, source="bench:stale")
+            store.log("bench", "user", f"Update for lesson {i}: {lesson['correction']}")
+            store.log("bench", "assistant", f"Noted. {lesson['correction']}")
+        before = [await probe(store, lesson, k) for lesson in LESSONS]
+
+        reports = []
+        seconds = 0.0
+        if arm != "no_dream":
             eng = DreamEngine(store, llm, cfg=cfg)
-            t0 = time.monotonic()
-            report = await eng.run(session_ids=["bench"], apply=True)
-            dream_s = time.monotonic() - t0
-            after = [await probe(store, lesson, args.k) for lesson in LESSONS]
-            stats = store.stats()
-            active = [i.text for i in store.list_items()]
-        finally:
-            store.close()
+            passes = 2 if arm == "two_generations" else 1
+            instructions = ("Do not create wiki pages or procedures; only reconcile notes and insights."
+                            if arm == "no_wiki" else "")
+            for _ in range(passes):
+                t0 = time.monotonic()
+                reports.append(await eng.run(session_ids=["bench"], instructions=instructions, apply=True))
+                seconds += time.monotonic() - t0
+        after = [await probe(store, lesson, k) for lesson in LESSONS]
+        stats = store.stats()
+        active = [i.text for i in store.list_items()]
+    finally:
+        dream_mod._grounded = original_grounded
+        store.close()
+        tmp.cleanup()
 
-    def rate(rows, key):
-        return round(sum(1 for r in rows if r[key]) / len(rows), 4) if rows else 0.0
-
-    summary = {
-        "benchmark": "memory-learning-loop", "lessons": len(LESSONS), "k": args.k,
-        "dream": {"status": report.status, "generation": f"{report.input_generation}->{report.output_generation}",
-                  "added": report.added, "superseded": report.superseded,
-                  "merged": report.merged, "archived": report.archived,
-                  "wiki": report.wiki, "insights": report.insights,
-                  "procedures": report.procedures, "unverified": report.unverified,
-                  "warnings": len(report.details.get("warnings") or []), "seconds": round(dream_s, 1)},
+    return {
+        "arm": arm,
+        "dream": [{"status": r.status, "generation": f"{r.input_generation}->{r.output_generation}",
+                   "added": r.added, "superseded": r.superseded, "merged": r.merged,
+                   "archived": r.archived, "wiki": r.wiki, "insights": r.insights,
+                   "procedures": r.procedures, "unverified": r.unverified,
+                   "warnings": len(r.details.get("warnings") or [])} for r in reports],
+        "seconds": round(seconds, 1),
         "before": {"stale_rate": rate(before, "stale"), "stale_mention_rate": rate(before, "stale_mention"),
                    "correct_rate": rate(before, "correct")},
         "after": {"stale_rate": rate(after, "stale"), "stale_mention_rate": rate(after, "stale_mention"),
                   "correct_rate": rate(after, "correct")},
-        "memory_stats": stats, "items": active[:20], "per_lesson": {"before": before, "after": after},
-        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "memory_stats": stats, "items": active[:20],
+        "active_items": sum(v.get("active", 0) for v in stats.get("layers", {}).values()),
+        "per_lesson_after": after,
     }
+
+
+async def main_async(args: argparse.Namespace) -> int:
+    cfg = load_config()
+    arms = [a.strip() for a in args.arms.split(",") if a.strip()]
+    rows = []
+    async with LLMClient(cfg) as llm:
+        for arm in arms:
+            row = await run_arm(arm, cfg, llm, args.k)
+            rows.append(row)
+            print(f"{arm:<16} stale {row['before']['stale_rate']:.2f}->{row['after']['stale_rate']:.2f}  "
+                  f"mention {row['before']['stale_mention_rate']:.2f}->{row['after']['stale_mention_rate']:.2f}  "
+                  f"correct {row['before']['correct_rate']:.2f}->{row['after']['correct_rate']:.2f}  "
+                  f"items={row['active_items']} {row['seconds']:.1f}s", flush=True)
+
+    summary = {"benchmark": "memory-learning-loop-ablation", "lessons": len(LESSONS), "k": args.k,
+               "arms": rows, "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
     RESULTS.mkdir(parents=True, exist_ok=True)
-    out = RESULTS / (f"memory_loop_{time.strftime('%Y%m%d-%H%M%S')}.json")
+    out = RESULTS / (f"memory_ablation_{time.strftime('%Y%m%d-%H%M%S')}.json")
     out.write_text(json.dumps(summary, indent=2, default=str), encoding="utf-8")
 
-    print(f"dream {report.status} ({summary['dream']['generation']}) in {dream_s:.1f}s; "
-          f"added={report.added} superseded={report.superseded} merged={report.merged} "
-          f"warnings={len(report.details.get('warnings') or [])}")
-    print(f"before: contradictory_stale={summary['before']['stale_rate']:.2f} "
-          f"stale_mention={summary['before']['stale_mention_rate']:.2f} correct={summary['before']['correct_rate']:.2f}")
-    print(f"after:  contradictory_stale={summary['after']['stale_rate']:.2f} "
-          f"stale_mention={summary['after']['stale_mention_rate']:.2f} correct={summary['after']['correct_rate']:.2f}")
-    for lesson, b, a in zip(LESSONS, before, after):
-        print(f"- {lesson['query'][:52]:<54} stale {b['stale']}->{a['stale']}  "
-              f"mention {b['stale_mention']}->{a['stale_mention']}  correct {b['correct']}->{a['correct']}")
-    warnings = report.details.get("warnings") or []
-    if warnings:
-        print("warnings:", warnings[:5])
+    print(f"\n{'arm':<16} {'stale':>7} {'mention':>8} {'correct':>8} {'items':>6}")
+    for row in rows:
+        print(f"{row['arm']:<16} {row['after']['stale_rate']:>7.2f} {row['after']['stale_mention_rate']:>8.2f} "
+              f"{row['after']['correct_rate']:>8.2f} {row['active_items']:>6}")
     print(f"\nSaved: {out.relative_to(ROOT)}")
     return 0
 
@@ -136,6 +167,8 @@ async def main_async(args: argparse.Namespace) -> int:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--k", type=int, default=3)
+    parser.add_argument("--arms", default="no_dream,full",
+                        help="comma-separated: no_dream,no_wiki,no_grounding,two_generations,full")
     args = parser.parse_args()
     return asyncio.run(main_async(args))
 

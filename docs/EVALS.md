@@ -7,7 +7,7 @@ backed by these checks, the benchmark suite, or cited literature.
 
 ```bash
 pytest -q
-# 63 passed
+# 64 passed
 ```
 
 | Area | Checks |
@@ -52,6 +52,8 @@ Full methodology and cached data: `benchmarks/README.md`. JSON records: `benchma
 | Repair loop (baseline) | 5 local repos, visible + hidden tests, 16-iteration cap | **5/5 resolved**, 0 tampered, 46,990 tokens / 163.0 s / 7.6 iter per task |
 | Repair loop (review) | same tasks + one mandatory `review_work` | **5/5 resolved**, +35% tokens, 3.2× wall time, no accuracy gain |
 | Prompt injection | 7 local attacks (4 obvious, 3 subtle) × defense off/on | **obedience 0.00 and 0 exfiltrations in both modes**; 5,191 → 5,318 mean tokens (+2.4%) |
+| Memory ablations | 6 lessons × 5 arms | no-dream **1.00 stale / 0.00 correct**; full **0.00 / 1.00**; no-wiki stale mentions 0.67 vs 0.50; two generations = same recall, 2.2× time |
+| Retrieval ablations | SciFact, one factor at a time | rerank 20 0.9190 > 50 0.9161 > 10 0.8919; k=10 0.8649 > k=60 0.8460; dense-heavy 0.8660 > BM25-heavy 0.8100; query instruction 0.8392 |
 | Context policies | synthetic 60-step / 29.6k-token transcript, 12 planted facts | full 29,639 tok 12/12 · microcompact 24,023 tok 12/12 · **autocompact 7,502 tok 12/12** · reset 1,225 tok 1/12 |
 | Fact-ledger ablation | same transcript, ledger disabled | **5/12 → 12/12** recall for +768 tokens |
 

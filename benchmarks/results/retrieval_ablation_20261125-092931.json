@@ -1,0 +1,55 @@
+{
+  "benchmark": "BEIR-SciFact-ablation",
+  "docs": 1000,
+  "queries": 100,
+  "embedding_model": "qwen3-embedding-8b",
+  "seed": 0,
+  "metrics": {
+    "rrf_k10": {
+      "recall@10": 0.9767,
+      "recall@100": 1.0,
+      "ndcg@10": 0.8649
+    },
+    "rrf_k60": {
+      "recall@10": 0.9397,
+      "recall@100": 1.0,
+      "ndcg@10": 0.846
+    },
+    "rrf_k100": {
+      "recall@10": 0.9297,
+      "recall@100": 1.0,
+      "ndcg@10": 0.8425
+    },
+    "rrf_bm25_heavy": {
+      "recall@10": 0.8997,
+      "recall@100": 1.0,
+      "ndcg@10": 0.81
+    },
+    "rrf_dense_heavy": {
+      "recall@10": 0.9667,
+      "recall@100": 1.0,
+      "ndcg@10": 0.866
+    },
+    "rerank_top10": {
+      "recall@10": 0.9397,
+      "recall@100": 1.0,
+      "ndcg@10": 0.8919
+    },
+    "rerank_top50": {
+      "recall@10": 0.97,
+      "recall@100": 1.0,
+      "ndcg@10": 0.9161
+    },
+    "query_instruction": {
+      "recall@10": 0.9297,
+      "recall@100": 1.0,
+      "ndcg@10": 0.8392
+    },
+    "rrf+rerank20": {
+      "recall@10": 0.9767,
+      "recall@100": 1.0,
+      "ndcg@10": 0.919
+    }
+  },
+  "timestamp": "2026-11-25T09:29:31Z"
+}

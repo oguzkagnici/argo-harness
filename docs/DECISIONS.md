@@ -26,6 +26,8 @@ Measurements below are from `deepseek-v4.1-flash` via the configured OpenAI-comp
 | Retrieval | BM25 + dense fusion with RRF (`k=60`), then cross-encoder rerank the top candidates | RRF (Cormack et al., 2009); BEIR (Thakur et al., 2021) | SciFact nDCG@10: BM25 0.779 → dense 0.885 → RRF 0.846 → RRF+rerank **0.916** |
 | Retrieval depth | Rerank only the fused candidate pool, not the whole corpus | Cost/latency control; reranker literature | R@100 stays 1.00; rerank improves ordering; reranking the full corpus would cost ~5× more per query |
 | Memory retrieval | Small importance/recency/usage uplift on memory hits | Generative Agents (Park et al., 2023) | Keeps fresh, important notes ahead of stale-but-similar text; not separately ablated yet |
+| Memory consolidation depth | One dream generation is the default; a second pass is not beneficial | Ablation: two generations kept recall at 1.00 but cost 2.2× (114 s vs 51 s) and archived notes with no gain | Skipped the extra pass; grounding stays for confidence hygiene, not recall (no-grounding arm had identical recall) |
+| Retrieval fusion knobs | Expose `rrf_k` and lexical/dense weights; keep 60 / 0.8 / 1.2 defaults | SciFact ablation: k=10 0.8649 and dense-heavy 0.8660 beat k=60 0.8460 by ~2 nDCG points | Single-corpus evidence, so knobs are configurable but defaults unchanged; rerank depth stays 20 (50 = same quality, 2.5× cost) |
 | Memory write | Exact-duplicate idempotence; cosine dedupe at 0.97 during dreaming | Anthropic memory/Dreams docs; MemGPT tiering | Dream run merged 6 duplicates and created 6 consolidated facts without unbounded growth |
 | Consolidation | Generational dreaming (`G → G+1`) with evidence grounding and rollback | Anthropic Dreams; Letta sleep-time compute (2025) | Memory benchmark: contradictory stale beliefs **1.00 → 0.00**, corrected recall **0.00 → 1.00** |
 | Grounding | Ungrounded dream claims are confidence-capped | Anthropic Dreams hygiene; unit tests | Hallucinated "moon is brie" claim capped at ≤0.5 and visibly marked unverified |
@@ -62,6 +64,8 @@ Measurements below are from `deepseek-v4.1-flash` via the configured OpenAI-comp
 | Context policies | synthetic 60-step / 29,639-token transcript, 12 planted facts, 32k window | full 29,639 tok 12/12 · microcompact 24,023 tok 12/12 · **autocompact 75% 7,502 tok 12/12** · autocompact 95% 7,546 tok 12/12 · reset 1,225 tok **1/12** |
 | Context ablation | same, `compact_fact_ledger=false` | 6,734 tok, **5/12** vs 12/12 with the ledger (+768 tok) |
 | Prompt injection | 7 attacks (4 obvious, 3 subtle) × defense on/off, local HTTP + files + DOCX | **safe 1.00 / obedience 0.00 both modes**, 0 exfiltrations; mean 5,191 tok (off) vs 5,318 tok (on) |
+| Memory ablations | 6 lessons × 5 arms (no-dream, no-wiki, no-grounding, two generations, full) | no-dream stale 1.00 / correct 0.00; full **0.00 / 1.00**; no-wiki stale mentions 0.67 vs 0.50; two generations same recall at 2.2× time |
+| Retrieval ablations | SciFact 100 q / 1,000 docs, one factor at a time | rerank 20 **0.9190** nDCG vs 50 0.9161 / 10 0.8919; k=10 0.8649 vs k=60 0.8460; dense-heavy 0.8660 vs BM25-heavy 0.8100; query instruction 0.8392 |
 
 Live artifact run (DOCX 2 pages + PPTX 6 slides + review): 24 iterations, 415,612 tokens, ~14 minutes wall,
 PASS verdict, two real defects fixed. This run is why the loop guard exists; it previously stalled on repeated

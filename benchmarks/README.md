@@ -174,6 +174,51 @@ Compaction with a verbatim fact ledger is the efficient setting: −75% prompt t
 ledger costs 768 tokens and recovers 7 of 12 facts that the summary alone dropped. Resets are for failed
 compaction or pathological bloat, not routine operation.
 
+## 9. Memory ablations (why the learning loop works)
+
+```bash
+python benchmarks/memory_loop.py --arms no_dream,no_wiki,no_grounding,two_generations,full
+```
+
+Six stale-fact lessons, top-3 recall before/after, one dream cycle unless noted.
+
+| Arm | Contradictory stale ↓ | Stale mention | Correct recall ↑ | Active notes | Time |
+|---|---|---|---|---|---|
+| no dream | **1.00** | 1.00 | **0.00** | 6 | 0 s |
+| no wiki/procedures | 0.00 | 0.67 | 1.00 | 14 | ~60 s |
+| no grounding check | 0.00 | 0.50 | 1.00 | 15 | ~64 s |
+| two dream generations | 0.00 | 0.50 | 1.00 | 5 (12 superseded) | 114 s |
+| **full (production)** | **0.00** | **0.50** | **1.00** | 13 | 51 s |
+
+Findings: consolidation — not transcript search — is what removes the contradiction; wiki/procedure pages
+reduce residual stale mentions (0.67 → 0.50); the grounding check does not change recall (it changes confidence,
+which this benchmark does not score); a second dream generation adds cost (2.2×) and archives notes without any
+recall gain.
+
+## 10. Retrieval ablations (SciFact, one factor at a time)
+
+```bash
+python benchmarks/retrieval.py --queries 100 --docs 1000 --ablate
+```
+
+| Config | R@10 | R@100 | nDCG@10 |
+|---|---|---|---|
+| **RRF + rerank top-20 (production)** | 0.9767 | 1.0000 | **0.9190** |
+| RRF + rerank top-50 | 0.9700 | 1.0000 | 0.9161 |
+| RRF + rerank top-10 | 0.9397 | 1.0000 | 0.8919 |
+| RRF k=60, dense-heavy (0.25/0.75) | 0.9667 | 1.0000 | 0.8660 |
+| RRF k=10 (equal weights) | **0.9767** | 1.0000 | 0.8649 |
+| RRF k=60 (default, equal weights) | 0.9397 | 1.0000 | 0.8460 |
+| RRF k=100 | 0.9297 | 1.0000 | 0.8425 |
+| Query instruction on dense leg | 0.9297 | 1.0000 | 0.8392 |
+| RRF k=60, BM25-heavy (0.75/0.25) | 0.8997 | 1.0000 | 0.8100 |
+
+Findings: reranking depth 20 is the knee (50 buys nothing for 2.5× the cost, 10 leaves 2.5 points on the table);
+fusion sharpness matters — k=10 beats k=60 by ~2 nDCG points and is the best R@10; SciFact prefers dense-heavy
+weighting, consistent with dense alone (0.8852) beating BM25 (0.7791). The query instruction did not help this
+embedder. `rrf_k`, `rrf_lexical_weight`, and `rrf_dense_weight` are now configuration knobs; defaults stay at
+k=60 / 0.8 / 1.2 until a second corpus confirms the k=10 and dense-heavy gains are not SciFact-specific.
+
 ## 9. Citation verification (R1/R2, local corpus)
 
 Six short operations documents, twelve claims: six supported, two overstated, three false, and one true
@@ -209,6 +254,8 @@ python benchmarks/provider_parity.py
 python benchmarks/injection.py --modes off,on
 python benchmarks/context_bench.py --policies full,microcompact,autocompact_75,autocompact_95,reset
 python benchmarks/citation.py
+python benchmarks/memory_loop.py --arms no_dream,no_wiki,no_grounding,two_generations,full
+python benchmarks/retrieval.py --queries 100 --docs 1000 --ablate
 pytest -q
 ```
 

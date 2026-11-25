@@ -94,8 +94,10 @@ def _hash(text: str) -> str:
 
 class MemoryStore:
     def __init__(self, path: str | Path, embed: EmbedFn | None = None, rerank: RerankFn | None = None,
-                 model: str = "default"):
+                 model: str = "default", rrf_k: int = 60, rrf_weights: tuple[float, float] = (0.8, 1.2)):
         self.path = Path(path)
+        self.rrf_k = rrf_k
+        self.rrf_weights = rrf_weights
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.embed = embed
         self.rerank = rerank
@@ -424,7 +426,8 @@ class MemoryStore:
                 rankings.append(dense_search(qvec, docs, candidate_pool))
             except Exception:
                 pass
-        fused = rrf(rankings, weights=[0.8] + [1.2] * (len(rankings) - 1))
+        weights = [self.rrf_weights[0]] + [self.rrf_weights[1]] * (len(rankings) - 1)
+        fused = rrf(rankings, k=self.rrf_k, weights=weights)
         fused = fused[:candidate_pool]
         candidates = [docs[i] | {"rrf": s} for i, s in fused]
 

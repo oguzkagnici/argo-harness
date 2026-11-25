@@ -7,6 +7,10 @@ documents from the full SciFact corpus.
 
 Usage:
   python benchmarks/retrieval.py --queries 100 --docs 1000
+  python benchmarks/retrieval.py --queries 100 --docs 1000 --ablate
+
+``--ablate`` runs one-factor-at-a-time ablations around the production recipe (BM25+dense, RRF k=60,
+rerank top-20): RRF k, hybrid weighting, rerank depth, and a query instruction for the embedder.
 """
 from __future__ import annotations
 
@@ -85,11 +89,84 @@ async def embed_with_cache(llm: LLMClient, texts: list[str], model: str, cache_d
     return arr
 
 
+def weighted_rrf(rankings: list[list[tuple[int, float]]], weights: list[float], k: int) -> list[tuple[int, float]]:
+    scores: dict[int, float] = {}
+    for ranking, weight in zip(rankings, weights):
+        for rank, (idx, _score) in enumerate(ranking):
+            scores[idx] = scores.get(idx, 0.0) + weight / (k + rank + 1)
+    return sorted(scores.items(), key=lambda item: -item[1])
+
+
 def cosine_rank(qvec: np.ndarray, doc_mat: np.ndarray, k: int) -> list[tuple[int, float]]:
     denom = (np.linalg.norm(doc_mat, axis=1) * (np.linalg.norm(qvec) or 1.0)) + 1e-9
     scores = (doc_mat @ qvec) / denom
     idx = np.argsort(-scores)[:k]
     return [(int(i), float(scores[i])) for i in idx]
+
+
+async def run_ablations(args, llm, docs, qs, model, doc_mat, q_mat) -> dict[str, dict]:
+    bm25 = BM25(docs, text_key="text")
+    bm_cache: dict[str, list[tuple[int, float]]] = {}
+    dn_cache: dict[str, list[tuple[int, float]]] = {}
+    for qi, q in enumerate(qs):
+        bm_cache[q["id"]] = bm25.search(q["text"], k=100)
+        dn_cache[q["id"]] = cosine_rank(q_mat[qi], doc_mat, k=100)
+
+    def ids(ranking):
+        return [docs[i]["id"] for i, _ in ranking]
+
+    configs: dict[str, dict] = {}
+    # RRF k sweep (no rerank) — tests how sharply rank position is discounted
+    for kk in (10, 60, 100):
+        configs[f"rrf_k{kk}"] = {"k": kk, "weights": (1.0, 1.0), "rerank": 0}
+    # weighted fusion: BM25-heavy and dense-heavy
+    configs["rrf_bm25_heavy"] = {"k": 60, "weights": (0.75, 0.25), "rerank": 0}
+    configs["rrf_dense_heavy"] = {"k": 60, "weights": (0.25, 0.75), "rerank": 0}
+
+    rankings: dict[str, dict[str, list[str]]] = {name: {} for name in configs}
+    for qi, q in enumerate(qs):
+        bm, dn = bm_cache[q["id"]], dn_cache[q["id"]]
+        for name, cfg in configs.items():
+            fused = weighted_rrf([bm[:50], dn[:50]], list(cfg["weights"]), cfg["k"])[:100]
+            rankings[name][q["id"]] = ids(fused)
+
+    # rerank depth sweep on the production fusion (k=60, equal weights)
+    for depth in (10, 50):
+        name = f"rerank_top{depth}"
+        rankings[name] = {}
+        for qi, q in enumerate(qs):
+            bm, dn = bm_cache[q["id"]], dn_cache[q["id"]]
+            fused = weighted_rrf([bm[:50], dn[:50]], [1.0, 1.0], 60)[:100]
+            cand = [docs[i]["text"] for i, _ in fused[:depth]]
+            reranked = await llm.rerank(q["text"], cand, top_n=depth)
+            order = [docs[fused[i][0]]["id"] for i, _ in reranked]
+            order += [d for d in ids(fused) if d not in set(order)]
+            rankings[name][q["id"]] = order
+
+    # query instruction for the embedder (re-embed queries only)
+    prefix = "Represent this sentence for searching relevant passages: "
+    t0 = time.monotonic()
+    q_inst = await embed_with_cache(llm, [prefix + q["text"] for q in qs], model, DATA / "cache")
+    print(f"instruction query embeddings: {time.monotonic() - t0:.1f}s", flush=True)
+    rankings["query_instruction"] = {}
+    for qi, q in enumerate(qs):
+        dn = cosine_rank(q_inst[qi], doc_mat, k=100)
+        fused = weighted_rrf([bm_cache[q["id"]][:50], dn[:50]], [1.0, 1.0], 60)[:100]
+        rankings["query_instruction"][q["id"]] = ids(fused)
+    return rankings
+
+
+def summarize(rankings: dict[str, dict[str, list[str]]], qrels, n_queries: int) -> dict[str, dict]:
+    metrics = {m: {"recall@10": 0.0, "recall@100": 0.0, "ndcg@10": 0.0} for m in rankings}
+    for method, per_q in rankings.items():
+        for qid, order in per_q.items():
+            r10, r100, ndcg = score_order(order, qrels[qid])
+            metrics[method]["recall@10"] += r10
+            metrics[method]["recall@100"] += r100
+            metrics[method]["ndcg@10"] += ndcg
+        for metric in metrics[method]:
+            metrics[method][metric] = round(metrics[method][metric] / n_queries, 4)
+    return metrics
 
 
 async def main_async(args: argparse.Namespace) -> int:
@@ -125,6 +202,22 @@ async def main_async(args: argparse.Namespace) -> int:
             order += [d for d in fused_ids if d not in set(order)]  # keep full-depth ranking
             rankings["rrf+rerank"][q["id"]] = order
         print(f"ranking+rerank: {time.monotonic() - t1:.1f}s", flush=True)
+        if args.ablate:
+            ablation = await run_ablations(args, llm, docs, qs, model, doc_mat, q_mat)
+            ablation["rrf+rerank20"] = rankings["rrf+rerank"]
+            metrics = summarize(ablation, qrels, len(qs))
+            summary = {"benchmark": "BEIR-SciFact-ablation", "docs": len(docs), "queries": len(qs),
+                       "embedding_model": model, "seed": args.seed, "metrics": metrics,
+                       "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+            RESULTS.mkdir(parents=True, exist_ok=True)
+            out = RESULTS / f"retrieval_ablation_{time.strftime('%Y%m%d-%H%M%S')}.json"
+            out.write_text(json.dumps(summary, indent=2), encoding="utf-8")
+            print(f"\n{'config':<22} {'R@10':>7} {'R@100':>7} {'nDCG@10':>8}")
+            for name, m in sorted(metrics.items(), key=lambda kv: -kv[1]["ndcg@10"]):
+                print(f"{name:<22} {m['recall@10']:>7.4f} {m['recall@100']:>7.4f} {m['ndcg@10']:>8.4f}")
+            print(f"\nSaved: {out.relative_to(ROOT)}")
+            return 0
+
 
     metrics = {m: {"recall@10": 0.0, "recall@100": 0.0, "ndcg@10": 0.0} for m in rankings}
     for method, per_q in rankings.items():
@@ -157,6 +250,7 @@ def main() -> int:
     parser.add_argument("--queries", type=int, default=100)
     parser.add_argument("--docs", type=int, default=1000)
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--ablate", action="store_true", help="run one-factor-at-a-time retrieval ablations")
     args = parser.parse_args()
     return asyncio.run(main_async(args))
 
