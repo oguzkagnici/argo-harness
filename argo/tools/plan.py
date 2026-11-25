@@ -58,6 +58,17 @@ async def _propose_plan(ctx: ToolContext, steps: list[str], actions: list[str] |
         return ToolResult("Plan mode needs an approval channel; run interactively or disable plan_mode.",
                           is_error=True)
     payload = {"steps": steps, "actions": actions or []}
+    sess = ctx.session
+    # Resume path: a plan approved in an earlier session stays approved as long as the
+    # requested actions are a subset of what was approved (scope change needs re-approval).
+    if sess is not None and sess.plan_approved:
+        approved = set(sess.approved_actions)
+        requested = {str(a) for a in (actions or [])}
+        if requested <= approved:
+            ctx.extra["plan_approved"] = True
+            ctx.emit("plan_reused", steps=steps, actions=sorted(requested))
+            return ToolResult("Plan was already approved earlier in this session and the requested actions are "
+                              "within scope. Mutating tools remain enabled; keep update_plan current.")
     decision = ctx.approvals(PlanProposal(), payload, "approve the whole plan (mutating actions are batched)")
     if inspect.isawaitable(decision):
         decision = await decision
@@ -65,7 +76,7 @@ async def _propose_plan(ctx: ToolContext, steps: list[str], actions: list[str] |
         return ToolResult("Plan rejected. Continue read-only exploration or propose a revised plan.", is_error=True)
     ctx.extra["plan_approved"] = True
     if ctx.session is not None:
-        ctx.session.set_plan([{"step": s, "status": "pending"} for s in steps])
+        ctx.session.approve_plan(steps, actions or [])
     ctx.emit("plan_approved", steps=steps, actions=actions or [])
     return ToolResult("Plan approved. Mutating tools are enabled for this run; follow the approved steps "
                       "and keep the plan updated with update_plan.")

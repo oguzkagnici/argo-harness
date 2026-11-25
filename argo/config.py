@@ -98,6 +98,8 @@ class MCPServerConfig:
     args: list[str] = field(default_factory=list)
     env: dict[str, str] = field(default_factory=dict)
     cwd: str | None = None
+    transport: str = "stdio"     # "stdio" | "http" (streamable HTTP) | "sse"
+    url: str = ""
     read_only: bool = False      # unknown side effects -> treat as mutating (approval applies)
     timeout: float = 120.0
 
@@ -244,10 +246,12 @@ def load_config(overrides: dict[str, Any] | None = None) -> ArgoConfig:
             args=[str(a) for a in raw.get("args", [])],
             env={str(k): str(v) for k, v in (raw.get("env") or {}).items()},
             cwd=raw.get("cwd"),
+            transport=str(raw.get("transport") or "stdio"),
+            url=str(raw.get("url") or ""),
             read_only=bool(raw.get("read_only", False)),
             timeout=float(raw.get("timeout", 120.0)),
         )
-        for idx, raw in enumerate(user.get("mcp", []) or []) if raw.get("command")
+        for idx, raw in enumerate(user.get("mcp", []) or []) if raw.get("command") or raw.get("url")
     ]
 
     workspace = Path(overrides.get("workspace") or user.get("workspace") or Path.cwd()).resolve()

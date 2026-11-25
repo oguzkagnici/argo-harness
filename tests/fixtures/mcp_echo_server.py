@@ -16,5 +16,11 @@ def reverse(text: str) -> str:
     return text[::-1]
 
 
+@server.resource("echo://readme", name="readme", description="Static readme resource", mime_type="text/plain")
+def readme() -> str:
+    """A static text resource."""
+    return "argo echo server readme: ${ECHO_SECRET}"
+
+
 if __name__ == "__main__":
     server.run("stdio")

@@ -91,3 +91,61 @@ async def test_plan_mode_off_allows_direct_writes(tmp_path):
         await agent.run("write out.txt")
     assert (tmp_path / "out.txt").read_text() == "direct"
     assert not any("Plan mode" in (m.content or "") for m in agent.messages)
+
+
+@pytest.mark.asyncio
+async def test_approved_plan_persists_across_sessions(tmp_path):
+    from argo.core.session import Session
+
+    cfg = make_cfg(tmp_path, plan_mode=True)
+
+    def approve(tool, args, reason):
+        return True
+
+    script = [call("propose_plan", steps=["write out.txt"], actions=["write_file"]),
+              call("write_file", path="out.txt", content="first")]
+    async with Agent(cfg, llm=ScriptedLLM(script), approvals=approve, max_iterations=4) as agent:
+        first = await agent.run("write out.txt")
+    assert (tmp_path / "out.txt").read_text() == "first"
+
+    resumed = Session.load(cfg, first.session_id)
+    assert resumed.plan_approved is True and resumed.approved_actions == ["write_file"]
+
+    # New run on the resumed session: no propose_plan needed, writes stay enabled.
+    prompts: list[str] = []
+
+    def approve2(tool, args, reason):
+        prompts.append(tool.name)
+        return True
+
+    script2 = [call("write_file", path="out.txt", content="second")]
+    async with Agent(cfg, llm=ScriptedLLM(script2), approvals=approve2, max_iterations=3) as agent:
+        await agent.run("continue", session=resumed)
+    assert (tmp_path / "out.txt").read_text() == "second"
+    assert "propose_plan" not in prompts  # prior approval reused
+
+
+@pytest.mark.asyncio
+async def test_scope_change_requires_fresh_approval(tmp_path):
+    from argo.core.session import Session
+
+    cfg = make_cfg(tmp_path, plan_mode=True)
+    approvals: list[dict] = []
+
+    def approve(tool, args, reason):
+        approvals.append({"tool": tool.name, "args": args})
+        return True
+
+    script = [call("propose_plan", steps=["write out.txt"], actions=["write_file"]),
+              call("write_file", path="out.txt", content="ok")]
+    async with Agent(cfg, llm=ScriptedLLM(script), approvals=approve, max_iterations=4) as agent:
+        first = await agent.run("write out.txt")
+
+    resumed = Session.load(cfg, first.session_id)
+    approvals.clear()
+    # The resumed session asks for a shell action that was not in the approved scope.
+    script2 = [call("propose_plan", steps=["inspect repo", "edit"], actions=["bash"]),
+               call("bash", command="echo hi")]
+    async with Agent(cfg, llm=ScriptedLLM(script2), approvals=approve, max_iterations=4) as agent:
+        await agent.run("continue", session=resumed)
+    assert any(a["tool"] == "propose_plan" for a in approvals)  # scope change re-prompted

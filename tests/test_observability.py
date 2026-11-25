@@ -43,10 +43,13 @@ def test_summarize_aggregates_tokens_errors_and_slowest(tmp_path):
     assert stats["sessions"] == 2 and stats["runs"] == 2
     assert stats["tokens"]["total"] == 2500  # p1: 1000, p2: two usage events (1000 + 500)
     assert stats["tokens_per_run"]["max"] == 1500
-    assert stats["tools"] == {
+    assert {k: stats["tools"][k] for k in ("calls", "errors", "error_rate", "slowest")} == {
         "calls": 2, "errors": 1, "error_rate": 0.5,
         "slowest": [("bash", 4.25, 1), ("fetch_url", 1.5, 1)],
     }
+    assert stats["tools"]["by_tool"]["bash"] == {"calls": 1, "p50": 4.25, "p95": 4.25,
+                                                 "mean": 4.25, "max": 4.25}
+    assert stats["tokens_per_tool_call"] == 1250.0  # 2500 tokens / 2 tool calls
     assert stats["compactions"] == 1 and stats["resets"] == 0
     assert stats["stop_reasons"] == {"final": 2}  # both files have a run_end
 
@@ -132,3 +135,27 @@ async def test_agent_mirrors_compaction_events_to_session(tmp_path):
     assert "context_compacted" in types and "context_reset" in types
     assert [t for t in types if t == "run_end"] == ["run_end"]
     assert result.stop_reason == "final"
+
+
+def test_summarize_since_filters_old_events(tmp_path):
+    events = [
+        {"ts": 50.0, "type": "tool", "name": "bash", "is_error": True, "duration_s": 9.0},
+        {"ts": 150.0, "type": "tool", "name": "bash", "is_error": False, "duration_s": 1.0},
+        {"ts": 160.0, "type": "usage", "prompt": 10, "completion": 5, "total": 15},
+        {"ts": 170.0, "type": "run_end", "stop_reason": "final"},
+    ]
+    p = write_session(tmp_path / "s.jsonl", events)
+    stats = summarize([p], since=100.0)
+    assert stats["tools"]["calls"] == 1 and stats["tools"]["errors"] == 0
+    assert stats["tokens"]["total"] == 15 and stats["runs"] == 1
+
+
+def test_parse_since_units_and_dates():
+    import time as _time
+    from argo.cli import _parse_since
+    now = _time.time()
+    assert 3500 < now - _parse_since("1h") < 3700
+    assert _parse_since("7d") < now - 6 * 86400
+    assert _parse_since(None) is None
+    dated = _parse_since("2020-01-01")
+    assert dated > 1_500_000_000 and dated < 1_700_000_000

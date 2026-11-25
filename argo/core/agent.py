@@ -304,6 +304,28 @@ class Agent:
                 timeout=float(timeouts.get(info.server, 120.0)),
                 category="mcp",
             ))
+        # Expose each server's resources through one read tool so the agent can pull
+        # context (docs, files, records) that is not modelled as a callable tool.
+        by_server: dict[str, list[Any]] = {}
+        for res in getattr(self.mcp, "resources", []) or []:
+            by_server.setdefault(res.server, []).append(res)
+        for server, resources in by_server.items():
+            client = self.mcp
+
+            async def read_handler(ctx: ToolContext, uri: str, _server=server) -> ToolResult:
+                ctx.emit("mcp_read_resource", server=_server, uri=uri)
+                return await client.read_resource(_server, uri)
+
+            listing = ", ".join(f"{r.uri}" + (f" ({r.name})" if r.name else "") for r in resources[:20])
+            reg.register(Tool(
+                name=f"mcp__{re.sub(r'[^A-Za-z0-9_-]+', '_', server)}__read_resource",
+                description=(f"Read an MCP resource from '{server}'. Available: {listing}")[:1024],
+                parameters={"type": "object", "properties": {"uri": {"type": "string"}}, "required": ["uri"]},
+                handler=read_handler,
+                read_only=True, parallel_safe=True,
+                timeout=float(timeouts.get(server, 120.0)),
+                category="mcp",
+            ))
 
     def _register_subagent(self, reg: ToolRegistry) -> None:
         async def spawn(ctx: ToolContext, task: str, allowed_tools: list[str] | None = None,
@@ -653,6 +675,8 @@ class Agent:
         self.tool_ctx = ToolContext(cfg=self.cfg, memory=self.memory, session=self.session,
                                     events=self.events, approvals=self.approvals, depth=self.depth,
                                     extra=dict(self.extra, plan_mode=bool(getattr(self.cfg, "plan_mode", False))))
+        if getattr(self.session, "plan_approved", False):
+            self.tool_ctx.extra["plan_approved"] = True
         self.tool_ctx.extra.setdefault("llm", self._llm)
         self.registry = self._build_registry()
         schemas = self.registry.schemas()

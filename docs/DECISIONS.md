@@ -140,6 +140,31 @@ DOCX introspection.
   limits per goal, and cost is the metric operators actually budget. `argo metrics --cost` reports USD total and per
   run. Verified by 5 unit tests (token, wall-clock, tool-call caps, longest-prefix pricing, summarize cost).
 
+## 3b. Observability depth and MCP completeness (2026-11-25)
+
+- **Per-tool p50/p95 + tokens per tool call + `--since`.** `argo metrics` already reported max latency and error
+  rate; operators debugging a long run need percentiles and a time window. Added `tools.by_tool[name] =
+  {calls, p50, p95, mean, max}`, `tokens_per_tool_call`, and `--since 90m|24h|7d|YYYY-MM-DD` (events are filtered by
+  their own `ts`, so a single JSONL spanning a window is handled correctly). Percentile uses the nearest-rank
+  method on recorded durations. Verified by 3 tests.
+- **MCP resources and HTTP/SSE transport.** Tools-only stdio was the last gap versus the MCP spec. `connect()` now
+  picks `stdio` / `streamable_http_client` / `sse_client` from `transport`, lists `resources`, and the agent exposes
+  one read-only `mcp__<server>__read_resource` tool per server (so non-callable context — docs, records, files — is
+  reachable from the loop). Verified with the stdio fixture (resource read + agent registry) and a real in-process
+  uvicorn streamable-HTTP server (`tests/test_mcp_http.py`). Mutating MCP tools still route through the approval
+  queue via `MCPServerConfig.read_only=False`.
+
+## 3c. Plan persistence across sessions (2026-11-25)
+
+- **Approved plans survive session resume; scope changes re-prompt.** In plan mode, `propose_plan` approval only
+  lived in the current run's `ToolContext`, so resuming a session re-entered read-only mode and the user had to
+  re-approve the same plan. `Session` now records `plan_approved` with the approved action list; loading a session
+  restores it and the agent seeds `plan_approved` into the tool context. A resumed `propose_plan` whose requested
+  actions are a **subset** of the approved set is reused without a prompt (`plan_reused` event); any new action
+  (scope change) falls through to a fresh approval. This mirrors Claude Code/Codex batch-approval semantics where
+  approval is tied to a declared action surface, not to a single turn. 2 tests (resume reuses approval; scope change
+  re-prompts).
+
 ## 4. Deliberately not done (yet)
 
 - A graded SWE-bench-Lite score (the runner and Docker path exist; only a gold-patch check has been run, because

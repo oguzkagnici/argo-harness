@@ -19,6 +19,8 @@ class Session:
     memory: Any = None
     created_at: float = field(default_factory=time.time)
     plan: list[dict[str, str]] = field(default_factory=list)
+    plan_approved: bool = False
+    approved_actions: list[str] = field(default_factory=list)
     files_touched: list[str] = field(default_factory=list)
     usage: Usage = field(default_factory=Usage)
     meta: dict[str, Any] = field(default_factory=dict)
@@ -44,6 +46,12 @@ class Session:
                     continue
                 if ev.get("type") == "plan":
                     sess.plan = ev.get("steps", [])
+                elif ev.get("type") == "plan_approved":
+                    sess.plan_approved = True
+                    sess.approved_actions = list(ev.get("actions", []) or [])
+                elif ev.get("type") == "plan_revoked":
+                    sess.plan_approved = False
+                    sess.approved_actions = []
                 elif ev.get("type") == "usage":
                     sess.usage.prompt_tokens += ev.get("prompt", 0)
                     sess.usage.completion_tokens += ev.get("completion", 0)
@@ -80,6 +88,18 @@ class Session:
     def set_plan(self, steps: list[dict[str, str]]) -> None:
         self.plan = steps
         self.record("plan", steps=steps)
+
+    def approve_plan(self, steps: list[str], actions: list[str] | None = None) -> None:
+        """Persist a batch plan approval so a resumed session keeps write access."""
+        self.plan_approved = True
+        self.approved_actions = [str(a) for a in (actions or [])]
+        self.set_plan([{"step": str(s), "status": "pending"} for s in steps])
+        self.record("plan_approved", steps=[str(s) for s in steps], actions=self.approved_actions)
+
+    def revoke_plan(self) -> None:
+        self.plan_approved = False
+        self.approved_actions = []
+        self.record("plan_revoked")
 
     def add_usage(self, usage: Usage) -> None:
         self.usage.add(usage)

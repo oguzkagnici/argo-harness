@@ -573,6 +573,8 @@ def metrics(dir: Optional[str] = typer.Option(None, "--dir", help="Directory of 
             limit: int = typer.Option(500, "--limit", help="Most recent N sessions."),
             workspace: Optional[str] = typer.Option(None, "--workspace"),
             cost: bool = typer.Option(False, "--cost", help="Show estimated USD cost (needs [pricing] config)."),
+            since: Optional[str] = typer.Option(None, "--since",
+                                                help="Only events after this point: 90m, 24h, 7d, or YYYY-MM-DD."),
             json_out: bool = typer.Option(False, "--json", help="Print raw JSON.")) -> None:
     """Aggregate tokens, tool error rate, slowest tools, and stop reasons across sessions."""
     from .core.observability import summarize
@@ -580,7 +582,8 @@ def metrics(dir: Optional[str] = typer.Option(None, "--dir", help="Directory of 
     cfg = _cfg(None, None, workspace)
     root = Path(dir) if dir else Path(cfg.session_dir)
     paths = sorted(root.glob("*.jsonl"), key=lambda x: -x.stat().st_mtime)[:limit] if root.exists() else []
-    stats = summarize(paths, model_prices=cfg.model_prices if cost else None)
+    cutoff = _parse_since(since)
+    stats = summarize(paths, model_prices=cfg.model_prices if cost else None, since=cutoff)
     if json_out:
         console.print_json(data=stats)
         return
@@ -592,10 +595,13 @@ def metrics(dir: Optional[str] = typer.Option(None, "--dir", help="Directory of 
                   f"({tools['error_rate'] * 100:.1f}%) · [bold]compactions[/] {stats['compactions']} · "
                   f"[bold]resets[/] {stats['resets']}")
     if tools["slowest"]:
-        table = Table("slowest tool", "max seconds", "calls")
+        table = Table("tool", "calls", "p50 s", "p95 s", "max s")
         for name, seconds, calls in tools["slowest"]:
-            table.add_row(name, f"{seconds:.2f}", str(calls))
+            row = tools["by_tool"][name]
+            table.add_row(name, str(calls), f"{row['p50']:.2f}", f"{row['p95']:.2f}", f"{seconds:.2f}")
         console.print(table)
+    if stats["tokens_per_tool_call"]:
+        console.print(f"[bold]tokens / tool call[/] {stats['tokens_per_tool_call']:,.1f}")
     if stats["stop_reasons"]:
         console.print("[bold]stop reasons[/] " + ", ".join(f"{k}={v}" for k, v in stats["stop_reasons"].items()))
     if cost:
@@ -791,3 +797,20 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+
+def _parse_since(value: Optional[str]) -> Optional[float]:
+    """Parse '90m' / '24h' / '7d' / 'YYYY-MM-DD' into an epoch cutoff."""
+    if not value:
+        return None
+    import time as _time
+    value = value.strip().lower()
+    units = {"m": 60, "h": 3600, "d": 86400, "w": 604800}
+    if value[-1:] in units and value[:-1].replace(".", "", 1).isdigit():
+        return _time.time() - float(value[:-1]) * units[value[-1]]
+    for fmt in ("%Y-%m-%d", "%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M"):
+        try:
+            return _time.mktime(_time.strptime(value, fmt))
+        except ValueError:
+            continue
+    raise typer.BadParameter(f"cannot parse --since {value!r} (use 90m, 24h, 7d, or YYYY-MM-DD)")

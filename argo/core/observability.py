@@ -42,7 +42,8 @@ def _price_for(model: str, prices: dict) -> tuple[float, float]:
     return best
 
 
-def summarize(paths: Iterable[str | Path], model_prices: dict | None = None) -> dict[str, Any]:
+def summarize(paths: Iterable[str | Path], model_prices: dict | None = None,
+              since: float | None = None) -> dict[str, Any]:
     sessions = 0
     runs: list[float] = []
     prompt_tokens = completion_tokens = total_tokens = 0
@@ -57,7 +58,10 @@ def summarize(paths: Iterable[str | Path], model_prices: dict | None = None) -> 
             continue
         sessions += 1
         run_tokens = 0.0
+        saw_run_end = False
         for ev in events:
+            if since is not None and float(ev.get("ts") or 0) < since:
+                continue
             etype = ev.get("type")
             if etype == "usage":
                 prompt, completion, total = usage_fields(ev)
@@ -82,11 +86,25 @@ def summarize(paths: Iterable[str | Path], model_prices: dict | None = None) -> 
             elif etype == "run_end":
                 stops[str(ev.get("stop_reason"))] += 1
                 runs.append(run_tokens)
-        if not any(ev.get("type") == "run_end" for ev in events):
+                saw_run_end = True
+        if not saw_run_end:
             runs.append(run_tokens)
     slowest = sorted(
         ((name, round(max(times), 2), len(times)) for name, times in tool_times.items()),
         key=lambda item: -item[1])[:5]
+
+    def _pct(values: list[float], q: float) -> float:
+        if not values:
+            return 0.0
+        ordered = sorted(values)
+        idx = min(len(ordered) - 1, max(0, int(round(q * (len(ordered) - 1)))))
+        return round(ordered[idx], 3)
+
+    tool_stats = {
+        name: {"calls": len(times), "p50": _pct(times, 0.5), "p95": _pct(times, 0.95),
+               "mean": round(statistics.mean(times), 3), "max": round(max(times), 3)}
+        for name, times in tool_times.items()
+    }
     return {
         "sessions": sessions,
         "runs": len(runs),
@@ -95,10 +113,11 @@ def summarize(paths: Iterable[str | Path], model_prices: dict | None = None) -> 
                            "max": round(max(runs), 1) if runs else 0},
         "tools": {"calls": tool_calls, "errors": tool_errors,
                   "error_rate": round(tool_errors / tool_calls, 4) if tool_calls else 0.0,
-                  "slowest": slowest},
+                  "slowest": slowest, "by_tool": tool_stats},
         "compactions": compactions,
         "resets": resets,
         "stop_reasons": dict(stops),
+        "tokens_per_tool_call": round(total_tokens / tool_calls, 1) if tool_calls else 0.0,
         "cost": {"usd": round(cost_usd, 4),
                  "per_run": round(cost_usd / len(runs), 6) if runs else 0.0,
                  "priced": bool(model_prices)},

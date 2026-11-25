@@ -25,8 +25,11 @@ async def test_mcp_client_lists_and_calls_tools():
         add = next(t for t in client.tools if t.name == "add")
         assert add.input_schema.get("required") == ["a", "b"]
         assert set(add.input_schema.get("properties", {})) == {"a", "b"}
+        assert [r.uri for r in client.resources] == ["echo://readme"]
         result = await client.call("echo", "add", {"a": 2, "b": 40})
         assert not result.is_error and result.content.strip() == "42"
+        doc = await client.read_resource("echo", "echo://readme")
+        assert not doc.is_error and "readme" in doc.content.lower()
         rev = await client.call("echo", "reverse", {"text": "argo"})
         assert rev.content.strip() == "ogra"
     finally:
@@ -76,3 +79,7 @@ async def test_agent_registry_exposes_mcp_tools(tmp_path):
         assert tool.read_only and tool.parallel_safe and tool.category == "mcp"
         result = await agent.registry.execute("mcp__echo__add", {"a": 5, "b": 6})
         assert not result.is_error and result.content.strip() == "11"
+        assert "mcp__echo__read_resource" in names
+        read = agent.registry.execute("mcp__echo__read_resource", {"uri": "echo://readme"})
+        read = await read
+        assert not read.is_error and "readme" in read.content.lower()
