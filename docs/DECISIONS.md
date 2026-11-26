@@ -247,6 +247,22 @@ DOCX introspection.
   under shared-quota 429s and the breaker disabled compaction (the run still fit the window). Decision: prefer the
   identifier-preserving prompt (same recall, fewer compactions, cheaper); do not adopt two-pass in this harness.
 
+## 3j. SWE-bench environments must come from the official specs (2026-11-26)
+
+- **Problem found broadening beyond sympy.** A blind `pip install -e .` resolves *today's* dependencies and breaks
+  old checkouts: Flask 2.x imports `werkzeug.urls.url_quote`, removed in Werkzeug 3, and Flask's conftest calls
+  `pytest.monkeypatch.notset`, removed in pytest 8 — both on Python 3.12. Old code therefore failed for reasons that
+  had nothing to do with the bug under test.
+- **Fix: reuse the official harness recipe.** `official_spec()` reads `MAP_REPO_VERSION_TO_SPECS` + `make_test_spec`
+  from the installed `swebench` package; the version key comes from the dataset's base commit. Per instance we
+  create an isolated venv **outside the repo** with the spec's interpreter (`uv venv --python 3.9/3.10/3.11`),
+  install the spec's pinned `pip_packages`, pin pytest from the official requirements snapshot, then
+  `pip install -e . --no-deps`. The test wrapper points at that venv interpreter. This keeps the host venv untouched
+  and avoids untracked files in the prediction diff.
+- **Verified** by smoke tests before any agent run: flask-4992 reproduces
+  `TypeError: Config.from_file() got an unexpected keyword argument 'text'`; flask-4045 reproduces its two
+  blueprint failures; xarray-4094 reproduces the stacked-array failure. Unit tests cover spec parsing and fallback.
+
 ## 4. Deliberately not done (yet)
 
 - A graded SWE-bench-Lite score (the runner and Docker path exist; only a gold-patch check has been run, because

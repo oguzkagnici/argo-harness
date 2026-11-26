@@ -115,3 +115,16 @@ def test_feedback_prompt_includes_command():
     text = BENCH.PROMPT_FEEDBACK.format(repo="pkg/pkg", problem="bug", test_command="python -m pytest -q x")
     assert "python -m pytest -q x" in text
     assert "MUST run the failing tests" in text
+
+
+def test_spec_python_and_pytest_pin_from_official_scripts():
+    spec = {"_scripts": ["conda create -n testbed python=3.9 -y",
+                         "python -m pip install pytest==7.3.0 flask==2.0"]}
+    assert BENCH.spec_python(spec) == "3.9"
+    assert BENCH.pytest_pin(spec) == "pytest==7.3.0"
+    assert BENCH.spec_python({}) == "3.11"
+    assert BENCH.pytest_pin({}) == "pytest"
+
+
+def test_official_spec_falls_back_gracefully():
+    assert BENCH.official_spec({"repo": "nope/nope", "base_commit": "x"}) == {}

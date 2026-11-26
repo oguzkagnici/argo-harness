@@ -187,21 +187,84 @@ def apply_test_patch(ws: Path, inst: dict) -> bool:
             pass
 
 
-def install_env(ws: Path, timeout: float = 900.0) -> tuple[bool, str]:
-    """Editable-install the checkout so the agent can execute the project's own tests."""
-    cmds = [[sys.executable, "-m", "pip", "install", "-q", "setuptools", "wheel"],
-            [sys.executable, "-m", "pip", "install", "-q", "-e", "."],
-            [sys.executable, "-m", "pip", "install", "-q", "pytest"]]
+def official_spec(inst: dict) -> dict:
+    """The official SWE-bench install recipe for this repo/version (pinned packages)."""
+    try:
+        from swebench.harness.constants import MAP_REPO_VERSION_TO_SPECS
+        from swebench.harness.test_spec.test_spec import make_test_spec
+        ts = make_test_spec(inst)
+        conf = dict(MAP_REPO_VERSION_TO_SPECS[inst["repo"]][ts.version])
+        conf["_scripts"] = list(ts.repo_script_list or []) + list(ts.env_script_list or [])
+        return conf
+    except Exception:
+        return {}
+
+
+def spec_python(spec: dict) -> str:
+    """Interpreter version the official harness uses (3.9 / 3.11 / ...)."""
+    import re
+    for chunk in spec.get("_scripts") or []:
+        match = re.search(r"python[= ]?(3\.(?:9|10|11|12))", str(chunk))
+        if match:
+            return match.group(1)
+    return "3.11"
+
+
+def pytest_pin(spec: dict) -> str:
+    """Pull the pytest version out of the official requirements snapshot, else unpinned."""
+    import re
+    for chunk in spec.get("_scripts") or []:
+        match = re.search(r"\bpytest==([0-9][^\s\"'\\]*)", str(chunk))
+        if match:
+            return f"pytest=={match.group(1)}"
+    return "pytest"
+
+
+def install_env(ws: Path, inst: dict | None = None, timeout: float = 1200.0) -> tuple[bool, str, str]:
+    """Build an isolated venv from the official spec so test versions match the harness.
+
+    A blind ``pip install -e .`` resolves *current* deps and breaks old checkouts (e.g. Flask 2.x
+    needs Werkzeug 2.3.7, not 3.x). We therefore create a venv outside the repo, install the
+    spec's pinned ``pip_packages``, then ``pip install -e . --no-deps``. Returns (ok, log, python).
+    """
+    venv = (ws.parent / f".venv_{inst['instance_id']}") if inst else (ws.parent / ".venv_generic")
+    python = str(venv / "bin" / "python")
     log: list[str] = []
-    for cmd in cmds:
-        try:
+    spec = official_spec(inst) if inst else {}
+    want = spec_python(spec)
+    try:
+        if (venv / "bin" / "python").exists() and not (venv / ".argo_python").exists():
+            shutil.rmtree(venv, ignore_errors=True)  # stale venv built with the wrong interpreter
+        if not (venv / "bin" / "python").exists():
+            uv = shutil.which("uv")
+            if uv:
+                proc = subprocess.run([uv, "venv", "--python", want, "--seed", str(venv)],
+                                      capture_output=True, text=True, timeout=600)
+            else:
+                proc = subprocess.run([sys.executable, "-m", "venv", str(venv)],
+                                      capture_output=True, text=True, timeout=300)
+            if proc.returncode != 0:
+                return False, (proc.stdout + proc.stderr)[-2000:], python
+            (venv / ".argo_python").write_text(want, encoding="utf-8")
+        pins = spec.get("pip_packages") or []
+        if isinstance(pins, str):
+            pins = pins.split()
+        base = [python, "-m", "pip", "install", "-q", "--upgrade", "pip"]
+        for cmd in (base,
+                    [python, "-m", "pip", "install", "-q", "setuptools", "wheel", pytest_pin(spec)],
+                    [python, "-m", "pip", "install", "-q", *pins] if pins else None,
+                    [python, "-m", "pip", "install", "-q", "-e", ".", "--no-deps"]):
+            if not cmd:
+                continue
             proc = subprocess.run(cmd, cwd=ws, capture_output=True, text=True, timeout=timeout)
-        except subprocess.TimeoutExpired:
-            return False, f"{' '.join(cmd)} timed out after {timeout:.0f}s"
-        log.append((proc.stdout + proc.stderr)[-2000:])
-        if proc.returncode != 0:
-            return False, "\n".join(log)[-4000:]
-    return True, "\n".join(log)[-2000:]
+            log.append((proc.stdout + proc.stderr)[-1500:])
+            if proc.returncode != 0 and "-e" not in cmd:
+                return False, "\n".join(log)[-4000:], python
+            if proc.returncode != 0:
+                return False, "\n".join(log)[-4000:], python
+        return True, "\n".join(log)[-1500:], python
+    except subprocess.TimeoutExpired:
+        return False, "install timed out", python
 
 
 def build_cfg(ws: Path, state: Path):
@@ -226,7 +289,7 @@ async def generate_one(inst: dict, args) -> dict:
     cmd = test_command(inst)
     if getattr(args, "install_deps", False):
         row["test_patch_applied"] = apply_test_patch(ws, inst)
-        ok, log = install_env(ws)
+        ok, log, venv_python = install_env(ws, inst)
         row["deps_installed"] = ok
         if not ok:
             row["install_log"] = log[-1200:]
@@ -235,7 +298,7 @@ async def generate_one(inst: dict, args) -> dict:
             # without adding an untracked file to the prediction diff.
             runner = WORK / f"run_tests_{inst['instance_id']}.sh"
             runner.parent.mkdir(parents=True, exist_ok=True)
-            real_cmd = cmd.replace("python ", f"{sys.executable} ", 1)
+            real_cmd = cmd.replace("python ", f"{venv_python} ", 1)
             runner.write_text(f'#!/bin/bash\ncd "{ws}"\n{real_cmd}\n', encoding="utf-8")
             prompt = PROMPT_FEEDBACK.format(repo=inst["repo"], problem=inst["problem_statement"],
                                             test_command=f"bash {runner}")
