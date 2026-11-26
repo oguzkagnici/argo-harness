@@ -1,0 +1,64 @@
+{
+  "benchmark": "deep-research-exact-answer",
+  "set": "hard",
+  "coverage": false,
+  "questions": 4,
+  "correct": 4,
+  "accuracy": 1.0,
+  "tokens": 67177,
+  "rows": [
+    {
+      "id": "vendor_lead",
+      "question": "Who leads the vendor whose contract ends 2027-03-15?",
+      "expected": "Mira Chen",
+      "got": "Mira Chen",
+      "correct": true,
+      "stop": "final",
+      "iterations": 5,
+      "tokens": 16461,
+      "coverage": null,
+      "answer_text": "**Chain of reasoning:**\n1. `/docs/vendors` \u2014 the vendor whose contract ends 2027-03-15 is **Orion** (Lyra is renewed annually).\n2. `/docs/contracts` \u2014 Vendor Orion is managed by the **Helios** team.\n3. `/docs/people` \u2014 the Helios team lead is **Mira Chen**.\n\n(The `/docs/teams` page mentions Helios owning Project Beta, but that's a project-ownership fact, not the vendor's managing team; `/docs/alpha-old` is a superseded 2024 draft and was not used.)\n\nANSWER: Mira Chen",
+      "seconds": 35.6
+    },
+    {
+      "id": "alpha_code_chain",
+      "question": "What is the launch code of the project owned by the team that manages vendor Lyra?",
+      "expected": "ZX-441",
+      "got": "ZX-441",
+      "correct": true,
+      "stop": "final",
+      "iterations": 6,
+      "tokens": 20512,
+      "coverage": null,
+      "answer_text": "**Chain of reasoning:**\n1. `/docs/contracts` \u2014 Vendor **Lyra** is managed by the **Vega** team.\n2. `/docs/teams` \u2014 The **Vega** team owns **Project Alpha**.\n3. `/docs/alpha` \u2014 Project Alpha's launch code is **ZX-441**. (The `/docs/alpha-old` page lists QQ-000, but it self-identifies as a 2024 draft superseded by the 2026 overview, so it's stale.)\n\nANSWER: ZX-441",
+      "seconds": 133.7
+    },
+    {
+      "id": "beta_vendor",
+      "question": "Which vendor is managed by the team that owns Project Beta?",
+      "expected": "Orion",
+      "got": "Orion",
+      "correct": true,
+      "stop": "final",
+      "iterations": 6,
+      "tokens": 20275,
+      "coverage": null,
+      "answer_text": "Helios team owns Project Beta** (Vega owns Alpha).\n2. `/docs/contracts` (contract registry): **Vendor Orion is managed by the Helios team** (Lyra is managed by Vega).\n\nCross-check: `/docs/vendors` confirms Orion is a real registered vendor (contract ends 2027-03-15), and `/docs/people` confirms Helios is a real team (lead Mira Chen). The stale draft `/docs/alpha-old` was irrelevant to this chain, and `/docs/omega-note` explicitly states Project Omega is unrelated to Alpha or Beta.\n\nANSWER: Orion",
+      "seconds": 19.8
+    },
+    {
+      "id": "revenue_growth",
+      "question": "By how much did revenue grow from Q3 to Q4?",
+      "expected": "$0.3M",
+      "got": "$0.3M (25% growth, from $1.2M to $1.5M)",
+      "correct": true,
+      "stop": "final",
+      "iterations": 3,
+      "tokens": 9929,
+      "coverage": null,
+      "answer_text": "The `/docs/metrics` page is the only source with revenue figures (no stale duplicate exists for it): Q3 revenue was $1.2M and Q4 revenue was $1.5M.\n\nGrowth = $1.5M \u2212 $1.2M = **$0.3M**, which is a 25% increase over Q3.\n\nANSWER: $0.3M (25% growth, from $1.2M to $1.5M)",
+      "seconds": 33.9
+    }
+  ],
+  "timestamp": "2026-11-26T10:41:50Z"
+}

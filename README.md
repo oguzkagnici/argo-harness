@@ -235,7 +235,7 @@ Codex, DeepSeek Harness, OpenHands, Instinct, Hermes, and Anthropic's always-on 
 ## Tests
 
 ```bash
-pytest -q            # 153 unit/integration tests, no network required
+pytest -q            # 159 unit/integration tests, no network required
 argo doctor          # live provider check
 ```
 

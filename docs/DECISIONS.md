@@ -293,6 +293,25 @@ DOCX introspection.
   are now role-neutral, refusals are rejected explicitly, and a value counts only if the reply is the value plus at
   most a short gloss. Both are unit-tested; a benchmark that can be gamed by hedging is worthless for comparing runs.
 
+## 3m. Coverage plan: enforced decomposition for multi-hop research (2026-11-26)
+
+- **Mechanism.** `plan_research(question, subquestions)` stores a `CoveragePlan`; `mark_covered(sub_id, source_ids)`
+  marks hops as answered and rejects ids that were never recorded with `add_source` (no fake coverage). The agent
+  loop refuses to accept a text-only final answer while any sub-question is uncovered, appending the rendered plan
+  as a reminder — capped at two nudges so a stalled plan cannot loop. This copies the open-todo enforcement that
+  Codex/Claude Code use for plans, and mirrors the decomposition step in IRCoT (Trivedi et al., 2023) and
+  Self-RAG: multi-hop QA improves when each hop is retrieved for explicitly, rather than one fused query.
+- **Evidence (hard set, 4 three-hop questions, 9 cached pages).** Single pass **4/4** at 67,177 tokens / 223 s;
+  with the coverage gate **4/4** at 124,303 tokens / 541 s (coverage 1.00 on every question). The
+  decomposition gate costs **+85% tokens** and 2.4× wall for **zero accuracy gain** on a strong model
+  with a tiny enumerable corpus.
+- **Decision.** Ship it as opt-in (`--coverage` in the benchmark; the tools are always registered and inert unless
+  the model calls them). Rationale: the mechanism is a safety net for weak models or big corpora where a single
+  pass skips a hop, but enabling it by default doubles research cost at the ceiling — the same pattern as the
+  injection suite and mandatory review, where a strong model already does the right thing unaided.
+- **What would change the decision.** A hard set where single-pass drops below ceiling (more hops, noisier corpus,
+  or a smaller model) — then measure whether the gate recovers accuracy, not just cost.
+
 ## 4. Deliberately not done (yet)
 
 - A graded SWE-bench-Lite score (the runner and Docker path exist; only a gold-patch check has been run, because

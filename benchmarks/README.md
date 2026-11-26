@@ -328,6 +328,22 @@ hallucinated `/docs/alpha-old-2` and burned the iteration budget. Serving a mach
 point is the cheap fix — same accuracy ceiling, 4.5× fewer tokens, and it mirrors how retrieval-first harnesses
 (Deep Research, Claude Code's file listing) expose the corpus before acting.
 
+**Three-hop set.** `--set hard` adds four questions that need three chained pages (`vendors → contracts → people`,
+`contracts → teams → alpha`, `beta/teams → contracts`, and a Q3/Q4 revenue difference), all answerable from the
+same cached corpus:
+
+| Arm | Accuracy | Tokens | Wall | Coverage |
+|---|---|---|---|---|
+| `--set hard` (single pass) | **4/4** | 67,177 | 223 s | – |
+| `--set hard --coverage` (plan → mark_covered gate) | **4/4** | 124,303 | 541 s | 1.00 on all 4 |
+
+`--coverage` turns on `plan_research` (decompose the question into hops) and `mark_covered` (each hop must cite
+recorded source ids), and the agent loop *refuses to accept a final answer* while a plan is incomplete — the same
+open-todo enforcement used by Codex/Claude Code, not prompt advice. On this model and this 9-page corpus it buys no
+accuracy (**both arms are at ceiling**) and costs **+85% tokens** and 2.4× wall time,
+because every page must be re-recorded in the ledger. Keep it as an opt-in for weak models / large corpora where a
+single-pass agent skips hops; do not enable it by default.
+
 **Two scorer/fixture bugs found while grading.** (1) The decoy page was literally named `/docs/distractor`, which
 leaks its role; renaming to `/docs/omega-note` removes the tell. (2) Substring matching scored a refusal
 ("Not stated … the decoy claims $9.9M") as correct, because the answer appeared inside the sentence. The matcher now

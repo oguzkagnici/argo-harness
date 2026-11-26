@@ -91,3 +91,19 @@ def test_docs_index_lists_every_page():
             assert f"/{path}" in index, path
     finally:
         srv.shutdown()
+
+
+def test_hard_set_is_three_hop_and_grounded():
+    m = load()
+    ids = {q["id"] for q in m.HARD_QUESTIONS}
+    assert len(ids) == len(m.HARD_QUESTIONS) == 4
+    assert not ids & {q["id"] for q in m.QUESTIONS}
+    pages = m.PAGES
+    # each hop fact must live in a distinct page, else the question is not really multi-hop
+    assert "2027-03-15" in pages["docs/vendors"] and "Orion" in pages["docs/contracts"]
+    assert "Lyra" in pages["docs/contracts"] and "Vega" in pages["docs/teams"]
+    assert "ZX-441" in pages["docs/alpha"] and "QQ-000" in pages["docs/alpha-old"]
+    assert "Helios" in pages["docs/teams"] and "Helios" in pages["docs/contracts"]
+    growth = next(q for q in m.HARD_QUESTIONS if q["id"] == "revenue_growth")
+    assert m.answer_matches("$0.3M", growth) and m.answer_matches("300,000", growth)
+    assert not m.answer_matches("$2.7M", growth)

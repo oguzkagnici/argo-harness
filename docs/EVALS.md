@@ -52,6 +52,7 @@ Full methodology and cached data: `benchmarks/README.md`. JSON records: `benchma
 | Adaptive review (live) | create `report.docx`, `--review adaptive` | auto-review fired in 4 iterations / 27,796 tokens; reviewer flagged unspecified sections, so criteria were made goal-aware |
 | Report-level citations (live, R3) | ALCE-style precision/recall on a generated 6-bullet report | **precision 1.000, recall 1.000**, 6/6 lines cited, 99 s |
 | Deep research exact answers (live, R4) | 8 cached pages incl. stale draft + unrelated note; 6 questions, 2 multi-hop | **6/6**, 69,325 tokens, 817 s total (5/6 at 311,650 tok before the `/docs` index) |
+| Deep research 3-hop set (live) | 4 questions needing 3 chained pages | single pass **4/4** 67,177 tok / 223 s; `--coverage` plan gate **4/4** 124,303 tok / 541 s (+85% tok, no gain at ceiling) |
 | NFCorpus retrieval replication | 100 queries, dense vs BM25 vs RRF+rerank | dense > BM25 and rerank gives best nDCG replicate; RRF-best-R@100 does *not* replicate |
 | Memory scale (24 lessons / 5 sessions) | 1 vs 2 dream generations | 1 generation no gain; **2 generations = 1.00 correct, 0 stale** |
 | Repair loop (baseline) | 5 local repos, visible + hidden tests, 16-iteration cap | **5/5 resolved**, 0 tampered, 46,990 tokens / 163.0 s / 7.6 iter per task |
@@ -75,6 +76,8 @@ Interpretation:
 - Context resets trade recall for a clean window (1/12 facts, 1.2k tokens); use them only after a failed compaction.
 - The injection suite is at ceiling: a well-aligned model refused every payload without any defense, so the
   measured security benefit is zero and the guard's cost is small but real.
+- Decomposition is insurance, not a free win: the coverage gate held coverage 1.00 on every 3-hop question but
+  raised tokens 1.85× with accuracy already at ceiling. Enable it for weak models/large corpora.
 - Deep-research failure was a discovery problem, not reasoning: with a `/docs` index the agent stopped guessing
   URLs, went 6/6, and used 4.5× fewer tokens. Indexable corpus at the entry point beats URL inference.
 - Exact-answer graders need refusal handling: substring matching scored a hedge quoting the decoy value as

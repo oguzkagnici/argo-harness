@@ -1,6 +1,6 @@
 # Implementation status
 
-Snapshot: 2026-11-26. Offline suite: **153 tests passing** (`.venv/bin/python -m pytest -q`).
+Snapshot: 2026-11-26. Offline suite: **159 tests passing** (`.venv/bin/python -m pytest -q`).
 Live numbers live in [`benchmarks/README.md`](../benchmarks/README.md); rationale in
 [`DECISIONS.md`](DECISIONS.md). "Done" means implemented *and* tested; "measured" means we have a live number.
 
@@ -17,7 +17,8 @@ Live numbers live in [`benchmarks/README.md`](../benchmarks/README.md); rational
 | Retrieval: BM25 + dense + weighted RRF + cross-encoder rerank | Measured on 2 corpora | SciFact + NFCorpus |
 | Memory: dream consolidation, wiki extraction | Measured + scaled | 6-lesson + 24-lesson/5-session runs; 2 generations rule |
 | Research: evidence ledger + citation verifier | Done | `benchmarks/citation.py`, `tests/test_research.py` |
-| Deep research (exact-answer, cached pages) | Measured | `benchmarks/deep_research.py` (R4) |
+| Deep research (exact-answer, cached pages) | Measured | `benchmarks/deep_research.py` (R4): 6/6 base, 4/4 3-hop |
+| Research coverage plan (enforced decomposition) | Measured, opt-in | `argo/research/plan.py`, `tests/test_coverage_plan.py` |
 | Documents/slides (DOCX/PPTX) | Done | document QA benchmark |
 
 ## Always-on runtime

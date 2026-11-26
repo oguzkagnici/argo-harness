@@ -74,3 +74,10 @@ multi-section report pipeline, or evaluation on the full GAIA/BrowseComp/DeepRes
 Measured lesson from the exact-answer subset: the only failure was *discovery*, not reasoning — the agent guessed
 URLs and exhausted its iteration budget. Giving it a `/docs` index took accuracy 5/6 → 6/6 and cut tokens 4.5×.
 Any future research controller should make the candidate corpus enumerable before the model plans.
+
+## 6. Coverage enforcement (implemented, opt-in)
+
+`plan_research` + `mark_covered` (`argo/research/plan.py`) decompose a question into hops and make the loop refuse a
+final answer while a hop is unmarked; unknown source ids are rejected, so coverage cannot be faked. On a 4-question
+three-hop set both arms scored 4/4 — the gate costs +85% tokens for no gain at ceiling, so it stays opt-in until a
+weaker model or a larger corpus shows single-pass hop loss.

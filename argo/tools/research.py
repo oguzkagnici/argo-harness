@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from ..core.types import ToolResult
 from ..research.ledger import EvidenceLedger
+from ..research.plan import CoveragePlan
 from ..research.verify import verify_ledger
 from .base import ToolContext, ToolRegistry
 
@@ -52,6 +53,40 @@ def _report(ctx: ToolContext, title: str = "Research report") -> ToolResult:
     return ToolResult(ledger.to_markdown(title), metadata=ledger.stats())
 
 
+def _plan(ctx: ToolContext, question: str, subquestions: list[str]) -> ToolResult:
+    existing = ctx.extra.get("research_plan")
+    if isinstance(existing, CoveragePlan) and not existing.complete:
+        return ToolResult(
+            f"A plan is already active with {len(existing.uncovered())} uncovered sub-question(s); "
+            f"finish or replace it.\n{existing.render()}", is_error=True)
+    try:
+        plan = CoveragePlan.from_texts(question, subquestions)
+    except ValueError as exc:
+        return ToolResult(f"Cannot build plan: {exc}", is_error=True)
+    ctx.extra["research_plan"] = plan
+    ctx.emit("research_plan", question=question, sub_questions=len(plan.subs))
+    return ToolResult(f"Saved coverage plan. Mark each sub-question covered before answering.\n{plan.render()}",
+                      metadata=plan.stats())
+
+
+def _cover(ctx: ToolContext, sub_id: str, source_ids: list[str]) -> ToolResult:
+    plan = ctx.extra.get("research_plan")
+    if not isinstance(plan, CoveragePlan):
+        return ToolResult("No active plan; call plan_research first.", is_error=True)
+    if plan.get(sub_id) is None:
+        return ToolResult(f"Unknown sub-question {sub_id!r}; valid ids: {', '.join(s.id for s in plan.subs)}.",
+                          is_error=True)
+    ledger = _ledger(ctx)
+    unknown = [sid for sid in source_ids if sid not in ledger.sources]
+    if unknown:
+        return ToolResult(f"Unknown source ids: {', '.join(unknown)}. Record them with add_source first.",
+                          is_error=True)
+    sub = plan.mark(sub_id, source_ids)
+    ctx.emit("research_cover", sub_question=sub_id, sources=sub.covered_by)
+    return ToolResult(f"Marked {sub_id} covered by {', '.join(sub.covered_by)}.\n{plan.render()}",
+                      metadata=plan.stats())
+
+
 def _sources(ctx: ToolContext) -> ToolResult:
     return ToolResult(_ledger(ctx).render_sources())
 
@@ -85,3 +120,19 @@ def register(reg: ToolRegistry) -> None:
             read_only=True, category="research")
     reg.add("list_sources", "Show recorded sources and their ids.", {"type": "object", "properties": {}},
             _sources, read_only=True, category="research")
+    reg.add("plan_research",
+            "Decompose a multi-hop research question into sub-questions before searching. The run cannot finish "
+            "until every sub-question is marked covered with recorded source ids.",
+            {"type": "object", "properties": {
+                "question": {"type": "string"},
+                "subquestions": {"type": "array", "items": {"type": "string"},
+                                 "description": "One atomic fact-seeking sub-question per entry."}},
+             "required": ["question", "subquestions"]},
+            _plan, read_only=True, category="research")
+    reg.add("mark_covered",
+            "Mark a plan sub-question as answered by source ids already recorded with add_source.",
+            {"type": "object", "properties": {
+                "sub_id": {"type": "string", "description": "Q1, Q2, ... from the plan."},
+                "source_ids": {"type": "array", "items": {"type": "string"}}},
+             "required": ["sub_id", "source_ids"]},
+            _cover, read_only=True, category="research")

@@ -728,6 +728,7 @@ class Agent:
         stop_reason = "final"
         final_text = ""
         empty_retries = 0
+        coverage_nudges = 0
         run_start = time.time()
         run_tokens = 0
         tool_calls = 0
@@ -787,6 +788,13 @@ class Agent:
                              tool_calls=[{"name": t.name, "arguments": t.arguments} for t in assistant.tool_calls])
 
             if not assistant.tool_calls:
+                gate = self._coverage_reminder()
+                if gate and coverage_nudges < 2:
+                    coverage_nudges += 1
+                    self.session.record("coverage_gate", uncovered=gate.splitlines()[-1])
+                    self.events.emit("coverage_gate", attempt=coverage_nudges)
+                    self.messages.append(Message(role="user", content=gate))
+                    continue
                 final_text = (assistant.content or "").strip()
                 if not final_text and resp.finish_reason == "length" and empty_retries < 2:
                     empty_retries += 1
@@ -907,6 +915,21 @@ class Agent:
     @staticmethod
     def _sig(tc: ToolCall) -> str:
         return tc.name + ":" + hashlib.sha1((tc.arguments or "{}").encode("utf-8")).hexdigest()
+
+    def _coverage_reminder(self) -> str:
+        """Return a nudge when an active coverage plan still has uncovered sub-questions.
+
+        Decomposition only helps if coverage is enforced: a model that plans three sub-questions and
+        then answers after one search is behaving like a single-shot retriever. The loop therefore
+        refuses to accept a final answer while the plan is incomplete (bounded to two reminders so a
+        stuck plan cannot loop forever).
+        """
+        plan = (self.tool_ctx.extra.get("research_plan") if self.tool_ctx else None)
+        if plan is None or getattr(plan, "complete", True):
+            return ""
+        return ("Your research plan is not complete yet.\n" + plan.render() +
+                "\nFetch sources for the remaining sub-questions, record them with add_source, then call "
+                "mark_covered. Answer only after every sub-question is covered.")
 
     async def _execute_tool_calls(self, calls: list[ToolCall]) -> list[tuple[ToolCall, ToolResult]]:
         assert self.registry is not None

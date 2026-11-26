@@ -41,6 +41,8 @@ PAGES: dict[str, str] = {
     "docs/alpha-old": "Draft (2024). Project Alpha launch code is QQ-000. Superseded by the 2026 overview.",
     "docs/omega-note": "Planning note. Project Omega has a proposed budget of $9.9M. "
                        "Project Omega is unrelated to Alpha or Beta.",
+    "docs/contracts": "Contract registry. Vendor Orion is managed by the Helios team. "
+                      "Vendor Lyra is managed by the Vega team.",
 }
 
 QUESTIONS = [
@@ -56,6 +58,24 @@ QUESTIONS = [
      "answer": "2027-03-15", "aliases": ["march 15, 2027", "2027-03-15", "15 march 2027"]},
     {"id": "omega_budget", "question": "What is Project Omega's budget?",
      "answer": "$9.9M", "aliases": ["9.9m", "9.9 million", "$9.9 million"]},
+]
+
+
+# Three-hop questions: each answer requires chaining at least three pages.
+HARD_QUESTIONS = [
+    {"id": "vendor_lead", "question": "Who leads the vendor whose contract ends 2027-03-15?",
+     "answer": "Mira Chen", "aliases": ["mira"],
+     "chain": "vendors → contracts → people"},
+    {"id": "alpha_code_chain",
+     "question": "What is the launch code of the project owned by the team that manages vendor Lyra?",
+     "answer": "ZX-441", "aliases": ["zx441", "zx 441"],
+     "chain": "contracts → teams → alpha"},
+    {"id": "beta_vendor", "question": "Which vendor is managed by the team that owns Project Beta?",
+     "answer": "Orion", "aliases": ["vendor orion"],
+     "chain": "beta/teams → contracts"},
+    {"id": "revenue_growth", "question": "By how much did revenue grow from Q3 to Q4?",
+     "answer": "$0.3M", "aliases": ["0.3m", "300k", "$300,000", "0.3 million"],
+     "chain": "metrics (difference)"},
 ]
 
 
@@ -156,27 +176,40 @@ def serve(pages: dict[str, str]) -> tuple[ThreadingHTTPServer, str]:
     return srv, f"http://127.0.0.1:{port}"
 
 
-def prompt(base: str, question: str) -> str:
-    return (f"Research question: {question}\n\n"
+COVERAGE_INSTRUCTIONS = (
+    "\nBefore searching, call plan_research with the question and one sub-question per hop. "
+    "For each page you fetch, record the relevant text with add_source, then call mark_covered for every "
+    "sub-question that page answers. You cannot finish until every sub-question is covered."
+)
+
+
+def prompt(base: str, question: str, coverage: bool = False) -> str:
+    text = (f"Research question: {question}\n\n"
             f"Start by fetching {base}/docs — it is an index listing every page. Fetch the pages you need. "
             f"Some pages are stale drafts; prefer the most recent authoritative page. Combine sources when "
             f"the answer needs two steps. Do not guess URLs that are not in the index.\n"
             f"Reply with a short explanation and then a final line exactly 'ANSWER: <value>'.")
+    return text + (COVERAGE_INSTRUCTIONS if coverage else "")
 
 
-async def run_question(cfg, base: str, q: dict, timeout: float) -> dict:
+async def run_question(cfg, base: str, q: dict, timeout: float, coverage: bool = False) -> dict:
     started = time.monotonic()
-    cfg = cfg
-    async with Agent(cfg, max_iterations=14, allow_tools={"fetch_url"}) as agent:
+    tools = {"fetch_url"}
+    if coverage:
+        tools |= {"plan_research", "mark_covered", "add_source", "list_sources"}
+    async with Agent(cfg, max_iterations=18 if coverage else 14, allow_tools=tools) as agent:
         try:
-            result = await asyncio.wait_for(agent.run(prompt(base, q["question"])), timeout=timeout)
+            result = await asyncio.wait_for(agent.run(prompt(base, q["question"], coverage)),
+                                            timeout=timeout)
             out, stop = result.output, result.stop_reason
             tokens, iters = result.usage.total_tokens, result.iterations
         except asyncio.TimeoutError:
             out, stop, tokens, iters = "", "timeout", 0, 0
     got = extract_answer(out)
+    plan = (agent.tool_ctx.extra.get("research_plan") if agent.tool_ctx else None)
     return {"id": q["id"], "question": q["question"], "expected": q["answer"], "got": got,
             "correct": answer_matches(got, q), "stop": stop, "iterations": iters, "tokens": tokens,
+            "coverage": plan.stats() if plan is not None else None,
             "answer_text": out[-500:], "seconds": round(time.monotonic() - started, 1)}
 
 
@@ -187,21 +220,24 @@ async def main_async(args) -> int:
     cfg = load_config({"workspace": str(Path("/tmp") / "argo_deep_research")})
     cfg.session_dir = Path("/tmp/argo_deep_research/sessions")
     cfg.ensure_dirs()
-    questions = QUESTIONS[: max(1, args.questions)]
+    bank = HARD_QUESTIONS if args.set == "hard" else QUESTIONS
+    questions = bank if args.set == "hard" else bank[: max(1, args.questions)]
     if args.ids:
         wanted = {x.strip() for x in args.ids.split(",") if x.strip()}
-        questions = [q for q in QUESTIONS if q["id"] in wanted]
+        questions = [q for q in bank if q["id"] in wanted]
     rows = []
     try:
         for q in questions:
-            row = await run_question(cfg, base, q, args.timeout)
+            row = await run_question(cfg, base, q, args.timeout, coverage=args.coverage)
             rows.append(row)
-            print(f"{row['id']:<13} {'OK ' if row['correct'] else 'MISS'} got={row['got'][:30]!r:<34} "
-                  f"stop={row['stop']:<10} tok={row['tokens']:<6} {row['seconds']:.0f}s", flush=True)
+            cov = f" cov={row['coverage']['coverage']:.2f}" if row.get("coverage") else ""
+            print(f"{row['id']:<17} {'OK ' if row['correct'] else 'MISS'} got={row['got'][:26]!r:<30} "
+                  f"stop={row['stop']:<10} tok={row['tokens']:<6} {row['seconds']:.0f}s{cov}", flush=True)
     finally:
         srv.shutdown()
     correct = sum(r["correct"] for r in rows)
-    summary = {"benchmark": "deep-research-exact-answer", "questions": len(rows), "correct": correct,
+    summary = {"benchmark": "deep-research-exact-answer", "set": args.set, "coverage": args.coverage,
+               "questions": len(rows), "correct": correct,
                "accuracy": round(correct / len(rows), 4),
                "tokens": sum(r["tokens"] for r in rows), "rows": rows,
                "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
@@ -217,6 +253,8 @@ def self_check() -> int:
     write_cache()
     pages = load_pages()
     assert set(pages) >= set(PAGES), (sorted(pages), sorted(PAGES))
+    assert all(q["answer"] and q["question"] for q in HARD_QUESTIONS)
+    assert answer_matches("$0.3M", [q for q in HARD_QUESTIONS if q["id"] == "revenue_growth"][0])
     srv, base = serve(pages)
     try:
         import urllib.request
@@ -250,6 +288,10 @@ def main() -> int:
     ap.add_argument("--questions", type=int, default=6)
     ap.add_argument("--timeout", type=float, default=900.0)
     ap.add_argument("--ids", default="", help="comma-separated question ids to run")
+    ap.add_argument("--set", choices=["base", "hard"], default="base",
+                    help="base = single/2-hop set; hard = 3-hop set")
+    ap.add_argument("--coverage", action="store_true",
+                    help="require plan_research decomposition + mark_covered before answering")
     ap.add_argument("--self-check", action="store_true")
     args = ap.parse_args()
     if args.self_check:
