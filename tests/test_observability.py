@@ -159,3 +159,30 @@ def test_parse_since_units_and_dates():
     assert _parse_since(None) is None
     dated = _parse_since("2020-01-01")
     assert dated > 1_500_000_000 and dated < 1_700_000_000
+
+
+def test_otel_spans_from_session_events(tmp_path):
+    from argo.core.observability import otel_payload, to_otel_spans
+    events = [
+        {"ts": 100.0, "type": "run_start", "task": "research"},
+        {"ts": 101.0, "type": "tool", "name": "fetch_url", "is_error": False, "duration_s": 1.5},
+        {"ts": 102.0, "type": "usage", "prompt": 900, "completion": 100, "total": 1000, "model": "m-x"},
+        {"ts": 103.0, "type": "context_compacted", "tokens": 500},
+        {"ts": 104.0, "type": "run_end", "stop_reason": "final", "iterations": 2},
+    ]
+    spans = to_otel_spans(events, "sess-1")
+    assert len(spans) == 2
+    root = next(s for s in spans if s["name"] == "invoke_agent")
+    tool = next(s for s in spans if s["name"] == "execute_tool fetch_url")
+    assert root["attributes"]["gen_ai.usage.total_tokens"] == 1000
+    assert root["attributes"]["gen_ai.request.model"] == "m-x"
+    assert root["attributes"]["argo.stop_reason"] == "final"
+    assert root["events"][0]["name"] == "context_compacted"
+    assert tool["parentSpanId"] == root["spanId"]
+    assert tool["attributes"]["gen_ai.tool.name"] == "fetch_url"
+    assert tool["endTimeUnixNano"] > tool["startTimeUnixNano"]
+    assert all(s["traceId"] == root["traceId"] and len(s["traceId"]) == 32 for s in spans)
+
+    payload = otel_payload(spans, "argo-test")
+    resource = payload["resourceSpans"][0]["resource"]["attributes"]
+    assert {"key": "service.name", "value": {"stringValue": "argo-test"}} in resource

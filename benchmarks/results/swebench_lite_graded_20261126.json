@@ -1,0 +1,82 @@
+{
+  "benchmark": "swebench-lite-test-feedback",
+  "harness": "swebench.harness.run_evaluation",
+  "model": "deepseek-v4.1-flash",
+  "env": "per-instance venv from official swebench specs",
+  "instances": {
+    "sympy__sympy-16988": {
+      "resolved": true,
+      "fail_to_pass": {
+        "ok": 2,
+        "fail": 0
+      },
+      "pass_to_pass": {
+        "ok": 72,
+        "fail": 0
+      },
+      "run": "argo_20261125221307"
+    },
+    "sympy__sympy-20154": {
+      "resolved": true,
+      "fail_to_pass": {
+        "ok": 2,
+        "fail": 0
+      },
+      "pass_to_pass": {
+        "ok": 40,
+        "fail": 0
+      },
+      "run": "argo_20261125230139"
+    },
+    "sympy__sympy-20590": {
+      "resolved": true,
+      "fail_to_pass": {
+        "ok": 1,
+        "fail": 0
+      },
+      "pass_to_pass": {
+        "ok": 21,
+        "fail": 0
+      },
+      "run": "argo_20261125230139"
+    },
+    "pallets__flask-4992": {
+      "resolved": true,
+      "fail_to_pass": {
+        "ok": 1,
+        "fail": 0
+      },
+      "pass_to_pass": {
+        "ok": 18,
+        "fail": 0
+      },
+      "run": "argo_20261126091323"
+    },
+    "pallets__flask-4045": {
+      "resolved": true,
+      "fail_to_pass": {
+        "ok": 2,
+        "fail": 0
+      },
+      "pass_to_pass": {
+        "ok": 50,
+        "fail": 0
+      },
+      "run": "argo_20261126091323"
+    },
+    "pydata__xarray-4094": {
+      "resolved": true,
+      "fail_to_pass": {
+        "ok": 1,
+        "fail": 0
+      },
+      "pass_to_pass": {
+        "ok": 862,
+        "fail": 0
+      },
+      "run": "argo_20261126092123"
+    }
+  },
+  "resolved": 6,
+  "total": 6
+}

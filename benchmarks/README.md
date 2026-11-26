@@ -421,9 +421,22 @@ python benchmarks/swebench_lite.py --evaluate --limit 2      # docker, prebuilt 
 | sympy__sympy-20154 (Argo, `--install-deps`) | final | 20 | 326,913 | 1 file / 1,773 chars | no | **resolved** |
 | sympy__sympy-20590 (Argo, `--install-deps`) | max_iterations | 40 | 744,832 | 1 file / 646 chars | no | **resolved** |
 
-**Graded pass rate: 3/3 (100%)** on the three sympy instances run with test feedback
-(`benchmarks/results/swebench_lite_graded_20261125.json`). Per-instance FAIL_TO_PASS / PASS_TO_PASS:
-16988 2/2 + 72/72, 20154 2/2 + 40/40, 20590 1/1 + 21/21. `20590` needed all 40 iterations and 745k tokens and
+**Graded pass rate: 6/6 (100%)** across three repositories with test feedback
+(`benchmarks/results/swebench_lite_graded_20261126.json`). Per-instance FAIL_TO_PASS / PASS_TO_PASS:
+sympy-16988 2/2 + 72/72, sympy-20154 2/2 + 40/40, sympy-20590 1/1 + 21/21,
+flask-4992 1/1 + 18/18, flask-4045 2/2 + 50/50, xarray-4094 1/1 + 862/862.
+
+| Instance | Stop | Iter | Tokens | Patch | Resolved |
+|---|---|---|---|---|---|
+| `pallets__flask-4045` | final | 14 | 159,912 | 1 file / 1,497 c | yes |
+| `pallets__flask-4992` | final | 10 | 89,647 | 1 file / 1,692 c | yes |
+| `pydata__xarray-4094` | final | 12 | 142,320 | 1 file / 550 c | yes |
+
+Flask/xarray environments are built from the official `swebench` specs: `uv venv --python <spec>` outside the
+repo, the spec's pinned `pip_packages`, pytest pinned from the official requirements snapshot, then
+`pip install -e . --no-deps`. A blind `pip install -e .` fails on old checkouts (Werkzeug 3 / pytest 8 / py3.12),
+which is what the first attempts hit. Grading is run **one instance at a time** because the harness keeps a ~4 GB
+image per instance until the run ends and this box has ~8 GB free. `20590` needed all 40 iterations and 745k tokens and
 still passed on the final patch — the test loop lets a slow run converge where the old harness gave up. n=3 is a
 small, same-repo sample; do not read it as a Lite-wide rate.
 

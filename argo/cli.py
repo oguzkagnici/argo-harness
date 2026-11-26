@@ -576,6 +576,29 @@ def trace(session: str = typer.Argument(..., help="Session id (see `argo session
         console.print(line, markup=False, highlight=False)
 
 
+@app.command("export-otel")
+def export_otel(session: str = typer.Argument(..., help="Session id."),
+                out: Optional[str] = typer.Option(None, "--out", "-o", help="Write OTLP/JSON here."),
+                service: str = typer.Option("argo", "--service", help="OTel service.name."),
+                workspace: Optional[str] = typer.Option(None, "--workspace")) -> None:
+    """Export a session as OpenTelemetry spans (OTLP/JSON, GenAI semantic conventions)."""
+    import json as _json
+    from .core.observability import load_events, otel_payload, to_otel_spans
+
+    cfg = _cfg(None, None, workspace)
+    path = Path(cfg.session_dir) / f"{session}.jsonl"
+    if not path.exists():
+        err_console.print(f"[red]session {session!r} not found[/] ({path})")
+        raise typer.Exit(1)
+    spans = to_otel_spans(load_events(path), session)
+    body = _json.dumps(otel_payload(spans, service), indent=2)
+    if out:
+        Path(out).write_text(body, encoding="utf-8")
+        console.print(f"[green]wrote[/] {len(spans)} spans → {out}")
+    else:
+        console.print_json(body)
+
+
 @app.command()
 def metrics(dir: Optional[str] = typer.Option(None, "--dir", help="Directory of session JSONL files."),
             limit: int = typer.Option(500, "--limit", help="Most recent N sessions."),

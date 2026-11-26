@@ -46,9 +46,9 @@ run the project's tests — the harness's key feedback loop was missing.
 **Status:** option A implemented and **measured**: `sympy__sympy-16988` is **resolved 1/1** (FAIL_TO_PASS 2/2,
 PASS_TO_PASS 72/72), 17 iter / 228,926 tok, vs a 0-line ungraded patch before. Found and fixed two harness bugs along
 the way (novel shell output now counts as progress; official test patch must be applied, `setuptools` for py3.12).
-**Measured pass rate: 3/3 resolved** (16988, 20154, 20590) — the pass bar is met for the sympy subset.
-Remaining: broaden to other repos before quoting a Lite-wide rate. In progress: Flask (2) + xarray (1) with
-per-instance venvs built from the official `swebench` specs (see DECISIONS 3j). Option B (agent inside the official image) is still the
+**Measured pass rate: 6/6 resolved across 3 repos** (sympy ×3, flask ×2, xarray ×1). Environments from official
+specs (DECISIONS 3j); grade one instance at a time (image size). Remaining: harder/larger repos (django, astropy)
+and a Lite-wide sample before quoting a general rate. Option B (agent inside the official image) is still the
 exact-environment alternative.
 **Note:** one image ≈ 2.5-3 GB unpacked; this box has ~9 GB and 4 GB RAM, so run one at a time and clean up.
 

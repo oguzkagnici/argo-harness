@@ -151,3 +151,98 @@ def render_trace(events: list[dict[str, Any]], limit: int = 200) -> list[str]:
             detail = {k: v for k, v in ev.items() if k not in ("ts", "type")}
             lines.append(f"{offset:7.2f}s  {etype:<16} {json.dumps(detail, default=str)[:100]}")
     return lines
+
+
+def to_otel_spans(events: list[dict[str, Any]], session_id: str) -> list[dict[str, Any]]:
+    """Convert a session JSONL into OpenTelemetry spans (GenAI semantic conventions).
+
+    Emits one ``invoke_agent`` root span per run, one ``execute_tool`` span per tool call,
+    ``gen_ai.usage.*`` attributes on usage events, and compaction/reset as span events.
+    Timestamps are nanoseconds; ``traceId`` is derived deterministically from the session id.
+    The output is plain JSON so it can be posted to an OTLP/HTTP collector or inspected offline.
+    """
+    import hashlib
+    import uuid
+
+    def span_id(seed: str, n: int) -> str:
+        return hashlib.sha1(f"{session_id}:{seed}:{n}".encode()).hexdigest()[:16]
+
+    def nano(ts: Any) -> int:
+        return int(float(ts or 0) * 1_000_000_000)
+
+    trace_id = hashlib.sha1(session_id.encode()).hexdigest()[:32]
+    spans: list[dict[str, Any]] = []
+    run_seed = 0
+    run_start: dict[str, Any] | None = None
+    run_attrs: dict[str, Any] = {}
+    events_in_run: list[dict[str, Any]] = []
+
+    def close_run(end_ts: Any) -> None:
+        nonlocal run_start
+        if run_start is None:
+            return
+        attrs = dict(run_attrs)
+        spans.append({
+            "traceId": trace_id,
+            "spanId": span_id("run", run_seed),
+            "name": "invoke_agent",
+            "kind": 1,
+            "startTimeUnixNano": nano(run_start.get("ts")),
+            "endTimeUnixNano": nano(end_ts or run_start.get("ts")),
+            "attributes": attrs,
+            "events": events_in_run[-50:],
+        })
+        run_start = None
+
+    for i, ev in enumerate(events):
+        etype = ev.get("type")
+        if etype == "run_start":
+            close_run(ev.get("ts"))
+            run_seed += 1
+            run_start = ev
+            run_attrs = {"gen_ai.operation.name": "invoke_agent",
+                         "gen_ai.conversation.id": session_id,
+                         "argo.task": str(ev.get("task") or "")[:500]}
+            events_in_run = []
+        elif etype == "usage":
+            _p, _c, total = usage_fields(ev)
+            run_attrs["gen_ai.usage.total_tokens"] = int(run_attrs.get("gen_ai.usage.total_tokens", 0)) + total
+            if ev.get("model"):
+                run_attrs["gen_ai.request.model"] = str(ev["model"])
+        elif etype == "tool":
+            seconds = float(ev.get("duration_s") or 0.0)
+            end = float(ev.get("ts") or 0)
+            name = str(ev.get("name") or "tool")
+            attrs = {"gen_ai.operation.name": "execute_tool", "gen_ai.tool.name": name,
+                     "argo.tool.is_error": bool(ev.get("is_error"))}
+            if seconds:
+                attrs["argo.tool.duration_s"] = round(seconds, 4)
+            spans.append({
+                "traceId": trace_id,
+                "spanId": span_id("tool", i),
+                "parentSpanId": span_id("run", run_seed) if run_start is not None else "",
+                "name": f"execute_tool {name}",
+                "kind": 1,
+                "startTimeUnixNano": nano(end - seconds),
+                "endTimeUnixNano": nano(end),
+                "attributes": attrs,
+                "events": [],
+            })
+        elif etype in ("context_compacted", "context_reset", "loop_stop", "context_compact_disabled"):
+            events_in_run.append({"name": str(etype), "timeUnixNano": nano(ev.get("ts")),
+                                  "attributes": {k: v for k, v in ev.items() if k not in ("ts", "type")}})
+        elif etype == "run_end":
+            run_attrs["argo.stop_reason"] = str(ev.get("stop_reason") or "")
+            run_attrs["argo.iterations"] = int(ev.get("iterations") or 0)
+            close_run(ev.get("ts"))
+    close_run(events[-1].get("ts") if events else 0)
+    return spans
+
+
+def otel_payload(spans: list[dict[str, Any]], service_name: str = "argo") -> dict[str, Any]:
+    """Wrap spans in an OTLP/JSON ``resourceSpans`` envelope (no protobuf dependency)."""
+    return {"resourceSpans": [{
+        "resource": {"attributes": [{"key": "service.name", "value": {"stringValue": service_name}},
+                                    {"key": "telemetry.sdk.name", "value": {"stringValue": "argo"}}]},
+        "scopeSpans": [{"scope": {"name": "argo.harness"}, "spans": spans}],
+    }]}

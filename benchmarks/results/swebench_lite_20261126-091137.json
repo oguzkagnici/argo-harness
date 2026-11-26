@@ -1,0 +1,73 @@
+{
+  "benchmark": "swebench-lite-local",
+  "dataset": "princeton-nlp/SWE-bench_Lite",
+  "predictions": "benchmarks/results/swebench_lite_preds_20261126-091137.jsonl",
+  "rows": [
+    {
+      "instance_id": "pallets__flask-4045",
+      "repo": "pallets/flask",
+      "base_commit": "d8c37f43724cd9fb0870f77877b7c4c7e38a19e0",
+      "tests_protected": [
+        "tests/test_basic.py",
+        "tests/test_blueprints.py"
+      ],
+      "test_patch_applied": true,
+      "deps_installed": true,
+      "test_command": "python -m pytest -q \"tests/test_blueprints.py::test_dotted_name_not_allowed\" \"tests/test_blueprints.py::test_route_decorator_custom_endpoint_with_dots\"",
+      "stop_reason": "final",
+      "iterations": 14,
+      "tokens": 159912,
+      "session_id": "20261126-085614-2ca991",
+      "output": "The two target tests pass, and the broader suite's failures are pre-existing environment issues (Werkzeug version mismatch) \u2014 my change actually reduced failures from 118 to 116 (exactly the two target tests).\n\n## Summary\n\n**File changed:** `src/flask/blueprints.py`\n\n**Root cause:** Since blueprints can be nested, every `.` in a blueprint name is significant \u2014 it's used as the separator when composing nested endpoint names (`name_prefix + self.name + \".\" + endpoint`). Allowing dots in a blueprint's own name made endpoint names ambiguous and broke `url_for` resolution. Flask 1.0 already rejected dots in endpoint names, but the blueprint name itself was never validated.\n\n**Fix:**\n1. In `Blueprint.__init__`, raise `ValueError(\"'name' may not contain a dot '.' character.\")` when `\".\" in name`.",
+      "patch_chars": 1497,
+      "patch_files": 1,
+      "tampered_tests": false,
+      "patch": "diff --git a/src/flask/blueprints.py b/src/flask/blueprints.py\nindex 5fb84d86..376facb6 100644\n--- a/src/flask/blueprints.py\n+++ b/src/flask/blueprints.py\n@@ -188,6 +188,9 @@ class Blueprint(Scaffold):\n             template_folder=template_folder,\n             root_path=root_path,\n         )\n+        if \".\" in name:\n+            raise ValueError(\"'name' may not contain a dot '.' character.\")\n+\n         self.name = name\n         self.url_prefix = url_prefix\n         self.subdomain = subdomain\n@@ -360,12 +363,11 @@ class Blueprint(Scaffold):\n         \"\"\"Like :meth:`Flask.add_url_rule` but for a blueprint.  The endpoint for\n         the :func:`url_for` function is prefixed with the name of the blueprint.\n         \"\"\"\n-        if endpoint:\n-            assert \".\" not in endpoint, \"Blueprint endpoints should not contain dots\"\n-        if view_func and hasattr(view_func, \"__name__\"):\n-            assert (\n-                \".\" not in view_func.__name__\n-            ), \"Blueprint view function name should not contain dots\"\n+        if endpoint and \".\" in endpoint:\n+            raise ValueError(\"'endpoint' may not contain a dot '.' character.\")\n+\n+        if view_func and hasattr(view_func, \"__name__\") and \".\" in view_func.__name__:\n+            raise ValueError(\"'view_func' name may not contain a dot '.' character.\")\n         self.record(lambda s: s.add_url_rule(rule, endpoint, view_func, **options))\n \n     def app_template_filter(self, name: t.Optional[str] = None) -> t.Callable:",
+      "seconds": 249.9
+    },
+    {
+      "instance_id": "pallets__flask-4992",
+      "repo": "pallets/flask",
+      "base_commit": "4c288bc97ea371817199908d0d9b12de9dae327e",
+      "tests_protected": [
+        "tests/static/config.toml",
+        "tests/test_config.py"
+      ],
+      "test_patch_applied": true,
+      "deps_installed": true,
+      "test_command": "python -m pytest -q \"tests/test_config.py::test_config_from_file_toml\"",
+      "stop_reason": "final",
+      "iterations": 10,
+      "tokens": 89647,
+      "session_id": "20261126-090024-76d64e",
+      "output": "Fixed.\n\n**File changed:** `src/flask/config.py` \u2014 `Config.from_file()`\n\n**Change:** Added a `text: bool = True` parameter. The file is now opened with `open(filename, \"r\" if text else \"rb\")`, so callers can pass `text=False` to get a binary handle for loaders like `tomllib.load`:\n\n```python\napp.config.from_file(\"config.toml\", tomllib.load, text=False)\n```\n\nThe default (`text=True`) preserves the existing text-mode behavior for `json.load`, `toml.load`, etc. Docstring updated with a `tomllib` example, a `:param text:` entry, and a `versionchanged:: 2.3` note.\n\n**Verification:** `tests/test_config.py::test_config_from_file_toml` passes, and the full `tests/test_config.py` suite passes (19 passed). No test files were modified.",
+      "patch_chars": 1692,
+      "patch_files": 1,
+      "tampered_tests": false,
+      "patch": "diff --git a/src/flask/config.py b/src/flask/config.py\nindex d4fc310f..0160ae39 100644\n--- a/src/flask/config.py\n+++ b/src/flask/config.py\n@@ -234,6 +234,7 @@ class Config(dict):\n         filename: str,\n         load: t.Callable[[t.IO[t.Any]], t.Mapping],\n         silent: bool = False,\n+        text: bool = True,\n     ) -> bool:\n         \"\"\"Update the values in the config from a file that is loaded\n         using the ``load`` parameter. The loaded data is passed to the\n@@ -247,6 +248,9 @@ class Config(dict):\n             import toml\n             app.config.from_file(\"config.toml\", load=toml.load)\n \n+            import tomllib\n+            app.config.from_file(\"config.toml\", load=tomllib.load, text=False)\n+\n         :param filename: The path to the data file. This can be an\n             absolute path or relative to the config root path.\n         :param load: A callable that takes a file handle and returns a\n@@ -254,14 +258,18 @@ class Config(dict):\n         :type load: ``Callable[[Reader], Mapping]`` where ``Reader``\n             implements a ``read`` method.\n         :param silent: Ignore the file if it doesn't exist.\n+        :param text: Open the file in text or binary mode.\n         :return: ``True`` if the file was loaded successfully.\n \n         .. versionadded:: 2.0\n+\n+        .. versionchanged:: 2.3\n+            The ``text`` parameter was added.\n         \"\"\"\n         filename = os.path.join(self.root_path, filename)\n \n         try:\n-            with open(filename) as f:\n+            with open(filename, \"r\" if text else \"rb\") as f:\n                 obj = load(f)\n         except OSError as e:\n             if silent and e.errno in (errno.ENOENT, errno.EISDIR):",
+      "seconds": 141.2
+    },
+    {
+      "instance_id": "pydata__xarray-4094",
+      "repo": "pydata/xarray",
+      "base_commit": "a64cf2d5476e7bbda099b34c40b7be1880dbd39a",
+      "tests_protected": [
+        "xarray/tests/test_dataset.py"
+      ],
+      "test_patch_applied": true,
+      "deps_installed": true,
+      "test_command": "python -m pytest -q \"xarray/tests/test_dataset.py::TestDataset::test_to_stacked_array_to_unstacked_dataset\"",
+      "stop_reason": "final",
+      "iterations": 12,
+      "tokens": 142320,
+      "session_id": "20261126-090247-fa60c6",
+      "output": "Those 5 failures are pre-existing environment issues (pandas categorical/ImportError), confirmed by stashing my change and reproducing them on the unmodified tree.\n\n## Summary\n\n**File changed:** `xarray/core/dataarray.py` \u2014 one line in `DataArray.to_unstacked_dataset`.\n\n```python\n# before\ndata_dict[k] = self.sel({variable_dim: k}).squeeze(drop=True)\n# after\ndata_dict[k] = self.sel({variable_dim: k}, drop=True).squeeze(drop=True)\n```\n\n**Root cause:** `to_unstacked_dataset` loops over the levels of the stacked MultiIndex and selects each variable with `self.sel({variable_dim: k})`. For a single-dimension variable, the selection leaves a scalar coordinate named after the stacked dimension (e.g. `y` with value `('a',)`), because `squeeze(drop=True)` only drops *dimensions*, not scalar coordina",
+      "patch_chars": 550,
+      "patch_files": 1,
+      "tampered_tests": false,
+      "patch": "diff --git a/xarray/core/dataarray.py b/xarray/core/dataarray.py\nindex b0df8749..3be9bb79 100644\n--- a/xarray/core/dataarray.py\n+++ b/xarray/core/dataarray.py\n@@ -1961,7 +1961,7 @@ class DataArray(AbstractArray, DataWithCoords):\n         # pull variables out of datarray\n         data_dict = {}\n         for k in variables:\n-            data_dict[k] = self.sel({variable_dim: k}).squeeze(drop=True)\n+            data_dict[k] = self.sel({variable_dim: k}, drop=True).squeeze(drop=True)\n \n         # unstacked dataset\n         return Dataset(data_dict)",
+      "seconds": 535.1
+    }
+  ],
+  "timestamp": "2026-11-26T09:11:37Z"
+}
