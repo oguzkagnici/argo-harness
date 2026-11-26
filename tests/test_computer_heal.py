@@ -21,6 +21,7 @@ PAGE = """<!doctype html><html><body>
 <button id="submit-order">Submit order</button>
 <a class="signupLink">Signup here</a>
 <input name="email" placeholder="you@example.com">
+<select name="priority"><option value="low">Low</option><option value="high">High</option></select>
 </body></html>"""
 
 
@@ -88,6 +89,11 @@ async def test_resolve_heals_drifted_selectors_and_lists_candidates():
         srv.shutdown()
 
 
+async def page_value(ctx) -> str:
+    page = ctx.extra[comp.STATE_KEY]["page"]
+    return await page.eval_on_selector('select[name="priority"]', "el => el.value")
+
+
 async def test_computer_tool_clicks_through_drift_and_records_heal(tmp_path: Path):
     cfg = ArgoConfig(workspace=tmp_path, data_dir=tmp_path / "d", session_dir=tmp_path / "s",
                      index_dir=tmp_path / "i", workflow_dir=tmp_path / "w", skill_dir=tmp_path / "k",
@@ -107,6 +113,13 @@ async def test_computer_tool_clicks_through_drift_and_records_heal(tmp_path: Pat
         assert not out.is_error, out.content
         state = ctx.extra[comp.STATE_KEY]
         assert state["heals"]["click:#login"].startswith("*[data-testid")
+        # selecting by value and by visible label
+        out = await comp._computer(ctx, "select", selector='select[name="priority"]', text="high")
+        assert not out.is_error, out.content
+        assert await page_value(ctx) == "high"
+        out = await comp._computer(ctx, "select", selector="#priority-field", text="Low")
+        assert not out.is_error and "healed selector" in out.content
+        assert await page_value(ctx) == "low"
     finally:
         await comp.shutdown(ctx)
         srv.shutdown()

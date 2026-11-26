@@ -1,6 +1,6 @@
 # Implementation status
 
-Snapshot: 2026-11-26. Offline suite: **174 tests passing** (`.venv/bin/python -m pytest -q`).
+Snapshot: 2026-11-26. Offline suite: **179 tests passing** (`.venv/bin/python -m pytest -q`).
 Live numbers live in [`benchmarks/README.md`](../benchmarks/README.md); rationale in
 [`DECISIONS.md`](DECISIONS.md). "Done" means implemented *and* tested; "measured" means we have a live number.
 
@@ -21,7 +21,7 @@ Live numbers live in [`benchmarks/README.md`](../benchmarks/README.md); rational
 | Research coverage plan (enforced decomposition) | Measured, opt-in | `argo/research/plan.py`, `tests/test_coverage_plan.py` |
 | Per-turn model routing (`--router explore`) | Measured, opt-in | `argo/core/router.py`, `tests/test_router.py` |
 | Documents/slides (DOCX/PPTX) | Done | document QA benchmark |
-| Computer use: browser tool, self-healing selectors, workflow replay | Measured | `benchmarks/computer_use.py`, `benchmarks/workflow_drift.py` |
+| Computer use: browser tool (click/type/select), self-healing selectors, workflow replay | Measured | 3-task subset **3/3**, unsafe rate 0.0; replay drift 1/2 → 4/4 |
 
 ## Always-on runtime
 
@@ -61,7 +61,7 @@ Live numbers live in [`benchmarks/README.md`](../benchmarks/README.md); rational
 - Summary-prompt A/B: `identifiers` wins at 18 steps (3/3, 1 vs 2 compactions); confirm at 36 steps.
 - Repair loop: trap tasks on two models — both generalize 2/2, so review/repair still show no resolution gain; needs harder (multi-file/real-repo) tasks.
 - Deep research: larger/noisier corpus and multi-source synthesis beyond 2 hops.
-- Computer use: WebArena/OSWorld-scale subset; current evidence is one drifted-login task + deterministic replay.
+- Computer use: WebArena/OSWorld-scale subset; current evidence is a 3-task local site (login/decoy-table/form) with an unsafe-action rate.
 - MCP: per-tool approval policy (per-server `read_only` and the served trace view are done).
 - Multi-model router: per-turn `explore` routing done and measured; a review-only cheap subagent remains.
 - Statistical rigor: multiple seeds / confidence intervals; weaker target model for injection.

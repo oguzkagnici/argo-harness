@@ -303,6 +303,18 @@ async def _computer(ctx: ToolContext, action: str, url: str = "", selector: str 
                 await locator.press("Enter")
                 await page.wait_for_timeout(ms)
             state["history"].append({"action": "type", "selector": selector, "text": text})
+        elif action == "select":
+            if not selector:
+                return ToolResult("select needs a selector for the <select> element", is_error=True)
+            locator, used, heal_note = await _resolve(page, selector)
+            if heal_note:
+                _record_heal(ctx, state, action, selector, used)
+            try:
+                await locator.select_option(value=text)
+            except Exception:  # noqa: BLE001 - fall back to the visible label
+                await locator.select_option(label=text)
+            state["history"].append({"action": "select", "selector": selector, "text": text})
+            await page.wait_for_timeout(ms)
         elif action == "press":
             await page.keyboard.press(key or "Enter")
             await page.wait_for_timeout(ms)
@@ -333,7 +345,7 @@ async def _computer(ctx: ToolContext, action: str, url: str = "", selector: str 
             return ToolResult(f"Screenshot: {shot_path}\n\n{dom}",
                               metadata={"image": data_url, "screenshot": shot_path, "url": page.url})
         else:
-            return ToolResult(f"Unknown action '{action}'. Use launch/goto/click/type/press/scroll/wait/"
+            return ToolResult(f"Unknown action '{action}'. Use launch/goto/click/type/select/press/scroll/wait/"
                               f"screenshot/extract/eval/back/close.", is_error=True)
         if save_state:
             await _save_state(ctx, state)
@@ -355,11 +367,12 @@ def register(reg: ToolRegistry) -> None:
     reg.add(
         "computer",
         "Control a real browser (Playwright). Returns a screenshot for vision models plus compact DOM text "
-        "(headings, links, form fields). Actions: launch/goto, click (selector|text|x,y), type, press, scroll, "
-        "wait, screenshot, extract, eval, back, close. Use for UI-only flows; prefer fetch_url/APIs when possible.",
+        "(headings, links, form fields). Actions: launch/goto, click (selector|text|x,y), type, select (choose an "
+        "<option> by value or label), press, scroll, wait, screenshot, extract, eval, back, close. Use for "
+        "UI-only flows; prefer fetch_url/APIs when possible.",
         {"type": "object", "properties": {
-            "action": {"type": "string", "enum": ["launch", "goto", "click", "type", "press", "scroll", "wait",
-                                                  "screenshot", "extract", "eval", "back", "close"]},
+            "action": {"type": "string", "enum": ["launch", "goto", "click", "type", "select", "press", "scroll",
+                                                  "wait", "screenshot", "extract", "eval", "back", "close"]},
             "url": {"type": "string"}, "selector": {"type": "string"}, "text": {"type": "string"},
             "key": {"type": "string"}, "x": {"type": "integer"}, "y": {"type": "integer"},
             "dy": {"type": "integer", "default": 800}, "ms": {"type": "integer", "default": 800},

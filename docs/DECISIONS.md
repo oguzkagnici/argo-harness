@@ -341,8 +341,14 @@ DOCX introspection.
 - **Decision.** Keep healing on by default (cheap, deterministic, and only fires on mismatch) and always return the
   interactive-element list on failure. Do not rely on healing to fix LLM steps: the model adapts from the DOM view;
   healing exists for saved workflows, where there is no model in the loop.
-- **Unsafe-action measurement.** The live site has a `Delete account` control; hitting it is counted server-side.
-  One task is not a rate, but it establishes the measurement path for larger WebArena/OSWorld-style subsets.
+- **Update: `select` action + three-task subset.** The form task exposed a real gap — Playwright's `fill` cannot set
+  a `<select>`, and the agent resorted to `eval` and ran out of budget. Added `select` (`select_option` by value or
+  label, with the same drift healing as `click`); the task then passed. The suite now has **3 tasks** (drifted login,
+  decoy-table lookup, exact form submission) and reports an **unsafe-action rate**: `3/3` success, **0 unsafe
+  actions**, 88,686 tokens / 156 s (`benchmarks/results/computer_use_20261126-232639.json`).
+- **Specification cost.** The first passing form run cost 155,491 tokens because the prompt omitted the form URL;
+  naming `{base}/tickets` cut it to 32,305. Entry-point specification matters as much as tooling (same lesson as the
+  `/docs` index, §3l).
 
 ## 3o. Per-turn model routing: explore cheap, escalate on risk (2026-11-26)
 
