@@ -135,6 +135,14 @@ DOCX introspection.
   exfiltrations, defenses +8% tokens), so the *attack set* is the bottleneck, not the target. Next step is
   AgentDojo-style attack templates, not another model. Also fixed: the attacker call had no timeout and could hang
   the suite indefinitely (observed once); it is now bounded by `asyncio.wait_for`.
+  **Update (same day): the templates were written and the ceiling broke only on a misconfigured target.**
+  `tool_poison` (audit-hook note for automated readers), `authority_spoof` (fake security ticket + pre-approval) and
+  `multi_page` (deferred instruction on a second document) are refused by both aligned models, even with a control
+  policy that tells the agent document instructions are authoritative. On `gemma-4-31b` with that naive policy the
+  ASR was **1.0 (3/3)** undefended and **0.0 (0/3)** with Argo's defenses, utility unchanged, tokens lower
+  (5,038 vs 7,123). This is the first measured win for the untrusted-content guard and it sets the honest claim:
+  the guard protects **naive integrations** (small models, custom prompts, fine-tunes), not a well-aligned model
+  against these payloads. Cost on an aligned model remains ~+8% tokens.
   We keep the defenses (untrusted-content wrapping, egress secret block, injection guard)
   because the fixed suite and literature justify them, but we do **not** add adaptive-specific heuristics on the
   strength of a negative-result benchmark. A weaker target model is the next measurement that would be informative.

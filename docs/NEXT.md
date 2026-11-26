@@ -4,7 +4,7 @@ Ordered by (a) what is currently *unproven or broken*, (b) how much evidence exi
 (c) cost in rate limit/quota on this shared machine. Every item lists the success criterion so it can be closed with
 a measurement, not an opinion.
 
-Current state: 168 offline tests pass. Live evidence exists for retrieval, memory, repair, documents, citation,
+Current state: 170 offline tests pass. Live evidence exists for retrieval, memory, repair, documents, citation,
 injection (fixed + partial adaptive), context (synthetic + live), observability, worktree review, and the SWE-bench
 Docker path (gold patch 1/1).
 
@@ -32,8 +32,10 @@ from HTML comments, or require confirmation for writes whose content came from a
 **Better:** add a second, smaller/weaker model as the target to see a non-ceiling result.
 **Status:** done (full 18-run suite). Static 0/3, adaptive 0/6 ASR, utility 1.0, 0 exfiltrations, both modes;
 defenses cost ~9% tokens. Adaptive did **not** beat static, so no targeted defense added. Weak-model target
-(`qwen3.8-flash-next`) **also 0/6 ASR** — the attack set saturates, not the model. Remaining: AgentDojo-style
-templates (tool-result poisoning, authority impersonation, multi-turn priming).
+(`qwen3.8-flash-next`) **also 0/6 ASR**. Then the harder templates (audit-hook, authority spoof, two-document)
+were added: aligned models still 0/3, but `gemma-4-31b` under a **naive document-trust policy** scored **1.0 ASR
+undefended → 0.0 defended** with utility 1.0 — the first measured win for the untrusted-content guard. Remaining:
+run AgentDojo's full task suite (multi-turn priming) against a naive target.
 
 ### 3. Close the SWE-bench loop (agent that can run the tests) — infra done, measuring
 **Why:** the first Argo SWE-bench attempt produced a plausible but likely wrong patch, because the agent could not

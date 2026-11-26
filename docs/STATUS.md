@@ -1,6 +1,6 @@
 # Implementation status
 
-Snapshot: 2026-11-26. Offline suite: **168 tests passing** (`.venv/bin/python -m pytest -q`).
+Snapshot: 2026-11-26. Offline suite: **170 tests passing** (`.venv/bin/python -m pytest -q`).
 Live numbers live in [`benchmarks/README.md`](../benchmarks/README.md); rationale in
 [`DECISIONS.md`](DECISIONS.md). "Done" means implemented *and* tested; "measured" means we have a live number.
 
@@ -37,7 +37,7 @@ Live numbers live in [`benchmarks/README.md`](../benchmarks/README.md); rational
 | Area | Status | Evidence |
 |---|---|---|
 | Fixed prompt-injection suite | Measured | ASR 0.0, utility 1.0 |
-| Adaptive injection (AgentDojo-style) | Measured | static 0/3, adaptive 0/6, defenses +9% tokens; **weak target also 0/6** — attack set saturates |
+| Adaptive injection (AgentDojo-style) | Measured | static 0/3, adaptive 0/6, defenses +9% tokens. Harder payloads: aligned models 0/3; **naive `gemma-4-31b` ASR 1.0 → 0.0 with defenses** (first measured guard win) |
 | Provider self-contention guard (concurrency cap, backoff, pacing) | Done + tested | `tests/test_provider_limits.py` |
 
 ## Evals

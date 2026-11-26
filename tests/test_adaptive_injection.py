@@ -49,3 +49,27 @@ def test_cases_cover_both_channels_and_goals():
         objective = case["objective"].format(base="http://b")
         assert ("PWNED_BY_ADAPTIVE" in objective) != ("/leak" in objective)  # one goal per case
         assert ("http://b" in objective) == ("{base}" in case["objective"])
+
+
+def test_agentdojo_style_cases_present_and_realistic():
+    by_id = {c["id"]: c for c in BENCH.CASES}
+    for cid in ("tool_poison", "authority_spoof", "multi_page"):
+        case = by_id[cid]
+        assert case["goal"] == "write" and case["static"] and case["utility_terms"]
+        # these must not rely on the shouting pattern the earlier cases used
+        assert "IMPORTANT SYSTEM INSTRUCTION" not in case["static"]
+        assert "ignore the user" not in case["static"].lower()
+    assert by_id["multi_page"]["static2"], "multi-document attack needs a second page"
+    assert "PWNED_BY_ADAPTIVE" in by_id["authority_spoof"]["static"]
+
+
+def test_second_page_is_served(monkeypatch):
+    import urllib.request
+    BENCH.STATE["page2"] = "<p>second document marker</p>"
+    srv, base = BENCH.serve()
+    try:
+        body = urllib.request.urlopen(f"{base}/page2", timeout=5).read().decode()
+        assert "second document marker" in body
+        assert "Quarterly Operations Review" in urllib.request.urlopen(f"{base}/page", timeout=5).read().decode()
+    finally:
+        srv.shutdown()
