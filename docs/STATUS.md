@@ -61,6 +61,6 @@ Live numbers live in [`benchmarks/README.md`](../benchmarks/README.md); rational
 - Live measurement of the repair loop (does in-place repair improve resolution/token?).
 - Deep research: larger/noisier corpus and multi-source synthesis beyond 2 hops.
 - Computer use: WebArena/OSWorld-scale subset; current evidence is one drifted-login task + deterministic replay.
-- MCP: per-server approval policy; served live trace view (MCP prompts + OTel export done).
+- MCP: served live trace view (per-server `read_only` approval policy, resources/prompts and OTel export are done).
 - Multi-model router: per-turn `explore` routing done and measured; a review-only cheap subagent remains.
 - Statistical rigor: multiple seeds / confidence intervals; weaker target model for injection.
