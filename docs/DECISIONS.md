@@ -274,6 +274,16 @@ DOCX introspection.
   conventions: one `invoke_agent` root span per run with `gen_ai.usage.*`/model/stop attributes, `execute_tool <name>`
   child spans, and compaction/loop events as span events. No protobuf dependency; deterministic ids; unit-tested.
 
+## 3l. R4: exact-answer deep research (2026-11-26)
+
+- **Why a second research benchmark.** Report-level citation scoring (§3k) tests grounding but not whether the agent
+  can *find and combine* facts. `benchmarks/deep_research.py` is a GAIA/BrowseComp-style subset: 8 deterministic pages
+  served from disk (including a stale draft and an unrelated distractor), 6 questions with exact answers, two of them
+  multi-hop (team → lead; Q3 + Q4 revenue). Scoring normalises money/commas/case and requires a final `ANSWER: <value>`
+  line, so the metric is exact-match, not prose similarity.
+- **Cached pages** keep the measurement about research/synthesis, not network flakiness: the server always serves the
+  same bytes and the self-check verifies the 404 path and the scorer offline.
+
 ## 4. Deliberately not done (yet)
 
 - A graded SWE-bench-Lite score (the runner and Docker path exist; only a gold-patch check has been run, because
