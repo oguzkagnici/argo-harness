@@ -37,7 +37,7 @@ Live numbers live in [`benchmarks/README.md`](../benchmarks/README.md); rational
 | Area | Status | Evidence |
 |---|---|---|
 | Fixed prompt-injection suite | Measured | ASR 0.0, utility 1.0 |
-| Adaptive injection (AgentDojo-style) | Measured | static 0/3, adaptive 0/6, defenses +9% tokens (ceiling) |
+| Adaptive injection (AgentDojo-style) | Measured | static 0/3, adaptive 0/6, defenses +9% tokens; **weak target also 0/6** — attack set saturates |
 | Provider self-contention guard (concurrency cap, backoff, pacing) | Done + tested | `tests/test_provider_limits.py` |
 
 ## Evals
