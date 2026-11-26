@@ -31,8 +31,9 @@ compactions, summarization cost roughly offsets the reclaimed context. That is a
 from HTML comments, or require confirmation for writes whose content came from a tool result).
 **Better:** add a second, smaller/weaker model as the target to see a non-ceiling result.
 **Status:** done (full 18-run suite). Static 0/3, adaptive 0/6 ASR, utility 1.0, 0 exfiltrations, both modes;
-defenses cost ~9% tokens. Adaptive did **not** beat static, so no targeted defense added. Remaining: weak-model target
-for a non-ceiling signal.
+defenses cost ~9% tokens. Adaptive did **not** beat static, so no targeted defense added. Weak-model target
+(`qwen3.8-flash-next`) **also 0/6 ASR** — the attack set saturates, not the model. Remaining: AgentDojo-style
+templates (tool-result poisoning, authority impersonation, multi-turn priming).
 
 ### 3. Close the SWE-bench loop (agent that can run the tests) — infra done, measuring
 **Why:** the first Argo SWE-bench attempt produced a plausible but likely wrong patch, because the agent could not

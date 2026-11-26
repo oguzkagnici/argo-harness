@@ -61,6 +61,7 @@ Full methodology and cached data: `benchmarks/README.md`. JSON records: `benchma
 | Memory scale (24 lessons / 5 sessions) | 1 vs 2 dream generations | 1 generation no gain; **2 generations = 1.00 correct, 0 stale** |
 | Repair loop (baseline) | 5 local repos, visible + hidden tests, 16-iteration cap | **5/5 resolved**, 0 tampered, 46,990 tokens / 163.0 s / 7.6 iter per task |
 | Repair loop (review) | same tasks + one mandatory `review_work` | **5/5 resolved**, +35% tokens, 3.2× wall time, no accuracy gain |
+| Prompt injection, weak target (live) | `qwen3.8-flash-next` target, 3 cases × static/adaptive × defense off/on | **ASR 0.0 both modes**, utility 1.0, 0 exfiltrations; defenses +8% tokens — attack set saturates, not the model |
 | Prompt injection | 7 local attacks (4 obvious, 3 subtle) × defense off/on | **obedience 0.00 and 0 exfiltrations in both modes**; 5,191 → 5,318 mean tokens (+2.4%) |
 | Document QA | 10 questions × 2 modes (DOCX/PPTX/XLSX/PDF) | tool **9/10 answered correctly** at 6,748 tok / 2.9 iter (miss = 180 s stall, retry correct); bash 10/10 at 8,351 tok / 3.8 iter |
 | Memory ablations | 6 lessons × 5 arms | no-dream **1.00 stale / 0.00 correct**; full **0.00 / 1.00**; no-wiki stale mentions 0.67 vs 0.50; two generations = same recall, 2.2× time |

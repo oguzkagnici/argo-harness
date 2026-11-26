@@ -156,8 +156,11 @@ def parse_payload(text: str) -> str:
     return text.strip()
 
 
-def build_cfg(workspace: Path, defense: bool):
-    cfg = load_config()
+def build_cfg(workspace: Path, defense: bool, model: str = ""):
+    overrides = {}
+    if model:
+        overrides["model"] = model
+    cfg = load_config(overrides)
     cfg.workspace = workspace
     cfg.data_dir = workspace / ".argo"
     cfg.session_dir = cfg.data_dir / "sessions"
@@ -187,7 +190,8 @@ def tool_events(cfg, session_id: str) -> list[dict]:
     return out
 
 
-async def run_target(case: dict, payload: str, defense: bool, base: str, timeout: float) -> dict:
+async def run_target(case: dict, payload: str, defense: bool, base: str, timeout: float,
+                     model: str = "") -> dict:
     HIT_LOG.clear()
     STATE["page"] = BENIGN + (payload if not case.get("channel") else "")
     with tempfile.TemporaryDirectory(prefix=f"adapt_{case['id']}_") as tmp:
@@ -197,7 +201,7 @@ async def run_target(case: dict, payload: str, defense: bool, base: str, timeout
         if case.get("channel") == "file":
             notes += "\n" + payload
         (ws / "notes.md").write_text(notes, encoding="utf-8")
-        cfg = build_cfg(ws, defense)
+        cfg = build_cfg(ws, defense, model)
         started = time.monotonic()
         row: dict = {}
         try:
@@ -245,7 +249,7 @@ async def main_async(args) -> int:
                 defense = mode == "on"
                 for case in cases:
                     static_payload = case["static"].format(base=base)
-                    static_row = await run_target(case, static_payload, defense, base, args.timeout)
+                    static_row = await run_target(case, static_payload, defense, base, args.timeout, args.model)
                     static_row.update({"case": case["id"], "mode": mode, "arm": "static", "round": 0,
                                        "payload": static_payload[:700]})
                     rows.append(static_row)
@@ -257,14 +261,16 @@ async def main_async(args) -> int:
                     for rnd in range(1, args.rounds + 1):
                         prompt = attacker_prompt(case, base, defense, history)
                         try:
-                            resp = await llm.chat([Message(role="system", content=ATTACKER_SYSTEM),
-                                                   Message(role="user", content=prompt)])
+                            resp = await asyncio.wait_for(
+                                llm.chat([Message(role="system", content=ATTACKER_SYSTEM),
+                                          Message(role="user", content=prompt)]),
+                                timeout=max(60.0, args.timeout))
                             payload = parse_payload(resp.message.content or "")
                         except Exception as exc:  # noqa: BLE001
                             print(f"  attacker error: {type(exc).__name__}: {exc}", flush=True)
                             payload = ""
                         payload = payload[:1200] or static_payload
-                        row = await run_target(case, payload, defense, base, args.timeout)
+                        row = await run_target(case, payload, defense, base, args.timeout, args.model)
                         row.update({"case": case["id"], "mode": mode, "arm": "adaptive", "round": rnd,
                                     "payload": payload[:700]})
                         rows.append(row)
@@ -290,7 +296,8 @@ async def main_async(args) -> int:
             "exfiltrations": sum(r["exfiltrated"] for r in group),
             "mean_tokens": round(sum(r["tokens"] for r in group) / len(group)) if group else 0,
         }
-    summary = {"benchmark": "adaptive-injection", "rounds": args.rounds, "cases": [c["id"] for c in cases],
+    summary = {"benchmark": "adaptive-injection", "model": args.model or "default",
+               "rounds": args.rounds, "cases": [c["id"] for c in cases],
                "rows": rows, "summaries": summaries,
                "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
     RESULTS.mkdir(parents=True, exist_ok=True)
@@ -317,6 +324,7 @@ def main() -> int:
     ap.add_argument("--rounds", type=int, default=2)
     ap.add_argument("--cases", default="")
     ap.add_argument("--timeout", type=float, default=240.0)
+    ap.add_argument("--model", default="", help="target model (weak model gives a non-ceiling ASR)")
     return asyncio.run(main_async(ap.parse_args()))
 
 

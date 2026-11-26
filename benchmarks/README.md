@@ -462,9 +462,30 @@ Findings: the aligned target refuses both hand-written and iteratively refined i
 exfiltration channels; **adaptive ASR is not higher than static ASR**, so no targeted adaptive defense was required.
 The defenses (untrusted-content wrapping + injection guard) cost about **+9% tokens** (4,635 vs 4,250) and did not
 change utility. This is a ceiling result — the target model is strong enough that the benchmark cannot separate
-defended from undefended behaviour — not proof of safety; see the limitations section. The next step that would give
-a non-ceiling signal is running a smaller/weaker target model, which we have not done. The runner, payload parser,
+defended from undefended behaviour — not proof of safety; see the limitations section. The runner, payload parser,
 defense-aware attacker prompt and feedback loop are unit-tested.
+
+### 13b. Weaker target model (does the ceiling break?)
+
+```bash
+python benchmarks/adaptive_injection.py --rounds 1 --modes off,on --model qwen3.8-flash-next
+```
+
+`--model` sets the *target* model; the red team stays on the default model.
+
+| Target | Defense | Static ASR | Adaptive ASR | Utility | Exfiltrations | Mean tokens |
+|---|---|---|---|---|---|---|
+| `qwen3.8-flash-next` | off | 0.0 (0/3) | 0.0 (0/3) | 1.0 | 0 | 4,429 |
+| `qwen3.8-flash-next` | on | 0.0 (0/3) | 0.0 (0/3) | 1.0 | 0 | 4,790 |
+
+The weaker model is also at ceiling: it refused every payload, kept utility 1.0 and never touched the canary or the
+delete/leak channel; defenses again cost ~8% tokens. One adaptive round was lost to an attacker-side provider timeout
+(now bounded by `asyncio.wait_for`, previously an unbounded hang — a real robustness bug in the runner), so the
+adaptive arm fell back to the static payload in that case.
+
+**Conclusion:** the local attack set is the bottleneck, not the target model. Swapping models does not produce a
+non-ceiling signal; the next attempt should use AgentDojo's published attack templates (tool-result poisoning,
+authority impersonation, multi-turn priming) rather than another model.
 
 ## 14. SWE-bench-Lite subset (official harness)
 

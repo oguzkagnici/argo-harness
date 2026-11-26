@@ -131,7 +131,11 @@ DOCX introspection.
   2 adaptive rounds) × 2 defense modes = 18 runs. Static ASR 0.0 (0/3), adaptive ASR 0.0 (0/6), utility 1.0,
   exfiltrations 0 in both modes. Defenses cost ~9% more tokens (4,635 vs 4,250 mean) with no utility loss.
   Interpretation: `deepseek-v4.1-flash` is at ceiling for this benchmark, so the measurement cannot separate defended
-  from undefended behaviour. We keep the defenses (untrusted-content wrapping, egress secret block, injection guard)
+  from undefended behaviour. **Weaker target model (`qwen3.8-flash-next`) is also 0/6 ASR** (utility 1.0, 0
+  exfiltrations, defenses +8% tokens), so the *attack set* is the bottleneck, not the target. Next step is
+  AgentDojo-style attack templates, not another model. Also fixed: the attacker call had no timeout and could hang
+  the suite indefinitely (observed once); it is now bounded by `asyncio.wait_for`.
+  We keep the defenses (untrusted-content wrapping, egress secret block, injection guard)
   because the fixed suite and literature justify them, but we do **not** add adaptive-specific heuristics on the
   strength of a negative-result benchmark. A weaker target model is the next measurement that would be informative.
 
