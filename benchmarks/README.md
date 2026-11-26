@@ -148,6 +148,30 @@ artifacts, not routine fixes. Two review runs initially exceeded a 600 s cap bec
 led to a 6-iteration default, explicit "inspect only the named artifacts" guidance, and the harness now recovers
 token/iteration data from session logs on timeout (see `docs/DECISIONS.md`).
 
+### 5b. Trap tasks: does review catch over-fitting to the visible tests?
+
+The five tasks above are solved by the baseline, so they cannot show whether the review loop improves
+**generalization**. Two *trap* tasks were added where the obvious special-case fix passes the visible suite:
+`slugify` (visible tests only use single spaces; hidden tests add runs of spaces, padding, punctuation and
+symbols) and `intervals` (one visible overlap case; hidden tests add disjoint, touching, unsorted and empty input).
+
+```bash
+python benchmarks/repair.py --modes baseline,review --tasks slugify,intervals
+```
+
+| Mode | Resolved (hidden tests) | Completed | Test tampering | Mean tokens | Mean seconds |
+|---|---|---|---|---|---|
+| baseline | **2/2** | 2/2 | 0 | 65,792 | 172 |
+| review | **2/2** | 1/2 (one 600 s cap, still resolved) | 0 | 57,819 | 511 |
+
+The traps did **not** trap: this model wrote the general regex / sort-and-merge fix directly, so there was again no
+headroom for the reviewer to recover. Review was token-neutral-to-cheaper (−12%) but **3.0× the wall time**. The
+honest conclusion: on this model and suite, neither `review_work` nor the worktree repair loop can be shown to
+improve hidden-test resolution — not because review is useless, but because baseline generalization is already at
+ceiling. A future measurement needs tasks where the baseline actually over-fits (harder specs, or a weaker model),
+and it should grade the worktree repair loop (`spawn … review_changes=true repair_attempts=2`) rather than a single
+`review_work` call.
+
 A merged authoritative record can be rebuilt without re-running:
 
 ```bash

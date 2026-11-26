@@ -378,6 +378,22 @@ DOCX introspection.
   HTML escaping of an injected `<script>`, key enforcement. Verified against real sessions on this machine
   (e.g. a 4-tool-call run summarised at 29,655 tokens with per-tool breakdown).
 
+## 3q. Trap tasks: review cannot be shown to improve generalization (2026-11-26)
+
+- **Question.** `review_work` and `spawn(..., review_changes=true, repair_attempts=N)` are implemented, but every
+  prior run was on tasks the baseline already solved (5/5), so the loops had no headroom. Do they catch a fix that
+  passes the visible tests but over-fits them?
+- **Setup.** Two trap tasks: `slugify` (visible tests use single spaces only; hidden tests add repeated spaces,
+  padding, punctuation and symbols) and `intervals` (one visible overlap; hidden adds disjoint, touching, unsorted,
+  empty). Both validated by `--self-check` (buggy fails visible and hidden; reference fix passes both).
+- **Result.** Baseline resolved **2/2** — the model wrote `re.sub(r"[^a-z0-9]+", "-", …)` and the sorted merge
+  directly, without over-fitting. Review mode also resolved 2/2 at −12% tokens but **3.0× wall** (511 s vs 172 s),
+  and one review run hit the 600 s cap (resolved anyway, `completed` recorded 1/2).
+- **Decision.** Keep review opt-in/adaptive for high-stakes artifacts; do not recommend it for routine fixes. Record
+  the measurement as *no headroom*, not as a review win or loss: to test the repair loop we need a target that
+  actually over-fits (harder specs, weaker model), and the arm must exercise the worktree repair path rather than a
+  single review call.
+
 ## 4. Deliberately not done (yet)
 
 - A graded SWE-bench-Lite score (the runner and Docker path exist; only a gold-patch check has been run, because

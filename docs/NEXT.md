@@ -99,7 +99,9 @@ would confirm.
 **Done:** `spawn_subagent(..., review_changes=true, repair_attempts=N)` re-runs the child in the same worktree with
 the reviewer text, then re-reviews, capped at 3 rounds; metadata records `repair_rounds` and total subagent tokens.
 Test: `test_review_failure_triggers_in_place_repair_and_recheck`.
-**Still open:** a live measurement on the repair benchmark (does repair actually improve resolution per token?).
+**Still open:** the trap-task measurement (slugify/intervals) showed baseline generalization 2/2, so review and
+repair had no headroom; a target that actually over-fits (harder spec or weaker model) plus the worktree repair arm
+is still needed.
 
 ---
 
