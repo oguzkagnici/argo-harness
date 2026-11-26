@@ -1,0 +1,77 @@
+{
+  "benchmark": "citation-report-level",
+  "question": "Summarize our Q3 operations for an executive: throughput, latency, cache migration and cloud spend. Use ONLY the sources below and cite every factual sentence with [S#].",
+  "report": "- Throughput rose 12% to 4,800 req/s in Q3. [S1]\n- p95 latency was 180 ms in Q3, down from 240 ms in Q2. [S2]\n- The 200 ms latency target was met for the first time. [S2]\n- The cache migration completed on 2026-08-14. [S3]\n- Cache hit ratio reached 91% after the cutover. [S3]\n- Cloud spend was $380k for the quarter. [S4]",
+  "rows": [
+    {
+      "text": "Throughput rose 12% to 4,800 req/s in Q3.",
+      "refs": [
+        1
+      ],
+      "claim_id": "C1",
+      "verdict": "supported",
+      "reason": "The evidence states the exact same throughput increase and Q3 scope as the claim."
+    },
+    {
+      "text": "p95 latency was 180 ms in Q3, down from 240 ms in Q2.",
+      "refs": [
+        2
+      ],
+      "claim_id": "C2",
+      "verdict": "supported",
+      "reason": "The evidence states the exact p95 latency figures and Q3/Q2 comparison in the claim."
+    },
+    {
+      "text": "The 200 ms latency target was met for the first time.",
+      "refs": [
+        2
+      ],
+      "claim_id": "C3",
+      "verdict": "supported",
+      "reason": "The evidence explicitly states that the 200 ms target was met for the first time, matching the claim."
+    },
+    {
+      "text": "The cache migration completed on 2026-08-14.",
+      "refs": [
+        3
+      ],
+      "claim_id": "C4",
+      "verdict": "supported",
+      "reason": "The evidence explicitly states the cache migration completed on the same date as the claim."
+    },
+    {
+      "text": "Cache hit ratio reached 91% after the cutover.",
+      "refs": [
+        3
+      ],
+      "claim_id": "C5",
+      "verdict": "supported",
+      "reason": "The evidence directly states that the cache hit ratio reached 91% after the cutover, matching the claim."
+    },
+    {
+      "text": "Cloud spend was $380k for the quarter.",
+      "refs": [
+        4
+      ],
+      "claim_id": "C6",
+      "verdict": "supported",
+      "reason": "The evidence states the exact cloud spend amount and quarter scope claimed."
+    }
+  ],
+  "scores": {
+    "lines": 6,
+    "cited_lines": 6,
+    "uncited_lines": 0,
+    "citation_precision": 1.0,
+    "citation_recall": 1.0,
+    "sources_cited": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "missing_required": []
+  },
+  "seconds": 99.4,
+  "timestamp": "2026-11-26T09:31:22Z"
+}

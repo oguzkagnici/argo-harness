@@ -4,7 +4,7 @@ Ordered by (a) what is currently *unproven or broken*, (b) how much evidence exi
 (c) cost in rate limit/quota on this shared machine. Every item lists the success criterion so it can be closed with
 a measurement, not an opinion.
 
-Current state: 142 offline tests pass. Live evidence exists for retrieval, memory, repair, documents, citation,
+Current state: 146 offline tests pass. Live evidence exists for retrieval, memory, repair, documents, citation,
 injection (fixed + partial adaptive), context (synthetic + live), observability, worktree review, and the SWE-bench
 Docker path (gold patch 1/1).
 
@@ -120,7 +120,7 @@ stolen heartbeat rejected, in-run renewal.
 `argo run --budget/--max-wall/--max-tool-calls`, `argo metrics --cost`. 5 tests in `tests/test_budget.py`.
 
 ### 11. ~~Observability depth~~ — done
-**Why:** `argo trace`/`argo metrics` exist but are single-host and coarse.
+**Why:** `argo trace`/`argo metrics` exist but are single-host and coarse. (`argo export-otel` now emits OTLP/JSON.)
 **Do:** per-tool p50/p95, tokens per tool call, OTel/JSON export, and a `argo metrics --since` filter. Optionally
 serve a live trace view from `argo serve`.
 **Pass:** a failing 36-step run can be diagnosed from `argo metrics` + `argo trace` alone (already true for the
@@ -143,8 +143,8 @@ Mutating MCP tools still go through approvals (`read_only=False` default).
 ## P3 — breadth (only after P0-P2)
 
 13. **Computer use**: selector-drift recovery and a tiny WebArena/OSWorld subset; measure unsafe-action rate.
-14. **Deep research R3/R4**: ALCE-style citation precision/recall at report level, then a GAIA/BrowseComp-style
-    exact-answer subset with cached pages.
+14. **Deep research R3/R4**: R3 (report-level citation precision/recall) implemented and running live
+    (`citation.py --report`, 3 unit tests). R4 (GAIA/BrowseComp-style exact-answer subset with cached pages) remains.
 15. ~~**Plan persistence**~~ — done: `Session.plan_approved` + `approved_actions` are persisted and reloaded;
     a resumed plan is reused when actions ⊆ approved, and re-prompts on scope change. 2 tests.
 16. **Multi-model router**: partially done — `models.cheap` routes compaction/handoff summaries only (2 tests).

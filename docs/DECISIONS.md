@@ -263,6 +263,17 @@ DOCX introspection.
   `TypeError: Config.from_file() got an unexpected keyword argument 'text'`; flask-4045 reproduces its two
   blueprint failures; xarray-4094 reproduces the stacked-array failure. Unit tests cover spec parsing and fallback.
 
+## 3k. Report-level citations (ALCE-style) and OTel export (2026-11-26)
+
+- **R3: citation precision/recall at report level.** The existing citation benchmark labels claims we wrote; it does
+  not test a generated report. `citation.py --report` now generates a 4-6 bullet executive report from six sources
+  with `[S#]` citations, parses each line into (text, refs), verifies every cited line against its cited sources, and
+  scores ALCE-style **citation precision** (supported / cited lines) and **recall** (required sources cited). Uncited
+  lines are reported separately. Helpers are unit-tested offline; a live run is in progress.
+- **OTel export.** `argo export-otel SESSION` converts a session JSONL to OTLP/JSON spans using the GenAI semantic
+  conventions: one `invoke_agent` root span per run with `gen_ai.usage.*`/model/stop attributes, `execute_tool <name>`
+  child spans, and compaction/loop events as span events. No protobuf dependency; deterministic ids; unit-tested.
+
 ## 4. Deliberately not done (yet)
 
 - A graded SWE-bench-Lite score (the runner and Docker path exist; only a gold-patch check has been run, because

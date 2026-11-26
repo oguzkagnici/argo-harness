@@ -286,6 +286,25 @@ The two verdict misses are conservative in the safe direction: an overstated thr
 ~120 s at concurrency 2; a provider 429 mid-run exposed two robustness gaps, both fixed: retry with backoff
 on rate limits, and a strict-JSON retry when the verifier replies in prose.
 
+### 9b. Report-level citations (ALCE-style, R3)
+
+`--report` asks the model to write a 4-6 bullet executive report from the same six sources with `[S#]` citations,
+then verifies every cited line and scores **citation precision** (supported / cited lines) and **citation recall**
+(required sources cited).
+
+```bash
+python benchmarks/citation.py --report
+```
+
+| Run | Citation precision | Citation recall | Cited lines | Missing required | Wall |
+|---|---|---|---|---|---|
+| `citation_report_20261126-093122.json` | **1.000** | **1.000** | 6/6 | none | 99 s |
+
+The generated report used exactly one source per fact and every line verified as supported; no uncited facts and no
+wrong-source citations. That is a ceiling result on a 6-document corpus with clean facts — it validates the
+measurement path (parse → verify → score), not robustness to noisy or contradictory sources. Next step (R4) is a
+GAIA/BrowseComp-style exact-answer subset with cached pages.
+
 ## 11. Document QA (DOCX / PPTX / XLSX / PDF)
 
 Ten questions with exact answers over generated documents, answered by a fresh agent in two modes:
