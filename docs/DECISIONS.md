@@ -312,6 +312,26 @@ DOCX introspection.
 - **What would change the decision.** A hard set where single-pass drops below ceiling (more hops, noisier corpus,
   or a smaller model) — then measure whether the gate recovers accuracy, not just cost.
 
+## 3n. Computer use: self-healing selectors and an interactive-element fallback (2026-11-26)
+
+- **Problem.** Replayed workflows and agent clicks both die on selector drift — the dominant failure mode of UI
+  automation once a page is redeployed. Playwright's own guidance (prefer role/test-id locators over CSS ids) fixes
+  authoring, not the thousands of already-saved workflows.
+- **Mechanism.** `click`/`type`/`wait` resolve through `_resolve()`: exact selector → attribute variants
+  (`data-testid`, `aria-label`, `name`, `placeholder`, `title`, then substring matches on the selector's words) →
+  role/name → visible text. A heal is recorded in browser state and emitted as an event. If nothing matches, the
+  action fails with a 25-row list of interactive elements (`tag#id[data-testid=…] | label`), so the model corrects
+  in one turn rather than guessing.
+- **Evidence.** Deterministic replay of a stale login workflow: plain CSS **1/2 steps** (dies on the first renamed
+  field) vs self-healing **4/4 steps, 3 heals**, +1.1 s wall. Live agent on the same drifted site: balance correct,
+  **0 unsafe actions**, 64,309 tokens / 132 s, and **0 heals** — the DOM summary let it choose stable locators
+  itself.
+- **Decision.** Keep healing on by default (cheap, deterministic, and only fires on mismatch) and always return the
+  interactive-element list on failure. Do not rely on healing to fix LLM steps: the model adapts from the DOM view;
+  healing exists for saved workflows, where there is no model in the loop.
+- **Unsafe-action measurement.** The live site has a `Delete account` control; hitting it is counted server-side.
+  One task is not a rate, but it establishes the measurement path for larger WebArena/OSWorld-style subsets.
+
 ## 4. Deliberately not done (yet)
 
 - A graded SWE-bench-Lite score (the runner and Docker path exist; only a gold-patch check has been run, because

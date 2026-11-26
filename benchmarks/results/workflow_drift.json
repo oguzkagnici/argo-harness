@@ -1,0 +1,34 @@
+{
+  "benchmark": "workflow-selector-drift",
+  "rows": [
+    {
+      "heal": false,
+      "ok": false,
+      "steps_ok": 1,
+      "steps": 2,
+      "heals": 0,
+      "seconds": 1.57,
+      "error": "step 2 (computer) failed",
+      "outputs": [
+        "Opened http://127.0.0.1:33697/ (HTTP 200)\nScreenshot: /tmp/argo_wf_drift/.argo/browser/goto_1795692411892.png\n\nURL: http",
+        "type failed: ValueError: no element matched selector '#email-field'\nScreenshot: /tmp/argo_wf_drift/.argo/browser/error_1"
+      ]
+    },
+    {
+      "heal": true,
+      "ok": true,
+      "steps_ok": 4,
+      "steps": 4,
+      "heals": 3,
+      "seconds": 2.68,
+      "error": "",
+      "outputs": [
+        "Opened http://127.0.0.1:33697/ (HTTP 200)\nScreenshot: /tmp/argo_wf_drift/.argo/browser/goto_1795692413555.png\n\nURL: http",
+        "healed selector '#email-field' -> '*[name*=\"email\" i]'\ntype ok. URL: http://127.0.0.1:33697/\nScreenshot: /tmp/argo_wf_dr",
+        "healed selector '#password-input' -> '*[name*=\"password\" i]'\ntype ok. URL: http://127.0.0.1:33697/\nScreenshot: /tmp/argo",
+        "healed selector '#signin' -> '*[data-testid=\"signin\"]'\nclick ok. URL: http://127.0.0.1:33697/dashboard?email=a%40b.c&pas"
+      ]
+    }
+  ],
+  "timestamp": "2026-11-26T11:26:54Z"
+}

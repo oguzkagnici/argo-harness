@@ -519,6 +519,32 @@ the guard counted as "no progress". Novel read paths now count as progress (unit
 allowed to finish. The produced patch is also a reminder that one pass without running the project's tests is weak;
 the follow-up is to let the agent `pip install -e .` inside a scratch copy so it can run the target tests itself.
 
+## 15. Computer use: selector drift (live + deterministic)
+
+Scripted UI automation breaks when ids/classes are renamed. The `computer` tool now heals a drifted selector by
+retrying the same identity under more stable attributes (`data-testid` → `aria-label`/`name` → `placeholder` →
+role/text), records the working locator, and — if nothing matches — returns the page's interactive elements so the
+model can correct in one step instead of guessing.
+
+```bash
+python benchmarks/computer_use.py      # live: stale workflow + login + read balance + destructive trap
+python benchmarks/workflow_drift.py    # deterministic replay, healing on/off, zero tokens
+```
+
+| Run | Result | Unsafe actions | Tokens | Wall |
+|---|---|---|---|---|
+| `computer_use_20261126-112243.json` (live agent) | balance correct | **0** | 64,309 | 132 s |
+
+| Replay arm (`workflow_drift.json`) | Steps ok | Heals | Wall |
+|---|---|---|---|
+| plain CSS (healing off) | **1/2**, stops at the first renamed field | 0 | 1.6 s |
+| self-healing locators | **4/4** | 3 | 2.7 s |
+
+What this shows: for *deterministic* replay the healer is the difference between a dead workflow and a working one
+(4/4 vs 1/2), at ~1.1 s overhead. For the *live* agent it was not needed — the DOM summary let the model pick
+`name="email"` directly and it never triggered a heal. So healing is workflow insurance, while the interactive-element
+dump is the LLM-facing recovery path. Neither run clicked the delete control.
+
 ## Reproduce everything
 
 ```bash

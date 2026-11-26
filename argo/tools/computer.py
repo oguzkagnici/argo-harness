@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import base64
 import json
+import re
 import time
 from pathlib import Path
 from urllib.parse import urlparse
@@ -54,6 +55,13 @@ async def _save_state(ctx: ToolContext, state) -> None:
         pass
 
 
+def _record_heal(ctx: ToolContext, state: dict, action: str, selector: str, used: str) -> None:
+    """Remember the working locator so later steps and replays skip the drift."""
+    heals = state.setdefault("heals", {})
+    heals[f"{action}:{selector}"] = used
+    ctx.emit("selector_heal", action=action, selector=selector, used=used)
+
+
 async def _shot(ctx: ToolContext, page, label: str = "shot", full_page: bool = False) -> tuple[str, str]:
     path = _browser_dir(ctx) / f"{label}_{int(time.time() * 1000)}.png"
     await page.screenshot(path=str(path), full_page=full_page)
@@ -87,6 +95,132 @@ async def _dom_summary(page, max_chars: int = 6000) -> str:
              "TEXT:\n" + data.get("text", "")]
     out = "\n\n".join(parts)
     return out[:max_chars]
+
+
+
+_SIMPLE = re.compile(r"^(?P<tag>[a-zA-Z][\w-]*)?(?:(?P<hash>#)(?P<id>[\w-]+)|\.(?P<cls>[\w-]+))?$")
+
+
+def selector_variants(selector: str) -> list[str]:
+    """Alternative CSS selectors for a drifted simple selector.
+
+    Selector drift is the dominant failure mode of scripted UI automation: an id or class is renamed while the
+    element keeps its role, test id, accessible name or placeholder. We therefore retry the *same identity* under
+    progressively more stable attributes, most stable first (data-testid > aria-label/name > placeholder > text).
+    """
+    sel = (selector or "").strip()
+    m = _SIMPLE.match(sel)
+    if not m or not (m.group("id") or m.group("cls")):
+        return []
+    tag = (m.group("tag") or "").lower()
+    token = m.group("id") or m.group("cls")
+    prefix = tag if tag else "*"
+    if tag == "a":
+        prefix = "a"
+    variants = [
+        f'{prefix}[data-testid="{token}"]',
+        f'{prefix}[data-testid="{token}" i]',
+        f'{prefix}[aria-label="{token}" i]',
+        f'{prefix}[name="{token}" i]',
+        f'{prefix}[placeholder="{token}" i]',
+        f'{prefix}[title="{token}" i]',
+    ]
+    if m.group("id"):
+        variants.append(f'{prefix}[id="{m.group("id")}" i]')
+    if m.group("cls"):
+        variants.append(f'{prefix}.{m.group("cls")}')
+    # last resort: the element kept a *related* attribute (e.g. #email-input -> input[name="email"])
+    for word in selector_words(token):
+        variants.extend([
+            f'{prefix}[data-testid*="{word}" i]',
+            f'{prefix}[aria-label*="{word}" i]',
+            f'{prefix}[name*="{word}" i]',
+            f'{prefix}[placeholder*="{word}" i]',
+        ])
+    return variants
+
+
+def selector_words(selector: str) -> list[str]:
+    """Human words inside a selector, e.g. '#login-btn' -> ['login btn', 'login', 'btn']."""
+    sel = (selector or "").strip()
+    tokens = re.findall(r"[A-Za-z][A-Za-z0-9_-]*", re.sub(r"^[.#]", "", sel))
+    words: list[str] = []
+    for tok in tokens:
+        spaced = re.sub(r"(?<=[a-z])(?=[A-Z])", " ", tok).replace("-", " ").replace("_", " ").strip()
+        if len(spaced) >= 3 and spaced not in words:
+            words.append(spaced)
+        if " " in spaced:
+            for part in spaced.split():
+                if len(part) >= 4 and part not in words:
+                    words.append(part)
+    return words
+
+
+async def _interactive_summary(page, limit: int = 25) -> str:
+    try:
+        rows = await page.evaluate("""(limit) => {
+            const clean = s => (s || '').replace(/\\s+/g, ' ').trim().slice(0, 80);
+            const sel = e => {
+                let s = e.tagName.toLowerCase();
+                if (e.id) s += '#' + e.id;
+                if (e.getAttribute('data-testid')) s += '[data-testid="' + e.getAttribute('data-testid') + '"]';
+                if (e.getAttribute('name')) s += '[name="' + e.getAttribute('name') + '"]';
+                return s;
+            };
+            return [...document.querySelectorAll('a[href],button,input,select,textarea,[role=button],[role=link]')]
+                .filter(e => e.offsetParent !== null || e.tagName === 'INPUT')
+                .slice(0, limit)
+                .map(e => sel(e) + ' | ' + (e.getAttribute('aria-label') || clean(e.innerText) ||
+                                             clean(e.placeholder) || clean(e.value) || ''));
+        }""", limit)
+    except Exception:  # noqa: BLE001
+        return ""
+    return "Candidates on page:\n" + "\n".join(rows) if rows else ""
+
+
+async def _resolve(page, selector: str, text: str = "", timeout: int = 1500):
+    """Resolve a click/type target, healing a drifted selector.
+
+    Returns (locator, used_selector, heal_note). Raises ValueError if nothing matches, with the interactive
+    elements listed so the model can correct itself in one step instead of guessing repeatedly.
+    """
+    if selector:
+        loc = page.locator(selector)
+        try:
+            if await loc.count() and await loc.first.is_visible():
+                return loc.first, selector, ""
+        except Exception:  # noqa: BLE001
+            pass
+        for variant in selector_variants(selector):
+            try:
+                cand = page.locator(variant)
+                if await cand.count() and await cand.first.is_visible():
+                    return cand.first, variant, f"healed selector {selector!r} -> {variant!r}"
+            except Exception:  # noqa: BLE001
+                continue
+        for word in selector_words(selector):
+            for role in ("button", "link", "textbox", "searchbox", "combobox"):
+                try:
+                    cand = page.get_by_role(role, name=re.compile(re.escape(word), re.I)).first
+                    if await cand.count():
+                        used = f'role={role}, name~{word!r}'
+                        return cand, used, f"healed selector {selector!r} -> {used}"
+                except Exception:  # noqa: BLE001
+                    continue
+            try:
+                cand = page.get_by_text(re.compile(re.escape(word), re.I)).first
+                if await cand.count():
+                    used = f"text~{word!r}"
+                    return cand, used, f"healed selector {selector!r} -> {used}"
+            except Exception:  # noqa: BLE001
+                continue
+    if text:
+        cand = page.get_by_text(text, exact=False).first
+        if await cand.count():
+            return cand, f"text={text!r}", ""
+    listing = await _interactive_summary(page)
+    raise ValueError(f"no element matched selector {selector!r}" +
+                     (f" or text {text!r}" if text else "") + (f"\n{listing}" if listing else ""))
 
 
 def _check_url(url: str) -> str:
@@ -145,11 +279,13 @@ async def _computer(ctx: ToolContext, action: str, url: str = "", selector: str 
                               metadata={"image": data_url, "url": url, "screenshot": shot_path})
         if action == "back":
             await page.go_back(); await page.wait_for_timeout(ms)
-        elif action == "click":
-            if selector:
-                await page.click(selector)
-            elif text:
-                await page.get_by_text(text, exact=False).first.click()
+        heal_note = ""
+        if action == "click":
+            if selector or text:
+                locator, used, heal_note = await _resolve(page, selector, text)
+                if heal_note:
+                    _record_heal(ctx, state, action, selector, used)
+                await locator.click()
             elif x is not None and y is not None:
                 await page.mouse.click(x, y)
             else:
@@ -159,9 +295,12 @@ async def _computer(ctx: ToolContext, action: str, url: str = "", selector: str 
         elif action == "type":
             if not selector:
                 return ToolResult("type needs a selector", is_error=True)
-            await page.fill(selector, text)
+            locator, used, heal_note = await _resolve(page, selector)
+            if heal_note:
+                _record_heal(ctx, state, action, selector, used)
+            await locator.fill(text)
             if enter:
-                await page.press(selector, "Enter")
+                await locator.press("Enter")
                 await page.wait_for_timeout(ms)
             state["history"].append({"action": "type", "selector": selector, "text": text})
         elif action == "press":
@@ -172,7 +311,12 @@ async def _computer(ctx: ToolContext, action: str, url: str = "", selector: str 
             await page.wait_for_timeout(ms)
         elif action == "wait":
             if selector:
-                await page.wait_for_selector(selector, timeout=max(1000, ms * 5))
+                try:
+                    await page.wait_for_selector(selector, timeout=max(1000, ms * 5))
+                except Exception:
+                    locator, used, heal_note = await _resolve(page, selector)
+                    _record_heal(ctx, state, action, selector, used)
+                    await locator.wait_for(state="visible", timeout=max(1000, ms * 5))
             else:
                 await page.wait_for_timeout(ms)
         elif action == "eval":
@@ -195,7 +339,8 @@ async def _computer(ctx: ToolContext, action: str, url: str = "", selector: str 
             await _save_state(ctx, state)
         shot_path, data_url = await _shot(ctx, page, action)
         dom = await _dom_summary(page)
-        return ToolResult(f"{action} ok. URL: {page.url}\nScreenshot: {shot_path}\n\n{dom}",
+        prefix = f"{heal_note}\n" if heal_note else ""
+        return ToolResult(f"{prefix}{action} ok. URL: {page.url}\nScreenshot: {shot_path}\n\n{dom}",
                           metadata={"image": data_url, "screenshot": shot_path, "url": page.url})
     except Exception as exc:  # noqa: BLE001
         try:

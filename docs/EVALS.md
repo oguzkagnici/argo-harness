@@ -53,6 +53,8 @@ Full methodology and cached data: `benchmarks/README.md`. JSON records: `benchma
 | Report-level citations (live, R3) | ALCE-style precision/recall on a generated 6-bullet report | **precision 1.000, recall 1.000**, 6/6 lines cited, 99 s |
 | Deep research exact answers (live, R4) | 8 cached pages incl. stale draft + unrelated note; 6 questions, 2 multi-hop | **6/6**, 69,325 tokens, 817 s total (5/6 at 311,650 tok before the `/docs` index) |
 | Deep research 3-hop set (live) | 4 questions needing 3 chained pages | single pass **4/4** 67,177 tok / 223 s; `--coverage` plan gate **4/4** 124,303 tok / 541 s (+85% tok, no gain at ceiling) |
+| Computer use: drifted login (live) | stale workflow ids vs live name/testid page, destructive trap | balance **correct**, **0 unsafe actions**, 64,309 tok / 132 s, 0 heals needed |
+| Workflow drift (deterministic) | stale login workflow replayed with healing on/off | plain CSS **1/2 steps**, self-healing **4/4 steps / 3 heals** (+1.1 s) |
 | NFCorpus retrieval replication | 100 queries, dense vs BM25 vs RRF+rerank | dense > BM25 and rerank gives best nDCG replicate; RRF-best-R@100 does *not* replicate |
 | Memory scale (24 lessons / 5 sessions) | 1 vs 2 dream generations | 1 generation no gain; **2 generations = 1.00 correct, 0 stale** |
 | Repair loop (baseline) | 5 local repos, visible + hidden tests, 16-iteration cap | **5/5 resolved**, 0 tampered, 46,990 tokens / 163.0 s / 7.6 iter per task |

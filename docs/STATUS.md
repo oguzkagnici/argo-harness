@@ -1,6 +1,6 @@
 # Implementation status
 
-Snapshot: 2026-11-26. Offline suite: **159 tests passing** (`.venv/bin/python -m pytest -q`).
+Snapshot: 2026-11-26. Offline suite: **162 tests passing** (`.venv/bin/python -m pytest -q`).
 Live numbers live in [`benchmarks/README.md`](../benchmarks/README.md); rationale in
 [`DECISIONS.md`](DECISIONS.md). "Done" means implemented *and* tested; "measured" means we have a live number.
 
@@ -20,6 +20,7 @@ Live numbers live in [`benchmarks/README.md`](../benchmarks/README.md); rational
 | Deep research (exact-answer, cached pages) | Measured | `benchmarks/deep_research.py` (R4): 6/6 base, 4/4 3-hop |
 | Research coverage plan (enforced decomposition) | Measured, opt-in | `argo/research/plan.py`, `tests/test_coverage_plan.py` |
 | Documents/slides (DOCX/PPTX) | Done | document QA benchmark |
+| Computer use: browser tool, self-healing selectors, workflow replay | Measured | `benchmarks/computer_use.py`, `benchmarks/workflow_drift.py` |
 
 ## Always-on runtime
 
@@ -58,7 +59,7 @@ Live numbers live in [`benchmarks/README.md`](../benchmarks/README.md); rational
 - Summary-prompt A/B: `identifiers` wins at 18 steps (3/3, 1 vs 2 compactions); confirm at 36 steps.
 - Live measurement of the repair loop (does in-place repair improve resolution/token?).
 - Deep research: larger/noisier corpus and multi-source synthesis beyond 2 hops.
-- Computer-use subset (WebArena/OSWorld) and unsafe-action rate.
+- Computer use: WebArena/OSWorld-scale subset; current evidence is one drifted-login task + deterministic replay.
 - MCP: per-server approval policy; served live trace view (MCP prompts + OTel export done).
 - Multi-model router: per-turn exploration/final routing and review-only cheap subagent (compaction routing done).
 - Statistical rigor: multiple seeds / confidence intervals; weaker target model for injection.
