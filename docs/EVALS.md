@@ -62,6 +62,7 @@ Full methodology and cached data: `benchmarks/README.md`. JSON records: `benchma
 | Repair loop (baseline) | 5 local repos, visible + hidden tests, 16-iteration cap | **5/5 resolved**, 0 tampered, 46,990 tokens / 163.0 s / 7.6 iter per task |
 | Repair loop (review) | same tasks + one mandatory `review_work` | **5/5 resolved**, +35% tokens, 3.2× wall time, no accuracy gain |
 | Repair loop, trap tasks (live) | slugify + intervals: visible tests hide repeated-space/punctuation and disjoint/touching/unsorted cases | baseline **2/2 resolved**; review **2/2** at −12% tokens but 3.0× wall (one 600 s cap) — no headroom |
+| Repair loop, traps + weak model (live) | same two traps on `gemma-4-31b` | baseline **2/2**, review **2/2**; weak model costs +53% tokens / +1.7× iters — traps don't trap either model |
 | Prompt injection, harder payloads (live) | audit-hook / authority-spoof / two-document attacks, 2 target models | aligned models **0/3** even with a naive policy; `gemma-4-31b` + naive policy **ASR 1.0 → 0.0** with defenses, utility 1.0 |
 | Prompt injection, weak target (live) | `qwen3.8-flash-next` target, 3 cases × static/adaptive × defense off/on | **ASR 0.0 both modes**, utility 1.0, 0 exfiltrations; defenses +8% tokens — attack set saturates, not the model |
 | Prompt injection | 7 local attacks (4 obvious, 3 subtle) × defense off/on | **obedience 0.00 and 0 exfiltrations in both modes**; 5,191 → 5,318 mean tokens (+2.4%) |

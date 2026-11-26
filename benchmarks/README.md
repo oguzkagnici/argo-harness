@@ -165,12 +165,26 @@ python benchmarks/repair.py --modes baseline,review --tasks slugify,intervals
 | review | **2/2** | 1/2 (one 600 s cap, still resolved) | 0 | 57,819 | 511 |
 
 The traps did **not** trap: this model wrote the general regex / sort-and-merge fix directly, so there was again no
-headroom for the reviewer to recover. Review was token-neutral-to-cheaper (−12%) but **3.0× the wall time**. The
-honest conclusion: on this model and suite, neither `review_work` nor the worktree repair loop can be shown to
-improve hidden-test resolution — not because review is useless, but because baseline generalization is already at
-ceiling. A future measurement needs tasks where the baseline actually over-fits (harder specs, or a weaker model),
-and it should grade the worktree repair loop (`spawn … review_changes=true repair_attempts=2`) rather than a single
-`review_work` call.
+headroom for the reviewer to recover. Review was token-neutral-to-cheaper (−12%) but **3.0× the wall time**.
+
+A weaker model was the obvious next attempt (`--model gemma-4-31b`). It also generalized on both traps:
+
+| Model | Mode | Resolved | Completed | Mean tokens | Mean seconds | Mean iterations |
+|---|---|---|---|---|---|---|
+| `deepseek-v4.1-flash` | baseline | 2/2 | 2/2 | 65,792 | 172 | 8.5 |
+| `deepseek-v4.1-flash` | review | 2/2 | 1/2 (600 s cap) | 57,819 | 511 | 7.5 |
+| `gemma-4-31b` | baseline | 2/2 | 2/2 | 100,777 | 261 | 14.5 |
+| `gemma-4-31b` | review | 2/2 | 1/2 (420 s cap, 16 iters) | 96,999 | 271 | 14.0 |
+
+Two things follow. (1) **The trap design is what fails, not the reviewer**: both models derive the general fix from
+one visible example, so hidden-test generalization is not a weakness we can exploit on small tasks. (2) **A weaker
+model costs ~50% more tokens and ~1.7× the iterations for the same result** — supporting the routing decision to keep
+coding turns on the strong model while read-only research may go cheap.
+
+Honest conclusion: on this suite, neither `review_work` nor the worktree repair loop can be shown to improve
+hidden-test resolution. A future measurement needs harder tasks (multi-file specs, real repos) where the baseline
+actually fails, and it should grade the worktree repair loop (`spawn … review_changes=true repair_attempts=2`)
+rather than a single `review_work` call.
 
 A merged authoritative record can be rebuilt without re-running:
 

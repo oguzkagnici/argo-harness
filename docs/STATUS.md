@@ -59,7 +59,7 @@ Live numbers live in [`benchmarks/README.md`](../benchmarks/README.md); rational
 - Add harder repos (django/astropy) and a larger sample before quoting a Lite-wide rate.
 - Memory cadence/wiki ablations at 40–60 lessons (24-lesson scale test + two-generation rule done).
 - Summary-prompt A/B: `identifiers` wins at 18 steps (3/3, 1 vs 2 compactions); confirm at 36 steps.
-- Repair loop: measured on trap tasks — baseline generalizes 2/2, so review/repair show no resolution gain; needs a target that over-fits.
+- Repair loop: trap tasks on two models — both generalize 2/2, so review/repair still show no resolution gain; needs harder (multi-file/real-repo) tasks.
 - Deep research: larger/noisier corpus and multi-source synthesis beyond 2 hops.
 - Computer use: WebArena/OSWorld-scale subset; current evidence is one drifted-login task + deterministic replay.
 - MCP: per-tool approval policy (per-server `read_only` and the served trace view are done).

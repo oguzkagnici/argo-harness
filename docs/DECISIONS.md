@@ -389,10 +389,14 @@ DOCX introspection.
 - **Result.** Baseline resolved **2/2** — the model wrote `re.sub(r"[^a-z0-9]+", "-", …)` and the sorted merge
   directly, without over-fitting. Review mode also resolved 2/2 at −12% tokens but **3.0× wall** (511 s vs 172 s),
   and one review run hit the 600 s cap (resolved anyway, `completed` recorded 1/2).
+- **Weak model did not help either.** `gemma-4-31b` also resolved **2/2** on the traps (baseline 100,777 tok /
+  14.5 iters; review 96,999 tok / 14.0 iters, one 420 s cap). Both models derive the general fix from one visible
+  example, so the trap *design* is what fails, not the reviewer. Side finding that supports §3o: the weaker model
+  needed **~50% more tokens and ~1.7× the iterations** for the same code task — another reason coding turns stay
+  on the strong model while read-only research may route cheap.
 - **Decision.** Keep review opt-in/adaptive for high-stakes artifacts; do not recommend it for routine fixes. Record
-  the measurement as *no headroom*, not as a review win or loss: to test the repair loop we need a target that
-  actually over-fits (harder specs, weaker model), and the arm must exercise the worktree repair path rather than a
-  single review call.
+  the measurement as *no headroom*, not as a review win or loss. Closing it properly needs harder tasks (multi-file
+  specs, real repos) where the baseline fails, plus the worktree `repair_attempts` arm rather than a single review.
 
 ## 4. Deliberately not done (yet)
 

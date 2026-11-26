@@ -100,8 +100,8 @@ would confirm.
 the reviewer text, then re-reviews, capped at 3 rounds; metadata records `repair_rounds` and total subagent tokens.
 Test: `test_review_failure_triggers_in_place_repair_and_recheck`.
 **Still open:** the trap-task measurement (slugify/intervals) showed baseline generalization 2/2, so review and
-repair had no headroom; a target that actually over-fits (harder spec or weaker model) plus the worktree repair arm
-is still needed.
+repair had no headroom. The weaker model (`gemma-4-31b`) also resolved 2/2, so both small-task traps are exhausted;
+a multi-file / real-repo task where the baseline fails, graded with the worktree `repair_attempts` arm, is needed.
 
 ---
 

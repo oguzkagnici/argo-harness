@@ -500,8 +500,8 @@ def self_check() -> int:
     return 0 if failures == 0 else 1
 
 
-def make_cfg(workspace: Path, max_iterations: int):
-    cfg = load_config()
+def make_cfg(workspace: Path, max_iterations: int, model: str = ""):
+    cfg = load_config({"model": model} if model else None)
     cfg.workspace = workspace
     cfg.data_dir = workspace / ".argo"
     cfg.session_dir = cfg.data_dir / "sessions"
@@ -561,7 +561,7 @@ async def run_task(task: dict, mode: str, args: argparse.Namespace) -> dict:
     materialize(task, work)
     before = snapshot_tests(work)
     prompt = PROMPT + (REVIEW_SUFFIX if mode == "review" else "")
-    cfg = make_cfg(work, args.max_iterations)
+    cfg = make_cfg(work, args.max_iterations, getattr(args, "model", ""))
     started = time.monotonic()
     row: dict = {"task": task["id"], "mode": mode, "completed": True}
     try:
@@ -632,7 +632,8 @@ async def main_async(args: argparse.Namespace) -> int:
             "mean_seconds": round(sum(r["seconds"] for r in group) / len(group), 1) if group else 0.0,
             "mean_iterations": round(sum(r["iterations"] for r in group) / len(group), 1) if group else 0.0,
         }
-    summary = {"benchmark": "repair-loop-local", "model": None, "max_iterations": args.max_iterations,
+    summary = {"benchmark": "repair-loop-local", "model": getattr(args, "model", "") or "default",
+               "max_iterations": args.max_iterations,
                "summaries": summaries, "rows": rows,
                "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
     RESULTS.mkdir(parents=True, exist_ok=True)
@@ -658,6 +659,7 @@ def main() -> int:
     parser.add_argument("--keep-work", action="store_true")
     parser.add_argument("--merge", nargs="*", default=[], help="prior result JSONs to merge by (task, mode)")
     parser.add_argument("--merge-only", action="store_true", help="do not run tasks; only merge --merge files")
+    parser.add_argument("--model", default="", help="override the provider model (weak model -> over-fitting signal)")
     args = parser.parse_args()
     if args.self_check:
         return self_check()
