@@ -1,6 +1,6 @@
 # Implementation status
 
-Snapshot: 2026-11-26. Offline suite: **162 tests passing** (`.venv/bin/python -m pytest -q`).
+Snapshot: 2026-11-26. Offline suite: **168 tests passing** (`.venv/bin/python -m pytest -q`).
 Live numbers live in [`benchmarks/README.md`](../benchmarks/README.md); rationale in
 [`DECISIONS.md`](DECISIONS.md). "Done" means implemented *and* tested; "measured" means we have a live number.
 
@@ -19,6 +19,7 @@ Live numbers live in [`benchmarks/README.md`](../benchmarks/README.md); rational
 | Research: evidence ledger + citation verifier | Done | `benchmarks/citation.py`, `tests/test_research.py` |
 | Deep research (exact-answer, cached pages) | Measured | `benchmarks/deep_research.py` (R4): 6/6 base, 4/4 3-hop |
 | Research coverage plan (enforced decomposition) | Measured, opt-in | `argo/research/plan.py`, `tests/test_coverage_plan.py` |
+| Per-turn model routing (`--router explore`) | Measured, opt-in | `argo/core/router.py`, `tests/test_router.py` |
 | Documents/slides (DOCX/PPTX) | Done | document QA benchmark |
 | Computer use: browser tool, self-healing selectors, workflow replay | Measured | `benchmarks/computer_use.py`, `benchmarks/workflow_drift.py` |
 
@@ -61,5 +62,5 @@ Live numbers live in [`benchmarks/README.md`](../benchmarks/README.md); rational
 - Deep research: larger/noisier corpus and multi-source synthesis beyond 2 hops.
 - Computer use: WebArena/OSWorld-scale subset; current evidence is one drifted-login task + deterministic replay.
 - MCP: per-server approval policy; served live trace view (MCP prompts + OTel export done).
-- Multi-model router: per-turn exploration/final routing and review-only cheap subagent (compaction routing done).
+- Multi-model router: per-turn `explore` routing done and measured; a review-only cheap subagent remains.
 - Statistical rigor: multiple seeds / confidence intervals; weaker target model for injection.

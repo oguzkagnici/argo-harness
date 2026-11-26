@@ -4,7 +4,7 @@ Ordered by (a) what is currently *unproven or broken*, (b) how much evidence exi
 (c) cost in rate limit/quota on this shared machine. Every item lists the success criterion so it can be closed with
 a measurement, not an opinion.
 
-Current state: 146 offline tests pass. Live evidence exists for retrieval, memory, repair, documents, citation,
+Current state: 168 offline tests pass. Live evidence exists for retrieval, memory, repair, documents, citation,
 injection (fixed + partial adaptive), context (synthetic + live), observability, worktree review, and the SWE-bench
 Docker path (gold patch 1/1).
 
@@ -149,8 +149,10 @@ Mutating MCP tools still go through approvals (`read_only=False` default).
     vs **4/4** with the coverage gate at +85% tokens — gate is opt-in only. 8 unit tests.
 15. ~~**Plan persistence**~~ — done: `Session.plan_approved` + `approved_actions` are persisted and reloaded;
     a resumed plan is reused when actions ⊆ approved, and re-prompts on scope change. 2 tests.
-16. **Multi-model router**: partially done — `models.cheap` routes compaction/handoff summaries only (2 tests).
-    Per-turn exploration/final routing and a review-only cheap subagent remain, and should be ablated before enabling.
+16. **Multi-model router**: compaction routing done earlier; per-turn `--router explore` **done and measured**
+    (cheap model 4/4 on the 3-hop research set at −14% tokens; write-intent tasks and post-mutation turns stay strong;
+    6 tests). Remaining: a review-only cheap subagent, and cost-weighted routing once `[pricing]` exists for the
+    provider's models.
 
 ---
 

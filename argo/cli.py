@@ -133,6 +133,8 @@ def run(task: str = typer.Argument(..., help="Task for the agent."),
         max_iterations: Optional[int] = typer.Option(None, "--max-iterations"),
         cheap_model: Optional[str] = typer.Option(None, "--cheap-model",
                                                   help="Cheaper model for compaction/handoff summaries."),
+        router: Optional[str] = typer.Option(None, "--router",
+                                             help="off|explore — route read-only turns to --cheap-model."),
         low_priority: bool = typer.Option(False, "--low-priority",
                                           help="Pace provider calls to avoid starving other clients."),
         budget: Optional[int] = typer.Option(None, "--budget", help="Max tokens for this run."),
@@ -149,6 +151,8 @@ def run(task: str = typer.Argument(..., help="Task for the agent."),
         cfg.max_iterations = max_iterations
     if cheap_model:
         cfg.cheap_model = cheap_model
+    if router:
+        cfg.router_policy = router
     if low_priority:
         cfg.low_priority_pacing = 2.0
     if budget:

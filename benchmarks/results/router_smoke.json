@@ -1,0 +1,39 @@
+{
+  "benchmark": "router-explore-smoke",
+  "task": "Read note.txt and report the revenue growth. End with 'GROWTH: <value>'.",
+  "rows": [
+    {
+      "policy": "explore",
+      "stop": "final",
+      "iters": 2,
+      "tokens": 5234,
+      "router": {
+        "cheap": 2,
+        "strong": 0
+      },
+      "routes": [
+        {
+          "model": "qwen3.8-flash-next",
+          "reason": "exploring on cheap model"
+        },
+        {
+          "model": "qwen3.8-flash-next",
+          "reason": "exploring on cheap model"
+        }
+      ],
+      "output": "e2/note.txt`: \"Q3 revenue was $1.2M and Q4 revenue was $1.5M.\"\n\nCalculation: ($1.5M \u2212 $1.2M) / $1.2M = 0.3 / 1.2 = 0.25 \u2192 25% growth from Q3 to Q4.\n\nGROWTH: 25%"
+    },
+    {
+      "policy": "off",
+      "stop": "final",
+      "iters": 2,
+      "tokens": 5063,
+      "router": {
+        "cheap": 0,
+        "strong": 2
+      },
+      "routes": [],
+      "output": "Q3 revenue was $1.2M and Q4 revenue was $1.5M.\n\nGrowth = (1.5 \u2212 1.2) / 1.2 = 0.3 / 1.2 = 25% quarter-over-quarter (an increase of $0.3M).\n\nGROWTH: 25%"
+    }
+  ]
+}

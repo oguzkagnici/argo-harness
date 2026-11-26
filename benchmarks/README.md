@@ -545,6 +545,22 @@ What this shows: for *deterministic* replay the healer is the difference between
 `name="email"` directly and it never triggered a heal. So healing is workflow insurance, while the interactive-element
 dump is the LLM-facing recovery path. Neither run clicked the delete control.
 
+## 16. Cheap-model parity and per-turn routing
+
+`--model` on any benchmark overrides the provider model, which lets us check whether a cheaper model is safe to route
+to before wiring a router around it.
+
+| Run on the 4-question 3-hop set | Accuracy | Tokens | Wall |
+|---|---|---|---|
+| `deepseek-v4.1-flash` (strong) | 4/4 | 67,177 | 223 s |
+| `qwen3.8-flash-next` (cheap) | 4/4 | **57,549** | **172 s** |
+
+The router (`argo run --router explore --cheap-model qwen3.8-flash-next`) uses the cheap model only while a task is
+read-only by intent and nothing has mutated or failed; writes and recoveries stay on the strong model. Live smoke:
+read-only QA routed **2/2 turns to cheap** with a correct answer; a "write this file" task routed **0 turns to
+cheap** (fail-safe). Token parity on short tasks means the saving depends on the price ratio — check
+`argo metrics --cost` with a `[pricing]` table before enabling it by default.
+
 ## Reproduce everything
 
 ```bash

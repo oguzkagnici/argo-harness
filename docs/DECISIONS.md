@@ -332,6 +332,26 @@ DOCX introspection.
 - **Unsafe-action measurement.** The live site has a `Delete account` control; hitting it is counted server-side.
   One task is not a rate, but it establishes the measurement path for larger WebArena/OSWorld-style subsets.
 
+## 3o. Per-turn model routing: explore cheap, escalate on risk (2026-11-26)
+
+- **Literature.** RouteLLM (Ong et al., 2024) shows a router can keep most strong-model quality at a fraction of the
+  cost; FrugalGPT (Chen et al., 2023) gets similar wins with a *cascade* and a verifier. A trained router needs
+  labelled cost/quality pairs we do not have, so this is the explainable half: a policy over observable signals.
+- **Policy `explore`** (`argo/core/router.py`, `--router explore --cheap-model M`): the turn runs on the cheap model
+  only while the task is read-only *by intent* and no mutation or tool error has occurred; a write-intent task, any
+  turn after a mutating tool, and any turn after a failed tool use the strong model. Ambiguous tasks fail safe to
+  strong. The per-turn choice is emitted as a `model_route` event and counted in `agent.router.stats`.
+- **Evidence 1 (research, cheap vs strong).** The 4-question 3-hop set on `qwen3.8-flash-next` scored **4/4**
+  at 57,549 tokens / 172 s vs the strong model's **4/4** at 67,177 tokens / 223 s — 14% fewer tokens,
+  24% faster, same accuracy. Read-only research is genuinely safe to route.
+- **Evidence 2 (live smoke, both arms correct).** Read-only "report revenue growth": explore arm used 2/2 cheap turns,
+  5,234 tokens, answer correct; strong arm 5,063 tokens, answer correct — *token parity on a 2-turn task*, so token
+  count is not a cost proxy when the cheap model is chattier. The write-intent variant ("write growth.txt") correctly
+  used **0 cheap turns** (4 strong), and a read-only task whose trajectory mutated escalated after the write (tested).
+- **Decision.** Ship `--router explore` as opt-in, off by default. It is safe (no quality loss in 5 live tasks) but the
+  savings depend on the provider's price ratio, which this endpoint does not publish; measure `argo metrics --cost`
+  with a `[pricing]` table before turning it on generally. Writes never start on the cheap model.
+
 ## 4. Deliberately not done (yet)
 
 - A graded SWE-bench-Lite score (the runner and Docker path exist; only a gold-patch check has been run, because

@@ -1,0 +1,65 @@
+{
+  "benchmark": "deep-research-exact-answer",
+  "model": "qwen3.8-flash-next",
+  "set": "hard",
+  "coverage": false,
+  "questions": 4,
+  "correct": 4,
+  "accuracy": 1.0,
+  "tokens": 57549,
+  "rows": [
+    {
+      "id": "vendor_lead",
+      "question": "Who leads the vendor whose contract ends 2027-03-15?",
+      "expected": "Mira Chen",
+      "got": "Mira Chen",
+      "correct": true,
+      "stop": "final",
+      "iterations": 4,
+      "tokens": 13715,
+      "coverage": null,
+      "answer_text": "wed annually, so it doesn't match).\n2. `/docs/contracts` \u2014 Vendor Orion is managed by the **Helios** team.\n3. `/docs/people` \u2014 The Helios team lead is **Mira Chen**.\n\nI checked the other pages for conflicts: `/docs/alpha-old` is a superseded 2024 draft (only relevant to Project Alpha's launch code, not this chain), and `/docs/teams`, `/docs/beta`, `/docs/omega-note` contain no contradicting vendor/leadership data. No stale page overrides the vendors \u2192 contracts \u2192 people chain.\n\nANSWER: Mira Chen",
+      "seconds": 49.2
+    },
+    {
+      "id": "alpha_code_chain",
+      "question": "What is the launch code of the project owned by the team that manages vendor Lyra?",
+      "expected": "ZX-441",
+      "got": "ZX-441",
+      "correct": true,
+      "stop": "final",
+      "iterations": 5,
+      "tokens": 16773,
+      "coverage": null,
+      "answer_text": "**Reasoning chain (all from the indexed pages):**\n\n1. `/docs/contracts` \u2014 \"Vendor Lyra is managed by the Vega team.\"\n2. `/docs/teams` \u2014 \"The Vega team owns Project Alpha.\"\n3. `/docs/alpha` (current program overview) \u2014 \"Its launch code is ZX-441.\" The `/docs/alpha-old` draft lists QQ-000 but explicitly says it is \"Superseded by the 2026 overview,\" so ZX-441 is authoritative.\n\n(Other pages \u2014 beta, metrics, omega-note, people \u2014 were checked or irrelevant and don't affect the chain.)\n\nANSWER: ZX-441",
+      "seconds": 39.4
+    },
+    {
+      "id": "beta_vendor",
+      "question": "Which vendor is managed by the team that owns Project Beta?",
+      "expected": "Orion",
+      "got": "Orion",
+      "correct": true,
+      "stop": "final",
+      "iterations": 4,
+      "tokens": 13260,
+      "coverage": null,
+      "answer_text": "easoning chain (two steps, from the index pages):**\n\n1. `/docs/teams` (ownership map): \"The Helios team owns Project Beta.\"\n2. `/docs/contracts` (contract registry): \"Vendor Orion is managed by the Helios team.\" (Vendor Lyra belongs to Vega, which owns Alpha \u2014 a distractor.)\n\nSupporting context: `/docs/people` confirms Helios is a real team (lead: Mira Chen), and `/docs/beta` only covers budget, not ownership. The stale draft (`/docs/alpha-old`) was ignored per the index guidance.\n\nANSWER: Orion",
+      "seconds": 39.2
+    },
+    {
+      "id": "revenue_growth",
+      "question": "By how much did revenue grow from Q3 to Q4?",
+      "expected": "$0.3M",
+      "got": "$300K (25%)",
+      "correct": true,
+      "stop": "final",
+      "iterations": 4,
+      "tokens": 13801,
+      "coverage": null,
+      "answer_text": "metrics` (authoritative, not marked as a draft): Q3 revenue = $1.2M, Q4 revenue = $1.5M.\n- Growth: $1.5M \u2212 $1.2M = $0.3M, i.e. $300K, which is 0.3 / 1.2 = 25% growth.\n- Cross-check: the only stale draft in the index is `/docs/alpha-old` (superseded 2024 draft about a launch code); it contains no revenue figures, so no conflict. Other pages (`alpha`, `beta`, `omega-note`, `contracts`, `teams`, `people`, `vendors`) cover budgets, ownership, and vendors \u2014 not quarterly revenue.\n\nANSWER: $300K (25%)",
+      "seconds": 44.5
+    }
+  ],
+  "timestamp": "2026-11-26T13:32:23Z"
+}

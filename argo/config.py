@@ -145,6 +145,7 @@ class ArgoConfig:
     max_run_tool_calls: int = 0            # per-run tool-call cap, 0 = unlimited
     model_prices: dict = field(default_factory=dict)  # {model_substr: {"input": $/Mtok, "output": $/Mtok}}
     cheap_model: str = ""                  # optional cheaper model for compaction/handoff summaries
+    router_policy: str = "off"             # off | explore (per-turn cheap/strong routing)
     summary_prompt_variant: str = "default"  # default | identifiers | twopass (A/B for compaction quality)
     low_priority_pacing: float = 0.0       # seconds to sleep before each provider call (shared-quota politeness)
     memory_inject_chars: int = 6000        # always-loaded memory budget
@@ -294,6 +295,7 @@ def load_config(overrides: dict[str, Any] | None = None) -> ArgoConfig:
         max_run_tool_calls=int(overrides.get("max_run_tool_calls") or user.get("max_run_tool_calls", 0)),
         model_prices=dict(user.get("pricing", {}) or {}),
         cheap_model=str(overrides.get("cheap_model") or models_raw.get("cheap") or ""),
+        router_policy=str(overrides.get("router_policy") or models_raw.get("router") or "off"),
         summary_prompt_variant=str(overrides.get("summary_prompt_variant")
                                    or user.get("summary_prompt_variant", "default")),
         low_priority_pacing=float(overrides.get("low_priority_pacing")

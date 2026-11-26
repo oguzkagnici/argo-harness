@@ -217,7 +217,10 @@ async def main_async(args) -> int:
     write_cache()
     pages = load_pages()
     srv, base = serve(pages)
-    cfg = load_config({"workspace": str(Path("/tmp") / "argo_deep_research")})
+    overrides = {"workspace": str(Path("/tmp") / "argo_deep_research")}
+    if args.model:
+        overrides["model"] = args.model
+    cfg = load_config(overrides)
     cfg.session_dir = Path("/tmp/argo_deep_research/sessions")
     cfg.ensure_dirs()
     bank = HARD_QUESTIONS if args.set == "hard" else QUESTIONS
@@ -236,7 +239,8 @@ async def main_async(args) -> int:
     finally:
         srv.shutdown()
     correct = sum(r["correct"] for r in rows)
-    summary = {"benchmark": "deep-research-exact-answer", "set": args.set, "coverage": args.coverage,
+    summary = {"benchmark": "deep-research-exact-answer", "model": cfg.provider.model,
+               "set": args.set, "coverage": args.coverage,
                "questions": len(rows), "correct": correct,
                "accuracy": round(correct / len(rows), 4),
                "tokens": sum(r["tokens"] for r in rows), "rows": rows,
@@ -292,6 +296,7 @@ def main() -> int:
                     help="base = single/2-hop set; hard = 3-hop set")
     ap.add_argument("--coverage", action="store_true",
                     help="require plan_research decomposition + mark_covered before answering")
+    ap.add_argument("--model", default="", help="override the provider model for this run")
     ap.add_argument("--self-check", action="store_true")
     args = ap.parse_args()
     if args.self_check:

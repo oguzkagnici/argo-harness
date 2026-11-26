@@ -31,6 +31,7 @@ from ..workflows.core import list_workflows
 from .context import ContextManager
 from .events import EventBus
 from .prompts import build_system_prompt
+from .router import ModelRouter, TurnSignal
 from .session import Session
 from .tokens import estimate_tools
 from .types import Message, ToolCall, ToolResult, Usage
@@ -125,6 +126,13 @@ class Agent:
                  allow_tools: set[str] | None = None, extra: dict[str, Any] | None = None):
         self.cfg = cfg
         self._llm = llm
+        self.router = ModelRouter(
+            strong=getattr(getattr(cfg, "provider", None), "model", "") or "",
+            cheap=getattr(cfg, "cheap_model", "") or "",
+            policy=getattr(cfg, "router_policy", "off") or "off",
+        )
+        self._turn_signal = TurnSignal()
+        self._wrote = False
         self._owns_llm = llm is None
         self._owns_memory = memory is None
         self.memory = memory
@@ -725,6 +733,9 @@ class Agent:
                             cached_tokens=self.last_usage.cached_tokens,
                             reasoning_tokens=self.last_usage.reasoning_tokens)
         iterations = 0
+        self._wrote = False
+        self._turn_signal = TurnSignal()
+        self._task_writes = self.router.intent_is_mutating(task)
         stop_reason = "final"
         final_text = ""
         empty_retries = 0
@@ -759,11 +770,19 @@ class Agent:
                 break
 
             self.messages = await self.ctxmgr.manage(self.messages, state_summary=self._state_summary())
+            self._turn_signal.turn = iterations
+            self._turn_signal.wrote = self._wrote
+            self._turn_signal.task_writes = self._task_writes
+            routed_model = self.router.choose(self._turn_signal)
+            extra_kwargs = {"model": routed_model} if routed_model else {}
+            if routed_model:
+                self.events.emit("model_route", model=routed_model, reason=self.router.reason(self._turn_signal))
             try:
                 if use_stream:
-                    resp = await self.llm.collect_stream(self.messages, schemas, on_delta=self.on_delta)
+                    resp = await self.llm.collect_stream(self.messages, schemas, on_delta=self.on_delta,
+                                                         **extra_kwargs)
                 else:
-                    resp = await self.llm.chat(self.messages, schemas)
+                    resp = await self.llm.chat(self.messages, schemas, **extra_kwargs)
             except LLMError as exc:
                 stop_reason = "error"
                 final_text = f"LLM error: {exc}"
@@ -806,6 +825,14 @@ class Agent:
 
             tool_calls += len(assistant.tool_calls)
             results = await self._execute_tool_calls(assistant.tool_calls)
+            if results:
+                self._turn_signal.last_tool = results[-1][0].name
+                self._turn_signal.last_tool_error = any(res.is_error for _, res in results)
+                self._turn_signal.tool_calls += len(results)
+                for tc, _res in results:
+                    tool = self.registry.tools.get(tc.name) if self.registry else None
+                    if tool is not None and not tool.read_only:
+                        self._wrote = True
             images: list[str] = []
             for tc, res in results:
                 tool_msg = Message(role="tool", content=res.content, tool_call_id=tc.id, name=tc.name)
