@@ -305,6 +305,35 @@ wrong-source citations. That is a ceiling result on a 6-document corpus with cle
 measurement path (parse → verify → score), not robustness to noisy or contradictory sources. Next step (R4) is a
 GAIA/BrowseComp-style exact-answer subset with cached pages.
 
+### 9c. Deep research, exact answers (GAIA/BrowseComp-style, R4)
+
+`benchmarks/deep_research.py` serves 8 deterministic pages from `benchmarks/data/pages/` (one stale 2024 draft,
+one unrelated project note) and asks 6 questions whose answers must be exact: 4 single-hop lookups and 2 multi-hop
+(team → lead, Q3 + Q4 revenue). The scorer normalises case/money/commas, strips a short parenthetical glosses,
+and requires a final `ANSWER: <value>` line; it rejects hedged or negated replies that merely quote the decoy value.
+
+```bash
+python benchmarks/deep_research.py --questions 6
+python benchmarks/deep_research.py --ids omega_budget   # single question
+python benchmarks/deep_research.py --self-check         # page server + scorer, offline
+```
+
+| Run | Accuracy | Tokens | Notes |
+|---|---|---|---|
+| `deep_research_20261126-095938.json` | 5/6 | 311,650 | no page index; the miss guessed a URL and hit `max_iterations` after 101 tool calls |
+| `deep_research_20261126-102711.json` | **6/6** | **69,325** | `/docs` index page + "do not guess URLs" instruction |
+
+**What moved the number.** The failure was discovery, not reasoning: without a table of contents the model
+hallucinated `/docs/alpha-old-2` and burned the iteration budget. Serving a machine-readable index at the entry
+point is the cheap fix — same accuracy ceiling, 4.5× fewer tokens, and it mirrors how retrieval-first harnesses
+(Deep Research, Claude Code's file listing) expose the corpus before acting.
+
+**Two scorer/fixture bugs found while grading.** (1) The decoy page was literally named `/docs/distractor`, which
+leaks its role; renaming to `/docs/omega-note` removes the tell. (2) Substring matching scored a refusal
+("Not stated … the decoy claims $9.9M") as correct, because the answer appeared inside the sentence. The matcher now
+rejects refusal markers and requires the reply to be the value plus at most a short gloss, so truncation-style false
+positives are caught. Both are covered by `tests/test_deep_research.py`.
+
 ## 11. Document QA (DOCX / PPTX / XLSX / PDF)
 
 Ten questions with exact answers over generated documents, answered by a fresh agent in two modes:

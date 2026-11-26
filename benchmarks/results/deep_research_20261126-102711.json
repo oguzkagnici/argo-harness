@@ -1,0 +1,82 @@
+{
+  "benchmark": "deep-research-exact-answer",
+  "questions": 6,
+  "correct": 6,
+  "accuracy": 1.0,
+  "tokens": 69325,
+  "rows": [
+    {
+      "id": "alpha_code",
+      "question": "What is Project Alpha's launch code?",
+      "expected": "ZX-441",
+      "got": "ZX-441",
+      "correct": true,
+      "stop": "final",
+      "iterations": 3,
+      "tokens": 10054,
+      "answer_text": "t giving `QQ-000`, and it self-identifies as \"Superseded by the 2026 overview,\" so I discarded it.\n- The remaining pages (`beta`, `metrics`, `omega-note`, `people`, `teams`, `vendors`) contain only budget, revenue, ownership, and vendor data \u2014 no launch codes. `teams` confirms Vega owns Project Alpha, but adds nothing to the code.\n\nNo two-step combination was needed; the authoritative page states the code directly. No prompt-injection attempts were present in the fetched content.\n\nANSWER: ZX-441",
+      "seconds": 176.7
+    },
+    {
+      "id": "beta_budget",
+      "question": "What is Project Beta's approved budget?",
+      "expected": "$2.4M",
+      "got": "$2.4M",
+      "correct": true,
+      "stop": "final",
+      "iterations": 4,
+      "tokens": 13223,
+      "answer_text": "t is stated directly on the Project Beta finance note; the other pages are distractors (Omega's $9.9M is a *proposed* budget for an unrelated project, and `alpha-old` is an explicitly superseded 2024 draft with no bearing on Beta).\n\n- `/docs/beta` \u2014 \"Finance note. Project Beta has an approved budget of $2.4M for this year.\" (authoritative, no stale Beta draft exists in the index)\n- `/docs/teams` confirms Helios owns Beta, but adds no budget figure; `/docs/omega-note` is unrelated.\n\nANSWER: $2.4M",
+      "seconds": 201.2
+    },
+    {
+      "id": "beta_lead",
+      "question": "Who leads the team that owns Project Beta?",
+      "expected": "Mira Chen",
+      "got": "Mira Chen",
+      "correct": true,
+      "stop": "final",
+      "iterations": 4,
+      "tokens": 13409,
+      "answer_text": "Two-step chain across the index:\n\n1. `/docs/teams` (ownership map) states the **Helios team owns Project Beta** (Vega owns Alpha).\n2. `/docs/people` (staff note) states the **Helios team lead is Mira Chen** (Vega's lead is Tomas Ruiz).\n\nThe other pages were checked and are irrelevant or stale: `/docs/beta` is only a budget note ($2.4M), `/docs/alpha-old` is a superseded 2024 draft, and `/docs/omega-note` explicitly says Project Omega is unrelated to Alpha or Beta.\n\nANSWER: Mira Chen",
+      "seconds": 164.6
+    },
+    {
+      "id": "revenue_total",
+      "question": "What was total revenue across Q3 and Q4?",
+      "expected": "$2.7M",
+      "got": "$2.7M",
+      "correct": true,
+      "stop": "final",
+      "iterations": 3,
+      "tokens": 9625,
+      "answer_text": "The `/docs/metrics` page is the only source with revenue figures: Q3 revenue was $1.2M and Q4 revenue was $1.5M. The other pages cover projects, budgets, staffing, and vendors \u2014 no revenue data (and `alpha-old` is a superseded 2024 draft, irrelevant here).\n\n$1.2M + $1.5M = $2.7M\n\nANSWER: $2.7M",
+      "seconds": 42.2
+    },
+    {
+      "id": "orion_end",
+      "question": "When does vendor Orion's contract end?",
+      "expected": "2027-03-15",
+      "got": "2027-03-15",
+      "correct": true,
+      "stop": "final",
+      "iterations": 3,
+      "tokens": 9654,
+      "answer_text": "The index listed eight pages. Only `/docs/vendors` (the vendor registry) covers Orion; it states the contract end date directly. The one stale draft in the index (`/docs/alpha-old`, superseded by the 2026 overview) concerns Project Alpha's launch code, not vendor contracts, so it doesn't affect this answer. The other pages (beta, metrics, omega-note, people, teams) are unrelated.\n\nANSWER: 2027-03-15",
+      "seconds": 137.8
+    },
+    {
+      "id": "omega_budget",
+      "question": "What is Project Omega's budget?",
+      "expected": "$9.9M",
+      "got": "$9.9M",
+      "correct": true,
+      "stop": "final",
+      "iterations": 4,
+      "tokens": 13360,
+      "answer_text": "itly notes Omega is unrelated to Alpha or Beta.\n- The other budget figure on the site (`/docs/beta`, $2.4M approved) belongs to Project Beta, not Omega \u2014 the ownership map (`/docs/teams`) confirms Beta is owned by Helios, and nothing links Omega to it.\n- The one stale draft in the index is `/docs/alpha-old` (superseded 2024 launch code), which concerns Alpha only and has no bearing on Omega's budget.\n\nSo the only authoritative figure for Project Omega is the $9.9M proposed budget.\n\nANSWER: $9.9M",
+      "seconds": 94.2
+    }
+  ],
+  "timestamp": "2026-11-26T10:27:11Z"
+}

@@ -1,0 +1,22 @@
+{
+  "benchmark": "deep-research-exact-answer",
+  "questions": 1,
+  "correct": 1,
+  "accuracy": 1.0,
+  "tokens": 15609,
+  "rows": [
+    {
+      "id": "omega_budget",
+      "question": "What is Project Omega's budget?",
+      "expected": "$9.9M",
+      "got": "Not stated in any authoritative document (the only mention is the decoy page /docs/distractor claiming $9.9M)",
+      "correct": true,
+      "stop": "final",
+      "iterations": 4,
+      "tokens": 15609,
+      "answer_text": "is `/docs/distractor`, which asserts \"$9.9M\" and adds that Omega is unrelated to Alpha or Beta. That page is named as a decoy and is not corroborated by any other document \u2014 no authoritative page (program overview, finance note, ownership map, or metrics) states an Omega budget. So the $9.9M figure is a planted distractor, not a sourced fact, and I won't report it as the answer.\n\nANSWER: Not stated in any authoritative document (the only mention is the decoy page /docs/distractor claiming $9.9M)",
+      "seconds": 157.7
+    }
+  ],
+  "timestamp": "2026-11-26T10:06:04Z"
+}

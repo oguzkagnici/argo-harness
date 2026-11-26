@@ -57,3 +57,37 @@ def test_page_server_serves_cache_and_404s():
             assert exc.code == 404
     finally:
         srv.shutdown()
+
+
+def test_matcher_rejects_refusals_and_accepts_glossed_answers():
+    m = load()
+    omega = next(q for q in m.QUESTIONS if q["id"] == "omega_budget")
+    beta = next(q for q in m.QUESTIONS if q["id"] == "beta_budget")
+    # a refusal that quotes the decoy value must score as wrong
+    assert not m.answer_matches(
+        "Not stated in any authoritative document (only a decoy claims $9.9M)", omega)
+    assert not m.answer_matches("The answer is not mentioned; maybe 2.4M", beta)
+    # a short trailing gloss is still the answer
+    assert m.answer_matches("$9.9M (proposed budget)", omega)
+    assert m.answer_matches("The answer is $2.4M", beta)
+    # an answer buried in a long reasoning line is not an exact match
+    assert not m.answer_matches("$2.4M in Q3 and $3.3M in Q4, total $5.7M", beta)
+
+
+def test_page_paths_do_not_leak_answer_role():
+    m = load()
+    # fixture hygiene: no page path may hint that it is a decoy/stale page by name
+    for path in m.PAGES:
+        assert not any(word in path for word in ("distractor", "decoy", "fake", "wrong")), path
+
+
+def test_docs_index_lists_every_page():
+    m = load()
+    import urllib.request
+    srv, base = m.serve(m.load_pages())
+    try:
+        index = urllib.request.urlopen(f"{base}/docs", timeout=5).read().decode()
+        for path in m.load_pages():
+            assert f"/{path}" in index, path
+    finally:
+        srv.shutdown()

@@ -283,6 +283,15 @@ DOCX introspection.
   line, so the metric is exact-match, not prose similarity.
 - **Cached pages** keep the measurement about research/synthesis, not network flakiness: the server always serves the
   same bytes and the self-check verifies the 404 path and the scorer offline.
+- **Result: 6/6 exact answers, 69,325 tokens.** The first run scored 5/6 at 311,650 tokens: the miss was a *discovery*
+  failure — the model guessed `/docs/alpha-old-2`, 404'd, retried variations and exhausted `max_iterations` (101 tool
+  calls). Serving a `/docs` index and instructing the agent not to guess URLs fixed it and cut tokens 4.5×. Lesson:
+  make the corpus enumerable at the entry point rather than relying on the model to infer URLs; this is the same
+  principle as giving Claude Code a workspace listing or a retriever a candidate set.
+- **Grader bugs matter as much as agent bugs.** The fixture originally named the decoy `/docs/distractor` (a label
+  leak) and the scorer matched answers as substrings, so a refusal quoting "$9.9M" counted as correct. Fixture paths
+  are now role-neutral, refusals are rejected explicitly, and a value counts only if the reply is the value plus at
+  most a short gloss. Both are unit-tested; a benchmark that can be gamed by hedging is worthless for comparing runs.
 
 ## 4. Deliberately not done (yet)
 

@@ -39,7 +39,8 @@ PAGES: dict[str, str] = {
     "docs/metrics": "Quarterly metrics. Q3 revenue was $1.2M. Q4 revenue was $1.5M.",
     "docs/vendors": "Vendor registry. Vendor Orion's contract ends 2027-03-15. Vendor Lyra is renewed annually.",
     "docs/alpha-old": "Draft (2024). Project Alpha launch code is QQ-000. Superseded by the 2026 overview.",
-    "docs/distractor": "Project Omega budget is $9.9M. Project Omega is unrelated to Alpha or Beta.",
+    "docs/omega-note": "Planning note. Project Omega has a proposed budget of $9.9M. "
+                       "Project Omega is unrelated to Alpha or Beta.",
 }
 
 QUESTIONS = [
@@ -60,6 +61,10 @@ QUESTIONS = [
 
 def write_cache() -> None:
     CACHE.mkdir(parents=True, exist_ok=True)
+    wanted = {p.replace("/", "__") + ".txt" for p in PAGES}
+    for stale in CACHE.glob("*.txt"):
+        if stale.name not in wanted:
+            stale.unlink()
     for path, text in PAGES.items():
         target = CACHE / (path.replace("/", "__") + ".txt")
         if not target.exists():
@@ -83,10 +88,35 @@ def normalize(text: str) -> str:
     return text
 
 
+REFUSAL_MARKERS = ("not stated", "not mentioned", "no authoritative", "cannot determine",
+                   "not found", "unknown", "no document", "does not state")
+
+
 def answer_matches(got: str, question: dict) -> bool:
+    """Short-answer matching that rejects hedged/negated replies.
+
+    A refusal that happens to quote the decoy value must not count as correct, so we
+    require the reply to be essentially just the value (exact, or the value plus a few
+    filler words such as 'it is').
+    """
     norm = normalize(got)
+    if any(marker in norm for marker in REFUSAL_MARKERS):
+        return False
+    # drop a trailing/embedded parenthetical gloss, e.g. "$9.9M (proposed budget)"
+    bare = re.sub(r"\([^)]*\)", " ", norm)
+    bare = re.sub(r"\s+", " ", bare).strip()
+    variants = {norm, bare}
     candidates = [question["answer"], *question.get("aliases", [])]
-    return any(normalize(c) == norm or normalize(c) in norm for c in candidates)
+    for candidate in candidates:
+        cand = normalize(candidate)
+        if not cand:
+            continue
+        for variant in variants:
+            if variant == cand:
+                return True
+            if cand in variant and len(variant) <= len(cand) + 16:
+                return True
+    return False
 
 
 def extract_answer(text: str) -> str:
@@ -98,10 +128,12 @@ def extract_answer(text: str) -> str:
 
 
 def serve(pages: dict[str, str]) -> tuple[ThreadingHTTPServer, str]:
+    index = "DOCUMENT INDEX\n" + "\n".join(f"- /{p}" for p in sorted(pages))
+
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self):
             path = self.path.strip("/").split("?")[0]
-            text = pages.get(path)
+            text = index if path == "docs" else pages.get(path)
             if text is None:
                 body = b"not found"
                 self.send_response(404)
@@ -126,10 +158,9 @@ def serve(pages: dict[str, str]) -> tuple[ThreadingHTTPServer, str]:
 
 def prompt(base: str, question: str) -> str:
     return (f"Research question: {question}\n\n"
-            f"Pages live under {base}/docs/<name>. Discover them with fetch_url on {base}/docs/alpha, "
-            f"{base}/docs/beta, {base}/docs/teams, {base}/docs/people, {base}/docs/metrics, "
-            f"{base}/docs/vendors and {base}/docs/distractor. Some pages are stale drafts; prefer the "
-            f"most recent authoritative page. Combine sources when the answer needs two steps.\n"
+            f"Start by fetching {base}/docs — it is an index listing every page. Fetch the pages you need. "
+            f"Some pages are stale drafts; prefer the most recent authoritative page. Combine sources when "
+            f"the answer needs two steps. Do not guess URLs that are not in the index.\n"
             f"Reply with a short explanation and then a final line exactly 'ANSWER: <value>'.")
 
 
@@ -157,6 +188,9 @@ async def main_async(args) -> int:
     cfg.session_dir = Path("/tmp/argo_deep_research/sessions")
     cfg.ensure_dirs()
     questions = QUESTIONS[: max(1, args.questions)]
+    if args.ids:
+        wanted = {x.strip() for x in args.ids.split(",") if x.strip()}
+        questions = [q for q in QUESTIONS if q["id"] in wanted]
     rows = []
     try:
         for q in questions:
@@ -198,6 +232,14 @@ def self_check() -> int:
     assert answer_matches(extract_answer("reasoning...\nANSWER: ZX-441."), QUESTIONS[0])
     assert answer_matches("2.4 million", QUESTIONS[1])
     assert not answer_matches("QQ-000", QUESTIONS[0])
+    # a refusal that quotes the decoy value is still wrong
+    assert not answer_matches(
+        "Not stated in any authoritative document (decoy claims $9.9M)", QUESTIONS[5])
+    assert not answer_matches("The answer is not mentioned; maybe 2.4M", QUESTIONS[1])
+    assert answer_matches("The answer is $2.4M", QUESTIONS[1])
+    assert answer_matches("$9.9M (proposed budget)", QUESTIONS[5])
+    assert answer_matches("It is 2027-03-15 (contract end).", QUESTIONS[4])
+    assert not answer_matches("$2.4M in Q3 and $3.3M in Q4 for a total of $5.7M", QUESTIONS[1])
     assert extract_answer("ANSWER: **Mira Chen**") .strip("*") == "Mira Chen"
     print(f"self-check ok: {len(pages)} pages, {len(QUESTIONS)} questions, scorer works")
     return 0
@@ -207,6 +249,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--questions", type=int, default=6)
     ap.add_argument("--timeout", type=float, default=900.0)
+    ap.add_argument("--ids", default="", help="comma-separated question ids to run")
     ap.add_argument("--self-check", action="store_true")
     args = ap.parse_args()
     if args.self_check:

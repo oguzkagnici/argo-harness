@@ -143,9 +143,9 @@ Mutating MCP tools still go through approvals (`read_only=False` default).
 ## P3 — breadth (only after P0-P2)
 
 13. **Computer use**: selector-drift recovery and a tiny WebArena/OSWorld subset; measure unsafe-action rate.
-14. **Deep research R3/R4**: R3 done (report precision/recall 1.000). R4 implemented: `benchmarks/deep_research.py`
-    (8 cached pages incl. a stale draft + distractor, 6 exact-answer questions, 2 multi-hop), 4 unit tests; live run
-    in progress.
+14. ~~**Deep research R3/R4**~~ — done. R3 report-level citation precision/recall **1.000**. R4 exact-answer subset:
+    **6/6** at 69,325 tokens / 817 s (was 5/6 at 311,650 before the `/docs` index fix). 7 unit tests. Next: a larger, noisier
+    corpus and questions needing 3+ sources.
 15. ~~**Plan persistence**~~ — done: `Session.plan_approved` + `approved_actions` are persisted and reloaded;
     a resumed plan is reused when actions ⊆ approved, and re-prompts on scope change. 2 tests.
 16. **Multi-model router**: partially done — `models.cheap` routes compaction/handoff summaries only (2 tests).

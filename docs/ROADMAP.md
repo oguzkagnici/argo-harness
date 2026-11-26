@@ -75,7 +75,7 @@ restrictions. Cache snapshots and record retrieval timestamps to make runs repro
 | 9b | ~~**Retrieval ablations**~~ — done: `--ablate` on `benchmarks/retrieval.py` | rerank-20 knee; k=10 and dense-heavy +2 nDCG on SciFact; knobs added to config | Next: NFCorpus replication before changing defaults |
 | 9c | ~~**Document QA**~~ — done: `benchmarks/document_qa.py` | tool 9/10 at 6,748 tok / 2.9 iter (1 stall); bash 10/10 at 8,351 / 3.8 | Next: chart-heavy and scanned PDFs |
 | 9d | ~~**Adaptive review policy**~~ — done: `--review adaptive`, risk scoring | 6 tests; live doc run auto-reviewed (27.8k tok) and found defects | Next: measure cost/quality on the repair suite |
-| 9 | **Deep research implementation** — R1+R2 done (`argo/research/`) | false-support 1.000 → 0.000, supported retention 1.000 on a 12-claim local set | Next: R3 adaptive search, R4 report pipeline, GAIA subset |
+| 9 | **Deep research implementation** — R1+R2 done (`argo/research/`), R3 report citations + exact-answer subset done | false-support 1.000 → 0.000, report citation P/R 1.000, exact answers 6/6 @ 69k tok | Next: R4 multi-section pipeline, full GAIA/BrowseComp, adaptive search |
 
 ## 4. Non-goals (for now)
 

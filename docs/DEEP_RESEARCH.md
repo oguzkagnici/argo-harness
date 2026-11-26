@@ -1,6 +1,6 @@
 # Deep research: benchmark landscape and Argo's plan
 
-Status: **R1 and R2 implemented; R3/R4 planned.** `argo/research/` contains the evidence ledger and the
+Status: **R1, R2, and the R3 evaluation are implemented; R4 (multi-section report pipeline) is not.** `argo/research/` contains the evidence ledger and the
 claim verifier, with `benchmarks/citation.py` measuring them. This memo records what "deep research" is measured against, which
 metrics translate into engineering requirements, and the staged plan already summarized in
 [`ROADMAP.md`](ROADMAP.md) §2. Nothing here is claimed as a current Argo capability.
@@ -64,9 +64,13 @@ long-form output. Both are addressable in the harness rather than by prompt word
 |---|---|
 | R1 | **Met:** 5 unit tests (dedupe, ids, dangling citations, report rendering, end-to-end tools) |
 | R2 | **Met locally:** false-support 0.000 vs 1.000 baseline; supported retention 1.000; needs a larger corpus |
-| R3 | Coverage-per-search improves over a fixed-round baseline on a local task set |
-| R4 | Rubric review + verifier pass on a small, fixed task set; no fabricated citations |
+| R3 | **Met locally:** report-level citation precision 1.000 / recall 1.000 on a generated 6-bullet report; exact-answer subset 6/6 at 69,325 tokens |
+| R4 | Rubric review + verifier pass on a small, fixed task set; no fabricated citations (only the exact-answer subset exists today) |
 
-Until R3/R4 exist, Argo should not claim full deep-research capability. It now has the verification layer that
-separates research from plausible prose, but not yet the adaptive search controller, the multi-section report
-pipeline, or evaluation on GAIA/BrowseComp/DeepResearch Bench.
+Argo should still not claim full deep-research capability: it has the verification layer, a report-level citation
+measurement, and a small exact-answer (GAIA/BrowseComp-style) subset, but not the adaptive search controller, the
+multi-section report pipeline, or evaluation on the full GAIA/BrowseComp/DeepResearch Bench sets.
+
+Measured lesson from the exact-answer subset: the only failure was *discovery*, not reasoning — the agent guessed
+URLs and exhausted its iteration budget. Giving it a `/docs` index took accuracy 5/6 → 6/6 and cut tokens 4.5×.
+Any future research controller should make the candidate corpus enumerable before the model plans.

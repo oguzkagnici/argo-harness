@@ -1,0 +1,22 @@
+{
+  "benchmark": "deep-research-exact-answer",
+  "questions": 1,
+  "correct": 0,
+  "accuracy": 0.0,
+  "tokens": 13095,
+  "rows": [
+    {
+      "id": "omega_budget",
+      "question": "What is Project Omega's budget?",
+      "expected": "$9.9M",
+      "got": "$9.9M (proposed budget)",
+      "correct": false,
+      "stop": "final",
+      "iterations": 4,
+      "tokens": 13095,
+      "answer_text": "I fetched the index and all eight listed pages. Only `/docs/omega-note` mentions Project Omega: it states a **proposed** budget of $9.9M, and explicitly notes Omega is unrelated to Alpha or Beta (so the Alpha launch-code draft and Beta's $2.4M approved budget are distractors). No other page contains Omega budget figures, and there is no newer Omega page superseding this note.\n\nANSWER: $9.9M (proposed budget)",
+      "seconds": 126.4
+    }
+  ],
+  "timestamp": "2026-11-26T10:11:49Z"
+}

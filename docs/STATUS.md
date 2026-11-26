@@ -1,6 +1,6 @@
 # Implementation status
 
-Snapshot: 2026-11-25. Offline suite: **140 tests passing** (`.venv/bin/python -m pytest -q`).
+Snapshot: 2026-11-26. Offline suite: **153 tests passing** (`.venv/bin/python -m pytest -q`).
 Live numbers live in [`benchmarks/README.md`](../benchmarks/README.md); rationale in
 [`DECISIONS.md`](DECISIONS.md). "Done" means implemented *and* tested; "measured" means we have a live number.
 
@@ -17,6 +17,7 @@ Live numbers live in [`benchmarks/README.md`](../benchmarks/README.md); rational
 | Retrieval: BM25 + dense + weighted RRF + cross-encoder rerank | Measured on 2 corpora | SciFact + NFCorpus |
 | Memory: dream consolidation, wiki extraction | Measured + scaled | 6-lesson + 24-lesson/5-session runs; 2 generations rule |
 | Research: evidence ledger + citation verifier | Done | `benchmarks/citation.py`, `tests/test_research.py` |
+| Deep research (exact-answer, cached pages) | Measured | `benchmarks/deep_research.py` (R4) |
 | Documents/slides (DOCX/PPTX) | Done | document QA benchmark |
 
 ## Always-on runtime
@@ -55,8 +56,8 @@ Live numbers live in [`benchmarks/README.md`](../benchmarks/README.md); rational
 - Memory cadence/wiki ablations at 40–60 lessons (24-lesson scale test + two-generation rule done).
 - Summary-prompt A/B: `identifiers` wins at 18 steps (3/3, 1 vs 2 compactions); confirm at 36 steps.
 - Live measurement of the repair loop (does in-place repair improve resolution/token?).
-- Deep research R3/R4: report-level citation precision/recall and a GAIA/BrowseComp-style subset.
+- Deep research: larger/noisier corpus and multi-source synthesis beyond 2 hops.
 - Computer-use subset (WebArena/OSWorld) and unsafe-action rate.
-- MCP prompts + per-server approval policy; OTel export; served live trace view.
+- MCP: per-server approval policy; served live trace view (MCP prompts + OTel export done).
 - Multi-model router: per-turn exploration/final routing and review-only cheap subagent (compaction routing done).
 - Statistical rigor: multiple seeds / confidence intervals; weaker target model for injection.
