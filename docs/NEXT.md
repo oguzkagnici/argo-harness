@@ -4,7 +4,7 @@ Ordered by (a) what is currently *unproven or broken*, (b) how much evidence exi
 (c) cost in rate limit/quota on this shared machine. Every item lists the success criterion so it can be closed with
 a measurement, not an opinion.
 
-Current state: 170 offline tests pass. Live evidence exists for retrieval, memory, repair, documents, citation,
+Current state: 174 offline tests pass. Live evidence exists for retrieval, memory, repair, documents, citation,
 injection (fixed + partial adaptive), context (synthetic + live), observability, worktree review, and the SWE-bench
 Docker path (gold patch 1/1).
 
@@ -129,7 +129,7 @@ serve a live trace view from `argo serve`.
 **Pass:** a failing 36-step run can be diagnosed from `argo metrics` + `argo trace` alone (already true for the
 churn bug; make it systematic).
 **Status:** done for single-host. Added per-tool p50/p95, tokens/tool call, and `argo metrics --since`; `--json`
-is the export format. OTel export and a served live view remain optional and are not required for the pass bar.
+is the export format. OTel export is done, and the served live view is done (`/trace`, `/v1/sessions`; 4 tests).
 
 ### 12. ~~MCP completeness~~ — done
 **Why:** tools over stdio only.

@@ -1,6 +1,6 @@
 # Implementation status
 
-Snapshot: 2026-11-26. Offline suite: **170 tests passing** (`.venv/bin/python -m pytest -q`).
+Snapshot: 2026-11-26. Offline suite: **174 tests passing** (`.venv/bin/python -m pytest -q`).
 Live numbers live in [`benchmarks/README.md`](../benchmarks/README.md); rationale in
 [`DECISIONS.md`](DECISIONS.md). "Done" means implemented *and* tested; "measured" means we have a live number.
 
@@ -52,6 +52,7 @@ Live numbers live in [`benchmarks/README.md`](../benchmarks/README.md); rational
 | Document QA / citation / repair / workflow replay | Measured | see README |
 | Long-horizon context (live) | Measured | 3/3 completion |
 | Observability (trace/metrics/p50/p95/--since/--cost) | Done | `tests/test_observability.py` |
+| Served live trace view (`/trace`, `/v1/sessions`) | Done + tested | `tests/test_server_trace.py` |
 
 ## Still open
 
@@ -61,6 +62,6 @@ Live numbers live in [`benchmarks/README.md`](../benchmarks/README.md); rational
 - Live measurement of the repair loop (does in-place repair improve resolution/token?).
 - Deep research: larger/noisier corpus and multi-source synthesis beyond 2 hops.
 - Computer use: WebArena/OSWorld-scale subset; current evidence is one drifted-login task + deterministic replay.
-- MCP: served live trace view (per-server `read_only` approval policy, resources/prompts and OTel export are done).
+- MCP: per-tool approval policy (per-server `read_only` and the served trace view are done).
 - Multi-model router: per-turn `explore` routing done and measured; a review-only cheap subagent remains.
 - Statistical rigor: multiple seeds / confidence intervals; weaker target model for injection.

@@ -160,6 +160,11 @@ Any OpenAI SDK works: point `base_url` at `http://127.0.0.1:8000/v1`. The respon
 object with session id, iterations, files, compactions/resets, and token usage. Streaming uses standard SSE
 chunks. Native `POST /v1/agent` streams structured events. Optional `--api-key` enforces a bearer token.
 
+The same server exposes a live trace view: `GET /trace` lists recent sessions (stop reason, iterations, tokens,
+tool calls/errors) and `GET /trace/<session>` shows the timeline, auto-refreshing every few seconds. JSON
+equivalents are `GET /v1/sessions` and `GET /v1/sessions/<id>`; with `--api-key`, append `?key=…` for the HTML
+pages or send the bearer header.
+
 ## Documents
 
 One structured spec renders to DOCX, PPTX, XLSX, PDF, MD, HTML, CSV:
@@ -235,7 +240,7 @@ Codex, DeepSeek Harness, OpenHands, Instinct, Hermes, and Anthropic's always-on 
 ## Tests
 
 ```bash
-pytest -q            # 170 unit/integration tests, no network required
+pytest -q            # 174 unit/integration tests, no network required
 argo doctor          # live provider check
 ```
 

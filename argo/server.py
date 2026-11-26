@@ -10,6 +10,7 @@ Plus memory, dreaming, daemon/trigger, approval, and passthrough embeddings/rera
 from __future__ import annotations
 
 import asyncio
+import html
 import json
 import time
 import uuid
@@ -17,11 +18,12 @@ from pathlib import Path
 from typing import Any, AsyncIterator
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 
 from .config import ArgoConfig
 from .core.agent import Agent
-from .core.session import Session
+from .core.observability import load_events, render_trace, usage_fields
+from .core.session import Session, list_sessions
 from .daemon import GoalQueue
 from .llm.client import LLMClient
 from .memory.dream import DreamEngine
@@ -64,6 +66,58 @@ def _usage_dict(result: Any) -> dict[str, Any]:
             "prompt_tokens_details": {"cached_tokens": result.usage.cached_tokens},
             "completion_tokens_details": {"reasoning_tokens": result.usage.reasoning_tokens}}
 
+
+
+
+def _esc(value: Any) -> str:
+    return html.escape(str(value if value is not None else ""))
+
+
+STYLE = """
+body{font:14px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;background:#0f1115;color:#d7dae0;margin:0;padding:24px}
+h1{font-size:18px;margin:0 0 16px}
+a{color:#7cc4ff;text-decoration:none} a:hover{text-decoration:underline}
+table{border-collapse:collapse;width:100%} th,td{text-align:left;padding:6px 10px;border-bottom:1px solid #23272f}
+th{color:#8b93a1;font-weight:500}
+.bad{color:#ff7b72}.ok{color:#7ee787}.dim{color:#8b93a1}
+pre{white-space:pre-wrap;background:#161a21;padding:14px;border-radius:6px;overflow-x:auto}
+"""
+
+
+def _render_index(rows: list[dict[str, Any]], cfg: Any) -> str:
+    body = ["<h1>Argo sessions <span class='dim'>", _esc(cfg.provider.model), "</span></h1>",
+            "<table><tr><th>session</th><th>goal</th><th>stop</th><th>iters</th><th>tokens</th>"
+            "<th>tool calls</th><th>errors</th></tr>"]
+    for r in rows:
+        stop = _esc(r["stop_reason"] or "-")
+        cls = "ok" if r["stop_reason"] == "final" else "bad"
+        body.append(
+            f"<tr><td><a href='/trace/{_esc(r['id'])}'>{_esc(r['id'])}</a></td>"
+            f"<td class='dim'>{_esc((r['goal'] or '')[:70])}</td>"
+            f"<td class='{cls}'>{stop}</td><td>{r['iterations']}</td><td>{r['tokens']:,}</td>"
+            f"<td>{r['tool_calls']}</td><td class='{'bad' if r['tool_errors'] else ''}'>{r['tool_errors']}</td></tr>")
+    body.append("</table>")
+    if not rows:
+        body.append("<p class='dim'>No sessions yet. Run <code>argo run ...</code> first.</p>")
+    return (f"<!doctype html><html><head><meta charset='utf-8'><title>Argo traces</title>"
+            f"<meta http-equiv='refresh' content='5'><style>{STYLE}</style></head><body>"
+            + "".join(body) + "</body></html>")
+
+
+def _render_session(summary: dict[str, Any], lines: list[str], cfg: Any) -> str:
+    tools = "".join(f"<tr><td>{_esc(name)}</td><td>{row['calls']}</td><td>{row['seconds']:.2f}s</td>"
+                    f"<td class='{'bad' if row['errors'] else ''}'>{row['errors']}</td></tr>"
+                    for name, row in summary["tools"].items())
+    head = (f"<h1>{_esc(summary['id'])}</h1><p class='dim'>{_esc((summary['goal'] or '')[:300])}</p>"
+            f"<p>stop <b>{_esc(summary['stop_reason'] or '-')}</b> · {summary['iterations']} iterations · "
+            f"{summary['tokens']:,} tokens · {summary['tool_calls']} tool calls · "
+            f"{summary['tool_errors']} errors · model {_esc(cfg.provider.model)}</p>"
+            + ("<table><tr><th>tool</th><th>calls</th><th>time</th><th>errors</th></tr>" + tools + "</table>"
+               if tools else ""))
+    return (f"<!doctype html><html><head><meta charset='utf-8'><title>trace {_esc(summary['id'])}</title>"
+            f"<meta http-equiv='refresh' content='3'><style>{STYLE}</style></head><body>"
+            f"<p><a href='/trace'>&larr; all sessions</a></p>{head}"
+            f"<h1>timeline</h1><pre>{_esc(chr(10).join(lines))}</pre></body></html>")
 
 def create_app(cfg: ArgoConfig, require_key: str | None = None) -> FastAPI:
     app = FastAPI(title="Argo Harness", version="0.1.0")
@@ -250,6 +304,80 @@ def create_app(cfg: ArgoConfig, require_key: str | None = None) -> FastAPI:
                                  headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
     # --------------------------------------------------------------- memory
+
+    # ----------------------------------------------------------------- traces
+    def _session_path(session_id: str) -> Path:
+        if "/" in session_id or session_id.startswith("."):
+            raise HTTPException(400, "invalid session id")
+        path = Path(cfg.session_dir) / f"{session_id}.jsonl"
+        if not path.exists():
+            raise HTTPException(404, "unknown session")
+        return path
+
+    def _summarize(session_id: str, events: list[dict[str, Any]]) -> dict[str, Any]:
+        tokens = sum(usage_fields(e)[2] for e in events if e.get("type") == "usage")
+        tools: dict[str, dict[str, float]] = {}
+        errors = 0
+        for ev in events:
+            if ev.get("type") != "tool":
+                continue
+            name = str(ev.get("name"))
+            row = tools.setdefault(name, {"calls": 0, "seconds": 0.0, "errors": 0})
+            row["calls"] += 1
+            row["seconds"] += float(ev.get("duration_s") or 0)
+            if ev.get("is_error"):
+                row["errors"] += 1
+                errors += 1
+        final = next((e for e in reversed(events) if e.get("type") == "run_end"), {})
+        goal = next((e for e in events if e.get("type") == "run_start"), {}).get("task", "")
+        return {"id": session_id, "goal": goal, "tokens": tokens, "tool_calls": sum(r["calls"] for r in tools.values()),
+                "tool_errors": errors, "stop_reason": final.get("stop_reason", ""),
+                "iterations": final.get("iterations", 0), "events": len(events),
+                "tools": {k: {**v, "seconds": round(v["seconds"], 2)} for k, v in sorted(tools.items())}}
+
+    @app.get("/v1/sessions")
+    async def sessions(request: Request, limit: int = 30) -> dict[str, Any]:
+        authorize(request)
+        rows = []
+        for meta in list_sessions(cfg, limit=limit):
+            try:
+                events = load_events(_session_path(meta["id"]))
+            except HTTPException:
+                continue
+            rows.append(_summarize(meta["id"], events))
+        return {"object": "list", "data": rows}
+
+    @app.get("/v1/sessions/{session_id}")
+    async def session_detail(session_id: str, request: Request, limit: int = 500) -> dict[str, Any]:
+        authorize(request)
+        events = load_events(_session_path(session_id))
+        return {"session": _summarize(session_id, events), "events": events[-limit:]}
+
+    def _authorize_page(request: Request) -> None:
+        if not require_key:
+            return
+        if request.query_params.get("key") == require_key:
+            return
+        authorize(request)
+
+    @app.get("/trace", response_class=HTMLResponse)
+    async def trace_index(request: Request, limit: int = 30) -> str:
+        _authorize_page(request)
+        rows = []
+        for meta in list_sessions(cfg, limit=limit):
+            try:
+                summary = _summarize(meta["id"], load_events(_session_path(meta["id"])))
+            except HTTPException:
+                continue
+            rows.append(summary)
+        return _render_index(rows, cfg)
+
+    @app.get("/trace/{session_id}", response_class=HTMLResponse)
+    async def trace_page(session_id: str, request: Request, limit: int = 300) -> str:
+        _authorize_page(request)
+        events = load_events(_session_path(session_id))
+        return _render_session(_summarize(session_id, events), render_trace(events, limit=limit), cfg)
+
     @app.get("/v1/memory/stats")
     async def memory_stats(request: Request) -> dict[str, Any]:
         authorize(request)

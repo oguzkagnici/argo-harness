@@ -364,6 +364,20 @@ DOCX introspection.
   savings depend on the provider's price ratio, which this endpoint does not publish; measure `argo metrics --cost`
   with a `[pricing]` table before turning it on generally. Writes never start on the cheap model.
 
+## 3p. Served live trace view (2026-11-26)
+
+- **Why.** `argo trace` and `argo metrics` are CLI-only; an always-on deployment needs a browser-visible timeline
+  to answer "why did this run stop?" without shell access. This closes the last observability item from §3k/§2.
+- **What.** `argo serve` gains `GET /trace` (session index: stop reason, iterations, tokens, tool calls/errors),
+  `GET /trace/<id>` (auto-refreshing timeline with per-tool call counts, time and errors) and JSON twins
+  `GET /v1/sessions`, `GET /v1/sessions/<id>`. `--api-key` protects them (`?key=` for pages, bearer for JSON);
+  session ids are validated against path traversal and all rendered text is HTML-escaped.
+- **Panel semantics.** Token totals read both event shapes (`total_tokens` from the live bus, `total` from the
+  session JSONL) — a bug the first smoke test against real sessions exposed, now covered by a test.
+- **Evidence.** 4 offline tests (`tests/test_server_trace.py`): summary math (both usage shapes), 404/traversal,
+  HTML escaping of an injected `<script>`, key enforcement. Verified against real sessions on this machine
+  (e.g. a 4-tool-call run summarised at 29,655 tokens with per-tool breakdown).
+
 ## 4. Deliberately not done (yet)
 
 - A graded SWE-bench-Lite score (the runner and Docker path exist; only a gold-patch check has been run, because
