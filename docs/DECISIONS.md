@@ -577,6 +577,28 @@ DOCX introspection.
   SWE-bench (which cost 100k-750k tokens per run). Use `--repeats` for the cheap arms first; multi-seed SWE-bench
   needs a quota plan.
 
+## 3z. Broader SWE-bench batch: gold-control validity, and timeouts as the failure mode (2026-11-27)
+
+- **Goal.** Move beyond 8/8 on hand-picked easy instances: four more instances, two repos not yet covered
+  (`psf/requests`, `pytest-dev/pytest`), all with the same test-feedback loop and official grading.
+- **Results.** `django__django-13315` **resolved** (20 iter, 364,960 tok, 527 s); `pytest-dev__pytest-5221`
+  **resolved** (9 iter, 89,598 tok, 190 s); `psf__requests-2674` unresolved; `psf__requests-3362` unresolved with
+  **no patch** (both hit the 1,500 s cap after 739,078 / 410,195 tokens).
+- **Gold control saved the denominator.** Grading the *gold* patch for `requests-2674` through the same image fails
+  the **same five tests** (e.g. `test_mixed_case_scheme_acceptable`, all `SSLCertVerificationError` / urllib3-vs-pytest
+  artifacts). The instance is environment-invalid here, so it is excluded rather than counted as an agent failure.
+  Rule going forward: **run the gold patch through any instance you intend to count**, especially when the failure
+  looks environmental; a broken container is indistinguishable from a bad patch in the aggregate.
+- **Timeouts dominate the failures.** Requests tests reach live hosts; in this sandbox the feedback loop turned into
+  SSL/network debugging and consumed the whole wall budget, once without even editing a file. Cheap fixes for a
+  rerun: raise `--timeout`, tell the agent to run only the F2P command (already in the prompt) and to stop after N
+  attempts, or mark network-dependent instances unsupported.
+- **Cost spread.** 89,598 → 739,078 tokens per instance (8×), driven by how quickly the first correct edit lands, not
+  by repo size: Django (huge) was cheaper than requests (small).
+- **Running total.** **10 resolved / 11 gradable** across sympy, flask, xarray, django, pytest (12 attempted; one
+  environment-invalid, one no-patch timeout). The sample is deliberately small-env; it is evidence of mechanism
+  generalization across runners (pytest node ids, Django `runtests.py`, unittest labels), not a Lite-wide rate.
+
 ## 4. Deliberately not done (yet)
 
 - A graded SWE-bench-Lite score (the runner and Docker path exist; only a gold-patch check has been run, because

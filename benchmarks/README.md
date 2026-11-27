@@ -754,9 +754,37 @@ Django 11099's patch is the canonical `\A[\w.@+-]+\Z` validator fix (avoiding `r
 11179's is a one-line `delete()` initiator fix. Both needed no iteration against the test suite beyond the first
 edit — the feedback loop converged in 6-9 iterations at 51-101k tokens, far below sympy-20590 (40 iter, 745k).
 
-**Graded pass rate now 8/8** across four repositories (sympy ×3, flask ×2, xarray ×1, django ×2, official harness).
-Still not a Lite-wide rate: the sample is 8 of 300, chosen for small environments, and excludes astropy (its 1.3 spec
-pins `numpy==1.16.0`, which does not build on a modern toolchain).
+### 14c. Broader sample (+4 instances, two new repos) and a gold-control validity check
+
+Four more instances were generated with the test-feedback loop and graded one image at a time:
+
+| Instance | Stop | Iter | Tokens | Patch | Tampered | Official result |
+|---|---|---|---|---|---|---|
+| `django__django-13315` | final | 20 | 364,960 | 1 file / 1,221 c | no | **resolved** |
+| `pytest-dev__pytest-5221` | final | 9 | 89,598 | 1 file / 533 c | no | **resolved** |
+| `psf__requests-2674` | timeout (1,505 s) | 37 | 739,078 | 1 file / 914 c | no | unresolved — **invalid environment** |
+| `psf__requests-3362` | timeout (1,505 s) | 25 | 410,195 | **0 files** | no | unresolved |
+
+Two lessons matter more than the pass rate:
+
+- **Gold-control first.** Before counting `psf__requests-2674` as a failure, the **gold patch** was graded through
+  the same image: it fails the *same five tests* (`test_mixed_case_scheme_acceptable` among them, all tied to
+  `SSLCertVerificationError` / urllib3-vs-pytest in this image). The instance is therefore **environment-invalid**
+  here and is excluded from the denominator. Any SWE-bench number that does not run this control can silently blame
+  the agent for a broken container.
+- **Timeouts are a real failure mode, not a rounding error.** Both requests runs hit the 1,500 s cap while fighting
+  network/SSL test noise (410k and 739k tokens burned; one produced no edit at all). Requests tests hit live hosts,
+  so in this sandbox the feedback loop degrades into environment debugging. The two Django/pytest runs that did not
+  fight the network finished in 9-20 iterations.
+
+Cost per instance varies by **8×** (89,598 → 739,078 tokens) and is driven by how quickly the first edit lands, not by
+repo size (Django, a huge repo, was cheaper than requests, a small one).
+
+**Running total: 10 resolved / 11 gradable instances** across five repositories (sympy ×3, flask ×2, xarray ×1,
+django ×3, pytest ×1) under the official harness. One requests instance was excluded as environment-invalid (gold
+control failed identically) and one timed out without a patch. Still not a Lite-wide rate: 12 of 300 instances were
+attempted, chosen for small environments; astropy is excluded because its 1.3 spec pins `numpy==1.16.0`, which does
+not build on a modern toolchain.
 
 **Headline:** with the test-feedback loop (`--install-deps`: official test patch applied + editable install + the
 exact `FAIL_TO_PASS` pytest command in the prompt) the same instance that previously produced no patch **resolves**:

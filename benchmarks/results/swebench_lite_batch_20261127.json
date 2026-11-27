@@ -1,0 +1,59 @@
+{
+  "benchmark": "swebench-lite-batch-2026-11-27",
+  "predictions": "benchmarks/results/swebench_lite_preds_20261127-224922.jsonl",
+  "gold_control": {
+    "psf__requests-2674": "unresolved (same 5 failures as the model patch -> environment invalid)"
+  },
+  "counted": {
+    "resolved": 2,
+    "attempted_gradable": 3
+  },
+  "rows": [
+    {
+      "instance_id": "django__django-13315",
+      "repo": "django/django",
+      "stop": "final",
+      "iterations": 20,
+      "tokens": 364960,
+      "seconds": 527,
+      "patch_chars": 1221,
+      "tampered": false,
+      "official": "resolved"
+    },
+    {
+      "instance_id": "psf__requests-2674",
+      "repo": "psf/requests",
+      "stop": "timeout",
+      "iterations": 37,
+      "tokens": 739078,
+      "seconds": 1505,
+      "patch_chars": 914,
+      "tampered": false,
+      "official": "unresolved",
+      "validity": "environment-invalid (gold patch fails the same 5 tests: SSL certs/urllib3 vs pytest)"
+    },
+    {
+      "instance_id": "psf__requests-3362",
+      "repo": "psf/requests",
+      "stop": "timeout",
+      "iterations": 25,
+      "tokens": 410195,
+      "seconds": 1505,
+      "patch_chars": 0,
+      "tampered": false,
+      "official": "unresolved"
+    },
+    {
+      "instance_id": "pytest-dev__pytest-5221",
+      "repo": "pytest-dev/pytest",
+      "stop": "final",
+      "iterations": 9,
+      "tokens": 89598,
+      "seconds": 190,
+      "patch_chars": 533,
+      "tampered": false,
+      "official": "resolved"
+    }
+  ],
+  "timestamp": "2026-11-27T23:00:24Z"
+}

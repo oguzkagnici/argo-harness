@@ -53,8 +53,9 @@ PASS_TO_PASS 72/72), 17 iter / 228,926 tok, vs a 0-line ungraded patch before. F
 the way (novel shell output now counts as progress; official test patch must be applied, `setuptools` for py3.12).
 **Measured pass rate: 8/8 resolved across 4 repos** (sympy ×3, flask ×2, xarray ×1, **django ×2**; django needed the
 official `runtests.py` command from the spec, a PATH-prefixed venv and non-`--no-deps` installs — see DECISIONS §3v). Environments from official
-specs (DECISIONS 3j); grade one instance at a time (image size). Remaining: astropy is blocked by its `numpy==1.16.0`
-spec on a modern toolchain; a Lite-wide sample and multi-seed runs are still missing. Option B (agent inside the official image) is still the
+specs (DECISIONS 3j); grade one instance at a time (image size). Broadened to 12 attempts / 5 repos: **10 of 11 gradable resolved**; `psf/requests` needs a longer timeout and a
+gold-control gate (one instance was environment-invalid, one timed out with no patch). Astropy is blocked by its
+`numpy==1.16.0` spec on a modern toolchain; a Lite-wide sample and multi-seed runs are still missing. Option B (agent inside the official image) is still the
 exact-environment alternative.
 **Note:** one image ≈ 2.5-3 GB unpacked; this box has ~9 GB and 4 GB RAM, so run one at a time and clean up.
 
