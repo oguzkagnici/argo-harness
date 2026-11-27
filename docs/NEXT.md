@@ -4,7 +4,7 @@ Ordered by (a) what is currently *unproven or broken*, (b) how much evidence exi
 (c) cost in rate limit/quota on this shared machine. Every item lists the success criterion so it can be closed with
 a measurement, not an opinion.
 
-Current state: 198 offline tests pass. Live evidence exists for retrieval, memory, repair, documents, citation,
+Current state: 202 offline tests pass. Live evidence exists for retrieval, memory, repair, documents, citation,
 injection (fixed + partial adaptive), context (synthetic + live), observability, worktree review, and the SWE-bench
 Docker path (gold patch 1/1).
 
@@ -158,9 +158,10 @@ server's read tools out of the approval path (`{"search": true}`); covered by `t
 
 ## P3 — breadth (only after P0-P2)
 
-13. **Computer use**: selector-drift recovery done (replay 1/2 → 4/4). Subset expanded to 3 tasks (drifted login,
-    decoy-table lookup, exact form submit) with an unsafe-action rate: **3/3, rate 0.0**, 88,686 tok. A `select`
-    action was added after the form task exposed the gap. Remaining: a real WebArena/OSWorld subset.
+13. **Computer use**: selector-drift recovery done (replay 1/2 → 4/4). Stateless subset 3 tasks: **3/3, rate 0.0**,
+    88,686 tok. **WebArena-shaped subset** (`webarena_subset.py`: cookie sessions, server-side filters/pagination,
+    POST refunds, settings state; decoy cancelled order / sold-out product): **3/3, unsafe 0.0**, 357,785 tok.
+    Remaining: the real WebArena/OSWorld apps (dockerized sites, desktop control) and CAPTCHA/cross-site flows.
 14. ~~**Deep research R3/R4**~~ — done. R3 report-level citation precision/recall **1.000**. R4 exact-answer subset:
     **6/6** at 69,325 tokens / 817 s (was 5/6 at 311,650 before the `/docs` index fix). 3-hop set: **4/4** single pass
     vs **4/4** with the coverage gate at +85% tokens — gate is opt-in only. 8 unit tests.

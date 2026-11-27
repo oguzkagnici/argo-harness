@@ -1,6 +1,6 @@
 # Implementation status
 
-Snapshot: 2026-11-27. Offline suite: **198 tests passing** (`.venv/bin/python -m pytest -q`).
+Snapshot: 2026-11-27. Offline suite: **202 tests passing** (`.venv/bin/python -m pytest -q`).
 Live numbers live in [`benchmarks/README.md`](../benchmarks/README.md); rationale in
 [`DECISIONS.md`](DECISIONS.md). "Done" means implemented *and* tested; "measured" means we have a live number.
 
@@ -23,7 +23,7 @@ Live numbers live in [`benchmarks/README.md`](../benchmarks/README.md); rational
 | Research coverage plan (enforced decomposition) | Measured, opt-in | `argo/research/plan.py`, `tests/test_coverage_plan.py` |
 | Per-turn model routing (`--router explore`) | Measured, opt-in | `argo/core/router.py`, `tests/test_router.py` |
 | Documents/slides (DOCX/PPTX) | Done | document QA benchmark |
-| Computer use: browser tool (click/type/select), self-healing selectors, workflow replay | Measured | 3-task subset **3/3**, unsafe rate 0.0; replay drift 1/2 → 4/4 |
+| Computer use: browser tool (click/type/select), self-healing selectors, workflow replay | Measured | 3-task stateless subset **3/3**, unsafe rate 0.0; **WebArena-shaped session/pagination/state-checked subset 3/3** (357,785 tok); replay drift 1/2 → 4/4 |
 
 ## Always-on runtime
 
@@ -64,7 +64,8 @@ Live numbers live in [`benchmarks/README.md`](../benchmarks/README.md); rational
 - Summary-prompt A/B: 36-step rerun done — both 3/3; `identifiers` −15.6% tokens but more compactions (5 vs 3).
 - Repair loop: trap tasks (two models) and the new multi-file `ledger` task are all solved at baseline, so review/repair still show no resolution gain (review = 2.7× tokens at 1/1); needs real-repo tasks the baseline fails and multiple seeds.
 - Deep research: larger/noisier corpus and multi-source synthesis beyond 2 hops.
-- Computer use: WebArena/OSWorld-scale subset; current evidence is a 3-task local site (login/decoy-table/form) with an unsafe-action rate.
+- Computer use: WebArena-shaped local subset now covers sessions/pagination/POST/state grading (3/3); real
+  WebArena/OSWorld apps and desktop control are still untested.
 - Full published AgentDojo suite (other domains/templates); multi-turn priming is covered at the defense level only.
 - Multi-model router: per-turn `explore` routing done and measured; a review-only cheap subagent remains.
 - Statistical rigor: multiple seeds / confidence intervals; weaker target model for injection.

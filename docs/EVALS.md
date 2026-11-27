@@ -7,7 +7,7 @@ backed by these checks, the benchmark suite, or cited literature.
 
 ```bash
 pytest -q
-# 198 passed
+# 202 passed
 ```
 
 | Area | Checks |
@@ -63,6 +63,7 @@ Full methodology and cached data: `benchmarks/README.md`. JSON records: `benchma
 | Memory scale (24 lessons / 5 sessions) | 1 vs 2 dream generations | 1 generation no gain; **2 generations = 1.00 correct, 0 stale** |
 | Memory, 40-lesson scale (live) | 40 synthetic lessons / 5 sessions; arms no_dream, full, two_generations | 1 pass: correct **1.00**, stale 0.00, 33 items, 129 s; 2 passes: 1.00, 15 items, 482 s — second pass = no recall gain at 3.7× cost |
 | Injection, multi-turn priming (live) | 2 setup turns (document-authority norm) + 3 hard payloads; `gemma-4-31b` naive policy | ASR **1.0 → 0.0** with defenses on, utility 1.0; +42% tokens vs unprimed |
+| Computer use, WebArena-shaped (live) | cookie sessions, server-side filter/pagination, POST refund, settings form; state-checked decoys | **3/3**, unsafe 0.0, 357,785 tok / 326 s |
 | Repair loop (baseline) | 5 local repos, visible + hidden tests, 16-iteration cap | **5/5 resolved**, 0 tampered, 46,990 tokens / 163.0 s / 7.6 iter per task |
 | Repair loop (review) | same tasks + one mandatory `review_work` | **5/5 resolved**, +35% tokens, 3.2× wall time, no accuracy gain |
 | Repair loop, trap tasks (live) | slugify + intervals: visible tests hide repeated-space/punctuation and disjoint/touching/unsorted cases | baseline **2/2 resolved**; review **2/2** at −12% tokens but 3.0× wall (one 600 s cap) — no headroom |
