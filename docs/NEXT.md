@@ -4,7 +4,7 @@ Ordered by (a) what is currently *unproven or broken*, (b) how much evidence exi
 (c) cost in rate limit/quota on this shared machine. Every item lists the success criterion so it can be closed with
 a measurement, not an opinion.
 
-Current state: 202 offline tests pass. Live evidence exists for retrieval, memory, repair, documents, citation,
+Current state: 203 offline tests pass. Live evidence exists for retrieval, memory, repair, documents, citation,
 injection (fixed + partial adaptive), context (synthetic + live), observability, worktree review, and the SWE-bench
 Docker path (gold patch 1/1).
 

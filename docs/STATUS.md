@@ -1,6 +1,6 @@
 # Implementation status
 
-Snapshot: 2026-11-27. Offline suite: **202 tests passing** (`.venv/bin/python -m pytest -q`).
+Snapshot: 2026-11-27. Offline suite: **203 tests passing** (`.venv/bin/python -m pytest -q`).
 Live numbers live in [`benchmarks/README.md`](../benchmarks/README.md); rationale in
 [`DECISIONS.md`](DECISIONS.md). "Done" means implemented *and* tested; "measured" means we have a live number.
 

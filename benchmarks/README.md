@@ -700,6 +700,7 @@ text, writes `git diff` predictions (test-file edits reverted and flagged), and 
 ```bash
 python benchmarks/swebench_lite.py --generate --limit 2
 python benchmarks/swebench_lite.py --evaluate --limit 2      # docker, prebuilt swebench/sweb.eval.*
+python benchmarks/swebench_lite.py --evaluate --gold --instance-ids <ids>   # environment validity control
 ```
 
 | Instance | Stop | Iterations | Tokens | Patch | Tampered tests | Official result |

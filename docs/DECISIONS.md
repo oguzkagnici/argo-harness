@@ -588,7 +588,9 @@ DOCX introspection.
   the **same five tests** (e.g. `test_mixed_case_scheme_acceptable`, all `SSLCertVerificationError` / urllib3-vs-pytest
   artifacts). The instance is environment-invalid here, so it is excluded rather than counted as an agent failure.
   Rule going forward: **run the gold patch through any instance you intend to count**, especially when the failure
-  looks environmental; a broken container is indistinguishable from a bad patch in the aggregate.
+  looks environmental; a broken container is indistinguishable from a bad patch in the aggregate. The runner now
+  makes this one flag: `--evaluate --gold --instance-ids ...` writes the dataset's gold patches as predictions and
+  grades them through the same images (unit-tested).
 - **Timeouts dominate the failures.** Requests tests reach live hosts; in this sandbox the feedback loop turned into
   SSL/network debugging and consumed the whole wall budget, once without even editing a file. Cheap fixes for a
   rerun: raise `--timeout`, tell the agent to run only the F2P command (already in the prompt) and to stop after N

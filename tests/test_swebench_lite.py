@@ -147,3 +147,15 @@ def test_test_command_falls_back_to_pytest(monkeypatch):
     cmd = BENCH.test_command(inst)
     assert cmd.startswith("python -m pytest -q")
     assert "pkg/tests/test_x.py::test_one" in cmd
+
+
+def test_gold_predictions_writes_gold_patches(tmp_path, monkeypatch):
+    fake = [{"instance_id": "repo__repo-1", "patch": "diff --git a/x b/x\n"}]
+    monkeypatch.setattr(BENCH, "load_instances", lambda ids, limit, offset=0: fake)
+    monkeypatch.setattr(BENCH, "RESULTS", tmp_path)
+    out = BENCH.gold_predictions(["repo__repo-1"])
+    line = out.read_text(encoding="utf-8").strip()
+    import json as _json
+    row = _json.loads(line)
+    assert row["instance_id"] == "repo__repo-1" and row["model_name_or_path"] == "gold"
+    assert row["model_patch"].startswith("diff --git")

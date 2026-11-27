@@ -7,6 +7,7 @@ Two stages, so patch generation and grading can run separately:
   --verify     grade a predictions file locally with the instance's official test command in its pinned venv
   --evaluate   call ``python -m swebench.harness.run_evaluation`` with prebuilt images
                (``--namespace swebench``) for the same instance ids.
+  --gold       with --evaluate, grade gold patches instead (run this before counting a failure).
 
 This machine has ~9 GB disk and ~4 GB free RAM, so the default subset is two small sympy instances and grading
 runs one instance at a time with images removed afterwards. Use ``--instance-ids`` to pick others.
@@ -364,6 +365,24 @@ async def generate(args) -> int:
     return 0
 
 
+def gold_predictions(ids: list[str], limit: int = 0, offset: int = 0) -> Path:
+    """Write the dataset's gold patches as a predictions file (validity control for an environment)."""
+    insts = load_instances(ids, limit, offset)
+    stamp = time.strftime("%Y%m%d-%H%M%S")
+    out = RESULTS / f"swebench_lite_gold_preds_{stamp}.jsonl"
+    RESULTS.mkdir(parents=True, exist_ok=True)
+    with out.open("w", encoding="utf-8") as fh:
+        for inst in insts:
+            fh.write(json.dumps({"instance_id": inst["instance_id"], "model_name_or_path": "gold",
+                                 "model_patch": inst["patch"]}) + "\n")
+    try:
+        shown = out.relative_to(ROOT)
+    except ValueError:
+        shown = out
+    print(f"gold control predictions: {shown}", flush=True)
+    return out
+
+
 def verify(args) -> int:
     """Grade a predictions file locally with the *official* repo test command (no Docker).
 
@@ -430,7 +449,7 @@ def verify(args) -> int:
 
 def evaluate(args) -> int:
     ids = [s.strip() for s in args.instance_ids.split(",") if s.strip()] or DEFAULT_IDS
-    preds = args.predictions
+    preds = str(gold_predictions(ids, args.limit, args.offset)) if args.gold else args.predictions
     if not preds:
         found = sorted(RESULTS.glob("swebench_lite_preds_*.jsonl"))
         if not found:
@@ -455,6 +474,8 @@ def main() -> int:
     ap.add_argument("--verify", action="store_true",
                     help="Grade a predictions file locally with the official test command (no Docker).")
     ap.add_argument("--evaluate", action="store_true")
+    ap.add_argument("--gold", action="store_true",
+                    help="With --evaluate: grade the dataset's GOLD patches first (environment validity control).")
     ap.add_argument("--instance-ids", default="")
     ap.add_argument("--limit", type=int, default=2)
     ap.add_argument("--offset", type=int, default=0)
