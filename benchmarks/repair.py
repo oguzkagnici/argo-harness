@@ -410,6 +410,18 @@ Rules:
 - Finish by reporting the file changed and the exact test command you ran.
 """
 
+WTREPAIR_SUFFIX = """
+Do the work through ONE delegated subagent rather than editing files yourself:
+- call spawn_subagent exactly once with isolate=true, adopt=true, review_changes=true, repair_attempts=2 and
+  max_iterations=16, giving it this whole task as its brief;
+- after it returns, run `python -m pytest -q` yourself and confirm the visible suite passes.
+Then report the file changed and the exact test command you ran.
+"""
+
+TRAP_NOTE = """
+Hints are deliberately minimal: hidden tests check edge cases beyond the visible suite. Write the general fix.
+"""
+
 REVIEW_SUFFIX = """
 Before finishing, call review_work exactly once with these criteria:
 (1) the visible tests pass, (2) the source fix addresses the root cause rather than special-casing the visible
@@ -556,11 +568,40 @@ def review_events(cfg, session_id: str) -> tuple[int, str]:
     return count, verdict
 
 
+def init_git(work: Path) -> None:
+    for cmd in (("init", "-q", "-b", "main"), ("config", "user.email", "argo@example.com"),
+                ("config", "user.name", "Argo Benchmark")):
+        subprocess.run(["git", "-C", str(work), *cmd], check=True, capture_output=True)
+    subprocess.run(["git", "-C", str(work), "add", "-A"], check=True, capture_output=True)
+    subprocess.run(["git", "-C", str(work), "commit", "-qm", "benchmark baseline"], check=True,
+                   capture_output=True)
+
+
+def tool_log(cfg, session_id: str) -> list[str]:
+    """Tool results recorded for a session (used to see what the spawn loop reported back)."""
+    if not session_id:
+        return []
+    path = Path(cfg.session_dir) / f"{session_id}.jsonl"
+    out: list[str] = []
+    if not path.exists():
+        return out
+    for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+        try:
+            ev = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if ev.get("type") == "tool":
+            out.append(str(ev.get("result") or ""))
+    return out
+
+
 async def run_task(task: dict, mode: str, args: argparse.Namespace) -> dict:
     work = Path(tempfile.mkdtemp(prefix=f"repair_{task['id']}_{mode}_"))
     materialize(task, work)
+    if mode == "wtrepair":
+        init_git(work)
     before = snapshot_tests(work)
-    prompt = PROMPT + (REVIEW_SUFFIX if mode == "review" else "")
+    prompt = PROMPT + (REVIEW_SUFFIX if mode == "review" else "") + (WTREPAIR_SUFFIX if mode == "wtrepair" else "")
     cfg = make_cfg(work, args.max_iterations, getattr(args, "model", ""))
     started = time.monotonic()
     row: dict = {"task": task["id"], "mode": mode, "completed": True}
@@ -585,6 +626,11 @@ async def run_task(task: dict, mode: str, args: argparse.Namespace) -> dict:
     row["seconds"] = round(time.monotonic() - started, 1)
     after = snapshot_tests(work)
     row.update(evaluate(task, work, tests_changed=(before != after)))
+    if mode == "wtrepair":
+        row["adopted"] = "ADOPTED:" in row.get("output", "") or "ADOPTED:" in " ".join(
+            tool_log(cfg, row.get("session_id", "")))
+        row["adopt_skipped"] = "ADOPTION SKIPPED" in " ".join(tool_log(cfg, row.get("session_id", "")))
+        row["adopt_failed"] = "ADOPTION FAILED" in " ".join(tool_log(cfg, row.get("session_id", "")))
     row["workdir"] = str(work)
     print(f"{task['id']:<12} {mode:<8} done={row['completed']!s:<5} resolved={row['resolved']!s:<5} visible={row['visible_pass']!s:<5} "
           f"tampered={row['tests_modified']!s:<5} iter={row['iterations']:<3} "
@@ -653,7 +699,8 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--self-check", action="store_true")
     parser.add_argument("--tasks", default="", help="comma-separated task ids (default: all)")
-    parser.add_argument("--modes", default="baseline,review")
+    parser.add_argument("--modes", default="baseline,review",
+                        help="baseline | review | wtrepair (isolated child + review + repair + adopt)")
     parser.add_argument("--max-iterations", type=int, default=16)
     parser.add_argument("--timeout", type=float, default=600.0)
     parser.add_argument("--keep-work", action="store_true")

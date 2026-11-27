@@ -181,6 +181,25 @@ one visible example, so hidden-test generalization is not a weakness we can expl
 model costs ~50% more tokens and ~1.7× the iterations for the same result** — supporting the routing decision to keep
 coding turns on the strong model while read-only research may go cheap.
 
+### 5c. Worktree repair arm (`isolate + review_changes + repair_attempts + adopt`)
+
+The loop is only usable if the parent can *take* the child's work, so `spawn_subagent` gained `adopt=true`:
+the child's uncommitted work is committed on its branch, then merged into the parent checkout (`--no-ff`); a
+conflict aborts the merge and leaves the parent untouched, a failing review skips adoption, and the branch always
+survives. `benchmarks/repair.py --modes wtrepair` drives it through one delegated subagent and grades the parent
+workspace afterwards.
+
+| Arm (`intervals`) | Resolved | Tokens | Wall | Iterations | Adoption |
+|---|---|---|---|---|---|
+| baseline | 1/1 | 59,213 | 164 s | 8 | – |
+| `wtrepair` | **1/1** | 86,019 | 412 s | 10 | **merged** (`b416037`), review PASS |
+
+Two harness bugs surfaced on the first attempt: (1) the isolated child was not told it was in a worktree, so it
+probed the *parent* path and burned turns (the write was correctly refused) — isolated children now get a
+"your workspace root is this worktree, use relative paths" preamble; (2) a 600 s outer cap killed the run mid-child,
+so the arm needs ~1,800 s. With both fixed the loop completes: +45% tokens and 2.5× wall for the same resolution on
+a task the baseline already solves.
+
 Honest conclusion: on this suite, neither `review_work` nor the worktree repair loop can be shown to improve
 hidden-test resolution. A future measurement needs harder tasks (multi-file specs, real repos) where the baseline
 actually fails, and it should grade the worktree repair loop (`spawn … review_changes=true repair_attempts=2`)

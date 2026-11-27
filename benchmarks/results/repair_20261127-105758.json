@@ -1,0 +1,44 @@
+{
+  "benchmark": "repair-loop-local",
+  "model": "default",
+  "max_iterations": 20,
+  "summaries": {
+    "wtrepair": {
+      "tasks": 1,
+      "resolved_rate": 1.0,
+      "visible_pass_rate": 1.0,
+      "completed_rate": 1.0,
+      "tampered": 0,
+      "review_calls": 0,
+      "mean_tokens": 86019,
+      "mean_seconds": 412.2,
+      "mean_iterations": 10.0
+    }
+  },
+  "rows": [
+    {
+      "task": "intervals",
+      "mode": "wtrepair",
+      "completed": true,
+      "iterations": 10,
+      "stop_reason": "final",
+      "tokens": 86019,
+      "session_id": "20261127-105105-2b4bf2",
+      "output": "Done. The visible suite passes.\n\n## Root cause\n`app/intervals.py` was a stub:\n\n```python\ndef merge_intervals(intervals):\n    return list(intervals)\n```\n\nIt only shallow-copied the input \u2014 no sorting, no overlap detection, no merging \u2014 so `[(1, 3), (2, 4)]` came back unchanged instead of `[(1, 4)]`.\n\n## File changed\n- **`app/intervals.py`** (only file touched; `git diff --name-only HEAD~1 -- tests conftest.py` returns nothing, so `tests/` and `conftest.py` are untouched)\n\nThe fix sorts by `(start, end)`, merges when `start <= last_end` (so touching intervals like `(1,2),(2,3)` merge), never shrinks an interval (`if end > last_end`, so nested intervals are safe), materialises fresh tuples (no input mutation, accepts lists/tuples/generators), and returns `[]` for empty input.\n\n## Test command run\n```\n/usr/local/py-utils/bin/pytest -q\n```\nResult: `1 passed in 0.01s`, exit code 0. Also confirmed via `/usr/local/py-utils/venvs/pytest/bin/python -m pytest -q` \u2192 same result.\n\nNote on the environment: plain `python -m pytest -q` fails with `No module named pytest` \u2014 pytest is not installed in any of the system interpreters, and installing packages was disallowed. The pre-existing runner at `/usr/local/py-utils/bin/pytest` (a venv that already has pytest) is the working equivalent.\n\n## Extra verification\nRan a 12-case edge-case script (empty, single, unsorted, touching, chained touching, nested, disjoint, negatives, floats, degenerate zero-width, generator input) plus a non-mutation check \u2014 all passed, output is always `list[tuple]`.\n\nThe work was done through one `spawn_subagent` call (`isolate=true, adopt=true, review_changes=true, repair_attempts=2, max_iterations=16`); its independent diff review returned PASS and the branch was merged into the parent checkout (commit `b416037`).",
+      "review_calls": 0,
+      "review_verdict": "",
+      "seconds": 412.2,
+      "resolved": true,
+      "visible_pass": true,
+      "hidden_pass": true,
+      "tests_modified": false,
+      "visible_output": ".                                                                        [100%]\n1 passed in 0.00s\n\n/workspaces/argo/.venv/lib/python3.12/site-packages/pytest_asyncio/plugin.py:306: PytestDeprecationWarning: The configuration option \"asyncio_default_fixture_loop_scope\" is unset.\nThe event loop scope for asynchronous fixtures will default to the fixture scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to \"function\" scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: \"function\", \"class\", \"module\", \"package\", \"session\". Set it to \"fixture-scope\" to keep the current behavior.\n\n  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))",
+      "hidden_output": ".....                                                                    [100%]\n5 passed in 0.01s\n\n/workspaces/argo/.venv/lib/python3.12/site-packages/pytest_asyncio/plugin.py:306: PytestDeprecationWarning: The configuration option \"asyncio_default_fixture_loop_scope\" is unset.\nThe event loop scope for asynchronous fixtures will default to the fixture scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to \"function\" scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: \"function\", \"class\", \"module\", \"package\", \"session\". Set it to \"fixture-scope\" to keep the current behavior.\n\n  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))",
+      "adopted": true,
+      "adopt_skipped": false,
+      "adopt_failed": false,
+      "workdir": "/tmp/repair_intervals_wtrepair_i7kwx5l6"
+    }
+  ],
+  "timestamp": "2026-11-27T10:57:58Z"
+}

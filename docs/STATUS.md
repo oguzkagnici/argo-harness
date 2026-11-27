@@ -1,6 +1,6 @@
 # Implementation status
 
-Snapshot: 2026-11-26. Offline suite: **179 tests passing** (`.venv/bin/python -m pytest -q`).
+Snapshot: 2026-11-27. Offline suite: **185 tests passing** (`.venv/bin/python -m pytest -q`).
 Live numbers live in [`benchmarks/README.md`](../benchmarks/README.md); rationale in
 [`DECISIONS.md`](DECISIONS.md). "Done" means implemented *and* tested; "measured" means we have a live number.
 
@@ -12,7 +12,7 @@ Live numbers live in [`benchmarks/README.md`](../benchmarks/README.md); rational
 | OpenAI-compatible endpoints, BYOK, chat + responses wire APIs | Done | `tests/test_responses_api.py`, provider parity runs |
 | Context: microcompact → structured compaction → reset + handoff + fact ledger | Measured | live 36-step: autocompact 3/3 @275,722 tok, 0 resets |
 | Loop guard (no-progress) incl. novel shell output | Done + measured | `tests/test_agent_loop.py`, `tests/test_loop_shell_progress.py`, SWE-bench |
-| Subagents (isolated worktrees, review + in-place repair) | Done | `tests/test_worktree.py`, `tests/test_review.py` |
+| Subagents (isolated worktrees, review + in-place repair + **branch adoption**) | Done + measured | `tests/test_worktree.py` (12), live `wtrepair` arm |
 | Plan mode + plan persistence across sessions | Done | `tests/test_plan_mode.py` (5 tests) |
 | Retrieval: BM25 + dense + weighted RRF + cross-encoder rerank | Measured on 2 corpora | SciFact + NFCorpus |
 | Memory: dream consolidation, wiki extraction | Measured + scaled | 6-lesson + 24-lesson/5-session runs; 2 generations rule |

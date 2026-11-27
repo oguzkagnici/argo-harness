@@ -1,0 +1,45 @@
+{
+  "benchmark": "repair-loop-local",
+  "model": "default",
+  "max_iterations": 20,
+  "summaries": {
+    "wtrepair": {
+      "tasks": 1,
+      "resolved_rate": 0.0,
+      "visible_pass_rate": 0.0,
+      "completed_rate": 0.0,
+      "tampered": 0,
+      "review_calls": 0,
+      "mean_tokens": 80155,
+      "mean_seconds": 600.6,
+      "mean_iterations": 10.0
+    }
+  },
+  "rows": [
+    {
+      "task": "intervals",
+      "mode": "wtrepair",
+      "completed": false,
+      "timed_out": true,
+      "session_id": "20261127-103635-af0fee-sub-d2be",
+      "iterations": 10,
+      "stop_reason": "timeout",
+      "tokens": 80155,
+      "review_calls": 0,
+      "review_verdict": "",
+      "output": "(harness timeout; workspace evaluated as-is)",
+      "seconds": 600.6,
+      "resolved": false,
+      "visible_pass": false,
+      "hidden_pass": false,
+      "tests_modified": false,
+      "visible_output": "F                                                                        [100%]\n=================================== FAILURES ===================================\n_____________________________ test_two_overlapping _____________________________\n\n    def test_two_overlapping():\n>       assert merge_intervals([(1, 3), (2, 4)]) == [(1, 4)]\nE       assert [(1, 3), (2, 4)] == [(1, 4)]\nE         \nE         At index 0 diff: (1, 3) != (1, 4)\nE         Left contains one more item: (2, 4)\nE         Use -v to get more diff\n\ntests/test_intervals.py:5: AssertionError\n=========================== short test summary info ============================\nFAILED tests/test_intervals.py::test_two_overlapping - assert [(1, 3), (2, 4)...\n1 failed in 0.03s\n\n/workspaces/argo/.venv/lib/python3.12/site-packages/pytest_asyncio/plugin.py:306: PytestDeprecationWarning: The configuration option \"asyncio_default_fixture_loop_scope\" is unset.\nThe event loop scope for asynchronous fixtures will default to the fixture scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to \"function\" scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: \"function\", \"class\", \"module\", \"package\", \"session\". Set it to \"fixture-scope\" to keep the current behavior.\n\n  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))",
+      "hidden_output": "F.FF.                                                                    [100%]\n=================================== FAILURES ===================================\n_____________________________ test_two_overlapping _____________________________\n\n    def test_two_overlapping():\n>       assert merge_intervals([(1, 3), (2, 4)]) == [(1, 4)]\nE       assert [(1, 3), (2, 4)] == [(1, 4)]\nE         \nE         At index 0 diff: (1, 3) != (1, 4)\nE         Left contains one more item: (2, 4)\nE         Use -v to get more diff\n\ntests/test_intervals.py:5: AssertionError\n________________________ test_touching_intervals_merge _________________________\n\n    def test_touching_intervals_merge():\n>       assert merge_intervals([(1, 3), (3, 5)]) == [(1, 5)]\nE       assert [(1, 3), (3, 5)] == [(1, 5)]\nE         \nE         At index 0 diff: (1, 3) != (1, 5)\nE         Left contains one more item: (3, 5)\nE         Use -v to get more diff\n\ntests/test_hidden_intervals.py:9: AssertionError\n_____________________________ test_unsorted_input ______________________________\n\n    def test_unsorted_input():\n>       assert merge_intervals([(6, 8), (1, 3), (2, 5)]) == [(1, 5), (6, 8)]\nE       assert [(6, 8), (1, 3), (2, 5)] == [(1, 5), (6, 8)]\nE         \nE         At index 0 diff: (6, 8) != (1, 5)\nE         Left contains one more item: (2, 5)\nE         Use -v to get more diff\n\ntests/test_hidden_intervals.py:13: AssertionError\n=========================== short test summary info ============================\nFAILED tests/test_intervals.py::test_two_overlapping - assert [(1, 3), (2, 4)...\nFAILED tests/test_hidden_intervals.py::test_touching_intervals_merge - assert...\nFAILED tests/test_hidden_intervals.py::test_unsorted_input - assert [(6, 8), ...\n3 failed, 2 passed in 0.03s\n\n/workspaces/argo/.venv/lib/python3.12/site-packages/pytest_asyncio/plugin.py:306: PytestDeprecationWarning: The configuration option \"asyncio_default_fixture_loop_scope\" is unset.\nThe event loop scope for asynchronous fixtures will default to the fixture scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to \"function\" scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: \"function\", \"class\", \"module\", \"package\", \"session\". Set it to \"fixture-scope\" to keep the current behavior.\n\n  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))",
+      "adopted": false,
+      "adopt_skipped": false,
+      "adopt_failed": false,
+      "workdir": "/tmp/repair_intervals_wtrepair_dlzc3qz5"
+    }
+  ],
+  "timestamp": "2026-11-27T10:46:36Z"
+}

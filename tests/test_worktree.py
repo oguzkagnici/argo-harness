@@ -238,3 +238,154 @@ async def test_review_failure_triggers_in_place_repair_and_recheck(tmp_path):
     assert "INDEPENDENT DIFF REVIEW: PASS" in tool_msg.content
     assert llm.reviews == 2 and llm.repair_prompts == 1
     assert (repo / "app.txt").read_text() == "one\n"  # still isolated from the parent
+
+
+@pytest.mark.asyncio
+async def test_adopt_commits_child_work_and_merges(tmp_path):
+    from argo.core.worktree import adopt_worktree
+
+    repo = init_repo(tmp_path)
+    wt, branch, root = await create_worktree(repo, "Adopt Me", tmp_path / "data")
+    try:
+        (wt / "app.txt").write_text("two\n", encoding="utf-8")
+        (wt / "added.txt").write_text("new\n", encoding="utf-8")
+        assert (repo / "app.txt").read_text() == "one\n"
+        info = await adopt_worktree(wt, branch, root)
+        assert info["adopted"] and info["committed_child_work"] is True
+        assert (repo / "app.txt").read_text() == "two\n"
+        assert (repo / "added.txt").read_text() == "new\n"
+        log = subprocess.run(["git", "-C", str(repo), "log", "--oneline"], capture_output=True, text=True).stdout
+        assert branch in log, "merge commit should name the adopted branch"
+        # adopting twice is a no-op for work, and still reports a merge attempt (no new commits child-side)
+        info2 = await adopt_worktree(wt, branch, root)
+        assert info2["committed_child_work"] is False
+    finally:
+        await remove_worktree(root, wt, branch)
+
+
+@pytest.mark.asyncio
+async def test_adopt_aborts_cleanly_on_conflict(tmp_path):
+    from argo.core.worktree import adopt_worktree
+
+    repo = init_repo(tmp_path)
+    wt, branch, root = await create_worktree(repo, "Conflict", tmp_path / "data")
+    try:
+        (wt / "app.txt").write_text("child\n", encoding="utf-8")
+        (repo / "app.txt").write_text("parent\n", encoding="utf-8")
+        subprocess.run(["git", "-C", str(repo), "commit", "-qam", "parent edit"], check=True)
+        with pytest.raises(RuntimeError) as exc:
+            await adopt_worktree(wt, branch, root)
+        assert "aborted" in str(exc.value)
+        assert (repo / "app.txt").read_text() == "parent\n"
+        status = subprocess.run(["git", "-C", str(repo), "status", "--porcelain"],
+                                capture_output=True, text=True).stdout
+        assert status.strip() == "", "merge must be fully aborted, not left half-applied"
+    finally:
+        await remove_worktree(root, wt, branch)
+
+
+@pytest.mark.asyncio
+async def test_adopt_refuses_staged_parent_changes(tmp_path):
+    from argo.core.worktree import adopt_worktree
+
+    repo = init_repo(tmp_path)
+    wt, branch, root = await create_worktree(repo, "Staged", tmp_path / "data")
+    try:
+        (wt / "app.txt").write_text("child\n", encoding="utf-8")
+        (repo / "other.txt").write_text("x\n", encoding="utf-8")
+        subprocess.run(["git", "-C", str(repo), "add", "other.txt"], check=True)
+        with pytest.raises(RuntimeError) as exc:
+            await adopt_worktree(wt, branch, root)
+        assert "staged" in str(exc.value)
+        assert (repo / "app.txt").read_text() == "one\n"
+    finally:
+        await remove_worktree(root, wt, branch)
+
+
+class AdoptLLM(DiffReviewLLM):
+    """Parent asks for isolate + review + adopt; child makes a clean edit; reviewer passes."""
+
+    async def chat(self, messages, tools=None, **kwargs):
+        joined = "\n".join((m.content or "") for m in messages)
+        if "independent code reviewer" in joined:
+            return LLMResponse(message=Message(role="assistant", content="VERDICT: PASS\nfine"), usage=Usage())
+        if "ISOLATED_CHILD" in joined:
+            if any(m.role == "tool" for m in messages):
+                return LLMResponse(message=Message(role="assistant", content="child finished"), usage=Usage())
+            edit = ToolCall(id="c2", name="edit_file",
+                            arguments='{"path": "app.txt", "old_text": "one", "new_text": "three"}')
+            return LLMResponse(message=Message(role="assistant", tool_calls=[edit]), usage=Usage())
+        if any(m.role == "tool" for m in messages):
+            return LLMResponse(message=Message(role="assistant", content="parent done"), usage=Usage())
+        return LLMResponse(message=Message(role="assistant", tool_calls=[ToolCall(
+            id="c1", name="spawn_subagent",
+            arguments='{"task": "ISOLATED_CHILD: change app.txt", "isolate": true, "review_changes": true, '
+                      '"adopt": true}')]), usage=Usage())
+
+
+@pytest.mark.asyncio
+async def test_spawn_adopts_branch_into_parent_checkout(tmp_path):
+    repo = init_repo(tmp_path)
+    data = tmp_path / "data"
+    cfg = load_config({"workspace": str(repo), "data_dir": str(data)})
+    async with Agent(cfg, llm=AdoptLLM(), max_iterations=4) as agent:
+        await agent.run("delegate and adopt")
+    assert (repo / "app.txt").read_text() == "three\n", "adopted child edit must be live in the parent"
+    tool_msgs = [m for m in agent.messages if m.role == "tool"]
+    assert any("ADOPTED" in m.content for m in tool_msgs if m.role == "tool")
+    assert any(e.type == "worktree_adopted" for e in agent.events.history)
+
+
+class AdoptFailingReviewLLM(AdoptLLM):
+    """Parent asks for adopt, but the reviewer keeps returning FAIL."""
+
+    async def chat(self, messages, tools=None, **kwargs):
+        joined = "\n".join((m.content or "") for m in messages)
+        if "independent code reviewer" in joined:
+            return LLMResponse(message=Message(role="assistant",
+                                               content="VERDICT: FAIL\napp.txt:1 weakens the test"),
+                               usage=Usage())
+        return await super().chat(messages, tools=tools, **kwargs)
+
+
+@pytest.mark.asyncio
+async def test_spawn_skips_adoption_when_review_fails(tmp_path):
+    repo = init_repo(tmp_path)
+    data = tmp_path / "data"
+    cfg = load_config({"workspace": str(repo), "data_dir": str(data)})
+    async with Agent(cfg, llm=AdoptFailingReviewLLM(), max_iterations=4) as agent:
+        await agent.run("delegate with review and adopt")
+    assert (repo / "app.txt").read_text() == "one\n", "a failing review must not reach the parent checkout"
+    msgs = [m.content for m in agent.messages if m.role == "tool"]
+    assert any("ADOPTION SKIPPED" in m for m in msgs)
+    assert any("INDEPENDENT DIFF REVIEW: FAIL" in m for m in msgs)
+
+
+class PromptRecorderLLM:
+    def __init__(self):
+        self.prompts: list[str] = []
+
+    async def chat(self, messages, tools=None, **kwargs):
+        joined = "\n".join((m.content or "") for m in messages)
+        self.prompts.append(joined)
+        if "ISOLATED_CHILD" in joined:
+            return LLMResponse(message=Message(role="assistant", content="child finished"), usage=Usage())
+        return LLMResponse(message=Message(role="assistant", tool_calls=[ToolCall(
+            id="c1", name="spawn_subagent",
+            arguments='{"task": "ISOLATED_CHILD: do the thing", "isolate": true}')]), usage=Usage())
+
+    async def embed(self, texts):
+        return [[0.0] * 8 for _ in texts]
+
+
+@pytest.mark.asyncio
+async def test_isolated_child_is_told_where_it_is(tmp_path):
+    repo = init_repo(tmp_path)
+    cfg = load_config({"workspace": str(repo), "data_dir": str(tmp_path / "data")})
+    llm = PromptRecorderLLM()
+    async with Agent(cfg, llm=llm, max_iterations=3) as agent:
+        await agent.run("delegate")
+    child_prompts = [p for p in llm.prompts if "ISOLATED_CHILD" in p]
+    assert child_prompts, "child never ran"
+    assert "isolated git worktree" in child_prompts[0]
+    assert "use paths relative to it" in child_prompts[0]

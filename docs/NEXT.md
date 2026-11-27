@@ -4,7 +4,7 @@ Ordered by (a) what is currently *unproven or broken*, (b) how much evidence exi
 (c) cost in rate limit/quota on this shared machine. Every item lists the success criterion so it can be closed with
 a measurement, not an opinion.
 
-Current state: 174 offline tests pass. Live evidence exists for retrieval, memory, repair, documents, citation,
+Current state: 185 offline tests pass. Live evidence exists for retrieval, memory, repair, documents, citation,
 injection (fixed + partial adaptive), context (synthetic + live), observability, worktree review, and the SWE-bench
 Docker path (gold patch 1/1).
 
@@ -101,8 +101,9 @@ default prompt for short runs, `identifiers` when runs exceed ~30 steps.
 the reviewer text, then re-reviews, capped at 3 rounds; metadata records `repair_rounds` and total subagent tokens.
 Test: `test_review_failure_triggers_in_place_repair_and_recheck`.
 **Still open:** the trap-task measurement (slugify/intervals) showed baseline generalization 2/2, so review and
-repair had no headroom. The weaker model (`gemma-4-31b`) also resolved 2/2, so both small-task traps are exhausted;
-a multi-file / real-repo task where the baseline fails, graded with the worktree `repair_attempts` arm, is needed.
+repair had no headroom. The weaker model (`gemma-4-31b`) also resolved 2/2, so both small-task traps are exhausted.
+The worktree arm is now runnable end to end (`adopt=true` merges the reviewed branch; `--modes wtrepair`): it resolved
+`intervals` 1/1 at +45% tokens / 2.5× wall. What is still missing is a task where the baseline actually fails.
 
 ---
 

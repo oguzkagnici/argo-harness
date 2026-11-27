@@ -363,7 +363,7 @@ class Agent:
         async def spawn(ctx: ToolContext, task: str, allowed_tools: list[str] | None = None,
                         max_iterations: int = 18, isolate: bool = False,
                         keep_worktree: bool = True, review_changes: bool = False,
-                        repair_attempts: int = 0) -> ToolResult:
+                        repair_attempts: int = 0, adopt: bool = False) -> ToolResult:
             import copy
 
             child_cfg = self.cfg
@@ -402,7 +402,14 @@ class Agent:
                     extra_tokens.append(out.usage.total_tokens)
                 return out
 
-            result = await run_child(task)
+            child_task = task
+            if worktree is not None:
+                child_task = (
+                    f"You are working in an isolated git worktree at {worktree}. Your workspace root IS that "
+                    "directory: use paths relative to it, and do not touch the parent checkout. "
+                    "Commit or leave your edits in place; the parent decides whether to adopt this branch.\n\n"
+                    + task)
+            result = await run_child(child_task)
             total_tokens = result.usage.total_tokens
             self.events.emit("subagent_end", stop=result.stop_reason, tokens=result.usage.total_tokens)
             body = (f"Subagent finished ({result.brief()}).\n"
@@ -424,7 +431,7 @@ class Agent:
                     while not review["pass"] and rounds < max_rounds:
                         rounds += 1
                         fix_prompt = (
-                            f"{task}\n\nAn independent reviewer audited the changes you already made in this "
+                            f"{child_task}\n\nAn independent reviewer audited the changes you already made in this "
                             f"working tree and found blocking issues. Fix them now in place; do not revert "
                             f"unrelated work and do not modify tests.\n\nREVIEW:\n{review['text'][:4000]}")
                         self.events.emit("subagent_repair", round=rounds)
@@ -441,7 +448,28 @@ class Agent:
                              f"{review['text'][:2500]}\n"
                              + ("Adoption is recommended after the fixes above.\n" if not review["pass"]
                                 else "No blocking defects found; the branch is ready to adopt.\n"))
-                if not keep_worktree:
+                if adopt:
+                    review_ok = (not review_changes) or bool(meta.get("review_pass"))
+                    if not review_ok:
+                        body += ("ADOPTION SKIPPED: the reviewer still reports blocking defects after the repair "
+                                 "rounds; the branch is left for a human/parent decision.\n")
+                    else:
+                        from .worktree import adopt_worktree
+                        try:
+                            info = await adopt_worktree(worktree, branch, repo_root)
+                            meta.update({"adopted": True, **info})
+                            body += (f"ADOPTED: merged {branch} into the parent checkout "
+                                     f"({info['parent_before']} → {info['parent_after']}"
+                                     + (", including the child's uncommitted work"
+                                        if info["committed_child_work"] else "") + ").\n")
+                            self.events.emit("worktree_adopted", branch=branch, files=len(files))
+                        except Exception as exc:  # noqa: BLE001
+                            meta.update({"adopted": False, "adopt_error": str(exc)[:500]})
+                            body += f"ADOPTION FAILED: {exc}\nThe branch {branch} is intact.\n"
+                            if not keep_worktree:
+                                await remove_worktree(repo_root, worktree, branch)
+                                body += "Worktree and branch were removed (keep_worktree=false).\n"
+                elif not keep_worktree:
                     await remove_worktree(repo_root, worktree, branch)
                     body += "Worktree and branch were removed (keep_worktree=false).\n"
             body += f"\nRESULT:\n{result.output}"
@@ -467,7 +495,10 @@ class Agent:
                                                   "diff before you consider merging it (default false)."},
                 "repair_attempts": {"type": "integer", "default": 0,
                                     "description": "With review_changes=true, let the child fix reviewer findings "
-                                                   "in place and re-review, up to 3 rounds."}},
+                                                   "in place and re-review, up to 3 rounds."},
+                "adopt": {"type": "boolean", "default": False,
+                          "description": "Merge the child's branch into the parent checkout once review passes, so "
+                                         "the work is live without a manual git merge. Refused on conflict."}},
              "required": ["task"]},
             spawn, read_only=False, timeout=1800, max_output=30_000,
         )

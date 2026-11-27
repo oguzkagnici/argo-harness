@@ -411,6 +411,24 @@ DOCX introspection.
   the measurement as *no headroom*, not as a review win or loss. Closing it properly needs harder tasks (multi-file
   specs, real repos) where the baseline fails, plus the worktree `repair_attempts` arm rather than a single review.
 
+## 3r. Worktree adoption + isolated-child preamble (2026-11-27)
+
+- **Problem.** `spawn_subagent(isolate=true, review_changes=true, repair_attempts=N)` produced a reviewed branch, but
+  nothing merged it: the parent had to run `git merge` by hand, so the loop could never pay off automatically.
+- **`adopt=true`.** The child's pending work is committed on its branch, then merged into the parent checkout with
+  `--no-ff`. Guards: refuse on detached HEAD or staged parent changes; abort the merge on conflict (parent
+  byte-identical afterwards, branch intact); skip adoption when the reviewer still reports blocking defects;
+  emit `worktree_adopted`. All four paths unit-tested against real git repos.
+- **Isolated-child preamble.** The first live arm showed the child probing the *parent* checkout (the write was
+  correctly refused by the policy) because its brief said only "a repository in the current working directory".
+  Children spawned with `isolate=true` now receive "your workspace root IS this worktree; use relative paths; the
+  parent decides whether to adopt this branch".
+- **Measured (`intervals`, 20 iterations, 1,800 s cap).** `wtrepair` **resolved 1/1**, no test tampering, 86,019
+  tokens / 412 s / 10 parent iterations, review PASS, branch merged (`b416037`). Baseline on the same task: 59,213
+  tokens / 164 s / 8 iterations. So the full loop is now *usable* and costs **+45% tokens and 2.5× wall** for the
+  same resolution on a task the baseline already solves — consistent with §3q: the value is insurance for hard
+  tasks, not throughput.
+
 ## 4. Deliberately not done (yet)
 
 - A graded SWE-bench-Lite score (the runner and Docker path exist; only a gold-patch check has been run, because
