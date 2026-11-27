@@ -299,12 +299,15 @@ class GoalQueue:
 
 class Daemon:
     def __init__(self, cfg: ArgoConfig, once: bool = False, poll_seconds: int = 30,
-                 dream_every_hours: float = 24.0, stale_claim_seconds: float = 1800.0):
+                 dream_every_hours: float = 24.0, stale_claim_seconds: float = 1800.0,
+                 dream_generations: int = 1):
         self.cfg = cfg
         self.once = once
         self.poll_seconds = max(5, poll_seconds)
         self.stale_claim_seconds = stale_claim_seconds
         self.dream_every = dream_every_hours
+        # Passes per cycle. 2 was better at 24 lessons but not at 40 (see DECISIONS), so it is opt-in.
+        self.dream_generations = max(1, dream_generations)
         self.queue = GoalQueue(Path(cfg.data_dir) / "daemon.sqlite")
         self.worker_id = f"{__import__('socket').gethostname()}:{__import__('os').getpid()}:{uuid.uuid4().hex[:6]}"
         self.running = True
@@ -363,9 +366,11 @@ class Daemon:
             if mem_count == 0:
                 self.queue.set_state("last_dream", str(time.time()))
                 return
-            report = await DreamEngine(agent.memory, agent.llm, self.cfg).run(apply=True, max_sessions=50)
-            console.print(f"[magenta]◇ dream[/] {report.status}: +{report.added} notes, "
-                          f"{report.merged} merged, {report.wiki} wiki, {report.insights} insights")
+            eng = DreamEngine(agent.memory, agent.llm, self.cfg)
+            for _ in range(self.dream_generations):
+                report = await eng.run(apply=True, max_sessions=50)
+                console.print(f"[magenta]◇ dream[/] {report.status}: +{report.added} notes, "
+                              f"{report.merged} merged, {report.wiki} wiki, {report.insights} insights")
         self.queue.set_state("last_dream", str(time.time()))
 
     def _approvals(self, goal_id: str):

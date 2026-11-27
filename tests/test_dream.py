@@ -77,3 +77,13 @@ async def test_dream_rollback_restores_previous_generation(tmp_path):
     assert store.active_generation == 0
     assert not any("green" in i.text for i in store.list_items())
     assert any("blue" in i.text for i in store.list_items())
+
+
+def test_daemon_defaults_to_one_generation_and_accepts_override(tmp_path):
+    from argo.config import load_config
+    from argo.daemon import Daemon
+
+    cfg = load_config({"workspace": str(tmp_path), "data_dir": str(tmp_path / ".argo")})
+    assert Daemon(cfg, once=True).dream_generations == 1
+    assert Daemon(cfg, once=True, dream_generations=2).dream_generations == 2
+    assert Daemon(cfg, once=True, dream_generations=0).dream_generations == 1

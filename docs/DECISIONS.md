@@ -33,7 +33,7 @@ Measurements below are from `deepseek-v4.1-flash` via the configured OpenAI-comp
 | Retrieval | BM25 + dense fusion with RRF (`k=60`), then cross-encoder rerank the top candidates | RRF (Cormack et al., 2009); BEIR (Thakur et al., 2021) | SciFact nDCG@10: BM25 0.779 → dense 0.885 → RRF 0.846 → RRF+rerank **0.916** |
 | Retrieval depth | Rerank only the fused candidate pool, not the whole corpus | Cost/latency control; reranker literature | R@100 stays 1.00; rerank improves ordering; reranking the full corpus would cost ~5× more per query |
 | Memory retrieval | Small importance/recency/usage uplift on memory hits | Generative Agents (Park et al., 2023) | Keeps fresh, important notes ahead of stale-but-similar text; not separately ablated yet |
-| Memory consolidation depth | One dream generation is the default; a second pass is not beneficial | Ablation: two generations kept recall at 1.00 but cost 2.2× (114 s vs 51 s) and archived notes with no gain | Skipped the extra pass; grounding stays for confidence hygiene, not recall (no-grounding arm had identical recall) |
+| Memory consolidation depth | One dream generation is the default; a second pass is explicit opt-in | Ablation: two generations kept recall at 1.00 but cost 2.2× (114 s vs 51 s) and archived notes with no gain; 40-lesson re-run: one pass already 1.00 correct, two passes 3.7× wall | Skipped the extra pass; grounding stays for confidence hygiene, not recall (no-grounding arm had identical recall) |
 | Retrieval fusion knobs | Expose `rrf_k` and lexical/dense weights; keep 60 / 0.8 / 1.2 defaults | SciFact ablation: k=10 0.8649 and dense-heavy 0.8660 beat k=60 0.8460 by ~2 nDCG points | Single-corpus evidence, so knobs are configurable but defaults unchanged; rerank depth stays 20 (50 = same quality, 2.5× cost) |
 | Memory write | Exact-duplicate idempotence; cosine dedupe at 0.97 during dreaming | Anthropic memory/Dreams docs; MemGPT tiering | Dream run merged 6 duplicates and created 6 consolidated facts without unbounded growth |
 | Consolidation | Generational dreaming (`G → G+1`) with evidence grounding and rollback | Anthropic Dreams; Letta sleep-time compute (2025) | Memory benchmark: contradictory stale beliefs **1.00 → 0.00**, corrected recall **0.00 → 1.00** |
@@ -453,6 +453,23 @@ DOCX introspection.
 - **Also in this pass.** MCP per-tool approval policy: `read_only_tools = { tool = bool }` on a server overrides
   the server-level `read_only` for individual tools (unlisted tools stay mutating), so a mutating server's search
   tools skip the approval path. `tests/test_mcp.py::test_per_tool_read_only_override`.
+
+## 3t. Dream cadence at 40 lessons: no auto-escalation (2026-11-27)
+
+- **Context.** §3g measured "two generations above ~20 lessons" on 24 synthetic lessons and left cadence at scale
+  as an open follow-up. The tempting implementation was automatic escalation (`generations_for(active_items)`).
+- **Measured (40 lessons, 5 sessions, `--arms no_dream,full,two_generations,adaptive`).** no_dream: correct 0.425,
+  contradictory stale 0.35, 40 items. **One** pass: correct **1.00**, stale **0.00**, 33 items, 129 s. Two passes:
+  1.00 / 0.00, 15 items, 482 s. Adaptive (which escalated to 2 because 40 > 20): 1.00 / 0.00, 11 items, 306 s.
+- **Finding.** The second pass buys **no recall** at 40 lessons and costs 2.4-3.7× wall time. Since the 24-lesson run
+  showed the reverse, the ">20 ⇒ 2 passes" rule is **not stable across scales/seeds**; auto-escalation would have
+  doubled the cost of every large cycle on the strength of one run.
+- **Decision.** Revert auto-escalation. `Daemon.dream_generations` (and `argo daemon --dream-generations`) defaults
+  to **1**; 2 passes are explicit opt-in. Keep the observation that repeated passes shrink the active set
+  (40 → 33 → 15 → 11) as a precision hypothesis, not a claim. The `adaptive` arm stays in the benchmark history but
+  is no longer offered as a mode.
+- **Process note.** This is the first feature in this project that was implemented, measured, and then **rolled
+  back** on evidence. The test suite pins the new default (`dream_generations == 1`, `0 → 1`).
 
 ## 4. Deliberately not done (yet)
 

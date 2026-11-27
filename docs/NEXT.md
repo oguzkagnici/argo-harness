@@ -4,7 +4,7 @@ Ordered by (a) what is currently *unproven or broken*, (b) how much evidence exi
 (c) cost in rate limit/quota on this shared machine. Every item lists the success criterion so it can be closed with
 a measurement, not an opinion.
 
-Current state: 188 offline tests pass. Live evidence exists for retrieval, memory, repair, documents, citation,
+Current state: 189 offline tests pass. Live evidence exists for retrieval, memory, repair, documents, citation,
 injection (fixed + partial adaptive), context (synthetic + live), observability, worktree review, and the SWE-bench
 Docker path (gold patch 1/1).
 
@@ -81,8 +81,10 @@ off on larger, noisier histories.
 **Do:** extend `benchmarks/memory_loop.py` to 40-60 lessons over 5 sessions with duplicates, contradictions and
 time decay; compare 1 vs 2 generations, and a "dream every N sessions" schedule.
 **Pass:** a concrete rule (generations, cadence, wiki extraction on/off) with recall/cost numbers.
-**Status:** done at 24 lessons / 5 sessions. Rule: 2 dream generations for cycles >~20 lessons (1 gen = no gain over
-no-dream; 2 gen = 1.00 correct, 0 stale). Cadence and wiki-on/off at scale remain optional follow-ups.
+**Status:** done at 24 lessons / 5 sessions, then re-run at **40 lessons**: one pass already reaches 1.00 correct /
+0 stale, and two passes cost 2.4-3.7× wall for the same recall — the ">20 ⇒ 2 generations" rule did **not**
+replicate, so auto-escalation was rolled back and `--dream-generations` defaults to 1 (explicit opt-in for 2).
+Cadence remains testable; wiki-on/off at scale is still optional.
 
 ### 7. ~~Prompt/context: ablate the summary prompt itself~~ — measured
 **Why:** the live run suggests summaries drop exact values; the ledger is a patch around that.

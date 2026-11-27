@@ -1,0 +1,1905 @@
+{
+  "benchmark": "memory-learning-loop-ablation",
+  "lessons": 40,
+  "sessions": 5,
+  "k": 3,
+  "arms": [
+    {
+      "arm": "no_dream",
+      "lessons": 40,
+      "dream": [],
+      "seconds": 0.0,
+      "before": {
+        "stale_rate": 0.35,
+        "stale_mention_rate": 0.525,
+        "correct_rate": 0.425
+      },
+      "after": {
+        "stale_rate": 0.35,
+        "stale_mention_rate": 0.525,
+        "correct_rate": 0.425
+      },
+      "memory_stats": {
+        "generation": 0,
+        "layers": {
+          "note": {
+            "active": 40
+          }
+        },
+        "transcripts": 88,
+        "chunks": 0,
+        "dreams": 0,
+        "path": "/tmp/argo_mem_no_dream_8tmpa4rg/memory.sqlite"
+      },
+      "items": [
+        "service-039 primary region is eu-west-1",
+        "service-038 primary region is us-east-1",
+        "service-037 primary region is eu-central-1",
+        "service-036 primary region is us-east-1",
+        "service-035 primary region is us-east-1",
+        "service-034 primary region is eu-central-1",
+        "service-033 primary region is ap-south-1",
+        "service-032 primary region is eu-west-1",
+        "service-031 primary region is us-west-2",
+        "service-030 primary region is us-west-2",
+        "service-029 primary region is eu-west-1",
+        "service-028 primary region is eu-west-1",
+        "service-027 primary region is us-east-1",
+        "service-026 primary region is ap-south-1",
+        "service-025 primary region is ap-south-1",
+        "service-024 primary region is us-east-1",
+        "service-023 primary region is eu-west-1",
+        "service-022 primary region is eu-central-1",
+        "service-021 primary region is eu-west-1",
+        "service-020 primary region is ap-south-1"
+      ],
+      "active_items": 40,
+      "per_lesson_after": [
+        {
+          "stale": true,
+          "stale_mention": true,
+          "correct": false,
+          "top": [
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1",
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-003 primary region is us-west-2\nservice-003 primary region is us-west-2"
+          ]
+        },
+        {
+          "stale": true,
+          "stale_mention": true,
+          "correct": false,
+          "top": [
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1",
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-003 primary region is us-west-2\nservice-003 primary region is us-west-2"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1",
+            "service-003 primary region is us-west-2\nservice-003 primary region is us-west-2"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "service-003 primary region is us-west-2\nservice-003 primary region is us-west-2",
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1",
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": false,
+          "correct": false,
+          "top": [
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1",
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-003 primary region is us-west-2\nservice-003 primary region is us-west-2"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": false,
+          "correct": false,
+          "top": [
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1",
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-003 primary region is us-west-2\nservice-003 primary region is us-west-2"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": false,
+          "correct": false,
+          "top": [
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1",
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-003 primary region is us-west-2\nservice-003 primary region is us-west-2"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": false,
+          "correct": true,
+          "top": [
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1",
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-003 primary region is us-west-2\nservice-003 primary region is us-west-2"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": false,
+          "correct": false,
+          "top": [
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1",
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-003 primary region is us-west-2\nservice-003 primary region is us-west-2"
+          ]
+        },
+        {
+          "stale": true,
+          "stale_mention": true,
+          "correct": false,
+          "top": [
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1",
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-003 primary region is us-west-2\nservice-003 primary region is us-west-2"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1",
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-010 primary region is us-east-1\nservice-010 primary region is us-east-1"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": false,
+          "correct": true,
+          "top": [
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1",
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-010 primary region is us-east-1\nservice-010 primary region is us-east-1"
+          ]
+        },
+        {
+          "stale": true,
+          "stale_mention": true,
+          "correct": false,
+          "top": [
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1",
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-010 primary region is us-east-1\nservice-010 primary region is us-east-1"
+          ]
+        },
+        {
+          "stale": true,
+          "stale_mention": true,
+          "correct": false,
+          "top": [
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1",
+            "service-003 primary region is us-west-2\nservice-003 primary region is us-west-2",
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": false,
+          "correct": true,
+          "top": [
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1",
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-010 primary region is us-east-1\nservice-010 primary region is us-east-1"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1",
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-010 primary region is us-east-1\nservice-010 primary region is us-east-1"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": false,
+          "correct": true,
+          "top": [
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1",
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-010 primary region is us-east-1\nservice-010 primary region is us-east-1"
+          ]
+        },
+        {
+          "stale": true,
+          "stale_mention": true,
+          "correct": false,
+          "top": [
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1",
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-010 primary region is us-east-1\nservice-010 primary region is us-east-1"
+          ]
+        },
+        {
+          "stale": true,
+          "stale_mention": true,
+          "correct": false,
+          "top": [
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1",
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-010 primary region is us-east-1\nservice-010 primary region is us-east-1"
+          ]
+        },
+        {
+          "stale": true,
+          "stale_mention": true,
+          "correct": false,
+          "top": [
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1",
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-010 primary region is us-east-1\nservice-010 primary region is us-east-1"
+          ]
+        },
+        {
+          "stale": true,
+          "stale_mention": true,
+          "correct": false,
+          "top": [
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-003 primary region is us-west-2\nservice-003 primary region is us-west-2",
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1"
+          ]
+        },
+        {
+          "stale": true,
+          "stale_mention": true,
+          "correct": false,
+          "top": [
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1",
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-021 primary region is eu-west-1\nservice-021 primary region is eu-west-1"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": false,
+          "correct": true,
+          "top": [
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-003 primary region is us-west-2\nservice-003 primary region is us-west-2",
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "service-003 primary region is us-west-2\nservice-003 primary region is us-west-2",
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-023 primary region is eu-west-1\nservice-023 primary region is eu-west-1"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": false,
+          "correct": false,
+          "top": [
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-003 primary region is us-west-2\nservice-003 primary region is us-west-2",
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1"
+          ]
+        },
+        {
+          "stale": true,
+          "stale_mention": true,
+          "correct": false,
+          "top": [
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1",
+            "service-003 primary region is us-west-2\nservice-003 primary region is us-west-2"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-003 primary region is us-west-2\nservice-003 primary region is us-west-2",
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": false,
+          "correct": true,
+          "top": [
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-003 primary region is us-west-2\nservice-003 primary region is us-west-2",
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": false,
+          "correct": false,
+          "top": [
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-003 primary region is us-west-2\nservice-003 primary region is us-west-2",
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1"
+          ]
+        },
+        {
+          "stale": true,
+          "stale_mention": true,
+          "correct": false,
+          "top": [
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-003 primary region is us-west-2\nservice-003 primary region is us-west-2",
+            "service-029 primary region is eu-west-1\nservice-029 primary region is eu-west-1"
+          ]
+        },
+        {
+          "stale": true,
+          "stale_mention": true,
+          "correct": false,
+          "top": [
+            "service-003 primary region is us-west-2\nservice-003 primary region is us-west-2",
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "service-003 primary region is us-west-2\nservice-003 primary region is us-west-2",
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1",
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": false,
+          "correct": false,
+          "top": [
+            "service-003 primary region is us-west-2\nservice-003 primary region is us-west-2",
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1"
+          ]
+        },
+        {
+          "stale": true,
+          "stale_mention": true,
+          "correct": false,
+          "top": [
+            "service-003 primary region is us-west-2\nservice-003 primary region is us-west-2",
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": false,
+          "correct": true,
+          "top": [
+            "service-003 primary region is us-west-2\nservice-003 primary region is us-west-2",
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": false,
+          "correct": true,
+          "top": [
+            "service-003 primary region is us-west-2\nservice-003 primary region is us-west-2",
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": false,
+          "correct": false,
+          "top": [
+            "service-003 primary region is us-west-2\nservice-003 primary region is us-west-2",
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": false,
+          "correct": true,
+          "top": [
+            "service-003 primary region is us-west-2\nservice-003 primary region is us-west-2",
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": false,
+          "correct": false,
+          "top": [
+            "service-003 primary region is us-west-2\nservice-003 primary region is us-west-2",
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": false,
+          "correct": true,
+          "top": [
+            "service-003 primary region is us-west-2\nservice-003 primary region is us-west-2",
+            "service-000 primary region is us-west-2\nservice-000 primary region is us-west-2",
+            "service-001 primary region is ap-south-1\nservice-001 primary region is ap-south-1"
+          ]
+        }
+      ]
+    },
+    {
+      "arm": "full",
+      "lessons": 40,
+      "dream": [
+        {
+          "status": "applied",
+          "generation": "0->1",
+          "added": 3,
+          "superseded": 40,
+          "merged": 40,
+          "archived": 0,
+          "wiki": 2,
+          "insights": 1,
+          "procedures": 1,
+          "unverified": 0,
+          "warnings": 1
+        }
+      ],
+      "seconds": 128.7,
+      "before": {
+        "stale_rate": 0.35,
+        "stale_mention_rate": 0.525,
+        "correct_rate": 0.425
+      },
+      "after": {
+        "stale_rate": 0.0,
+        "stale_mention_rate": 1.0,
+        "correct_rate": 1.0
+      },
+      "memory_stats": {
+        "generation": 1,
+        "layers": {
+          "note": {
+            "active": 30,
+            "superseded": 54
+          },
+          "procedure": {
+            "active": 1
+          },
+          "wiki": {
+            "active": 2
+          }
+        },
+        "transcripts": 88,
+        "chunks": 0,
+        "dreams": 1,
+        "path": "/tmp/argo_mem_full_jmox6gfg/memory.sqlite"
+      },
+      "items": [
+        "All 40 services (service-000..service-039) were migrated to new primary regions after a maintenance window; the pre-migration region assignments in generation-0 memory are stale and must be superseded.\n\nEvidence: \u201cUpdate for lesson 0: service-000 was migrated to eu-west-1 after the maintenance window.\u201d",
+        "When to use: When a transcript reports a service being staged or migrated to a region after a maintenance window.\nSteps:\n1. Ignore or discard the 'briefly staged in <region>' interim notice as transient.\n2. Take the region from the 'migrated to <region> after the maintenance window' update as the new canonical value.\n3. Supersede the existing region note for that service rather than adding a second note.\n4. Update the consolidated region-assignment wiki page.",
+        "Migrations are announced in two parts: an 'Interim status: <svc> was briefly staged in <region>' notice, then 'Update for lesson N: <svc> was migrated to <region> after the maintenance window.' Only the final migrated region is durable; staging notices are transient and must not be stored as the service's region.",
+        "Canonical primary region per service after the maintenance-window migrations. service-000 eu-west-1; 001 eu-west-1; 002 ap-south-1; 003 ap-south-1; 004 eu-central-1; 005 eu-central-1; 006 us-east-1; 007 ap-south-1; 008 eu-central-1; 009 us-east-1; 010 us-west-2; 011 us-east-1; 012 eu-west-1; 013 eu-central-1; 014 us-west-2; 015 ap-south-1; 016 us-east-1; 017 eu-west-1; 018 eu-west-1; 019 eu-central-1; 020 us-east-1; 021 eu-central-1; 022 ap-south-1; 023 us-west-2; 024 eu-central-1; 025 eu-west-1; 026 us-west-2; 027 us-west-2; 028 eu-central-1; 029 ap-south-1; 030 us-east-1; 031 ap-south-1; 032 eu-central-1; 033 eu-central-1; 034 ap-south-1; 035 us-west-2; 036 eu-central-1; 037 ap-south-1; 038 eu-central-1; 039 us-west-2.",
+        "service-039 primary region is us-west-2 (migrated after maintenance window)",
+        "service-038 primary region is eu-central-1 (migrated after maintenance window)",
+        "service-037 primary region is ap-south-1 (migrated after maintenance window)",
+        "service-036 primary region is eu-central-1 (migrated after maintenance window)",
+        "service-029 primary region is ap-south-1 (migrated after maintenance window)",
+        "service-028 primary region is eu-central-1 (migrated after maintenance window)",
+        "service-027 primary region is us-west-2 (migrated after maintenance window)",
+        "service-026 primary region is us-west-2 (migrated after maintenance window)",
+        "service-025 primary region is eu-west-1 (migrated after maintenance window)",
+        "service-024 primary region is eu-central-1 (migrated after maintenance window)",
+        "service-023 primary region is us-west-2 (migrated after maintenance window)",
+        "service-022 primary region is ap-south-1 (migrated after maintenance window)",
+        "service-019 primary region is eu-central-1 (migrated after maintenance window)",
+        "service-018 primary region is eu-west-1 (migrated after maintenance window)",
+        "service-017 primary region is eu-west-1 (migrated after maintenance window)",
+        "service-016 primary region is us-east-1 (migrated after maintenance window)"
+      ],
+      "active_items": 33,
+      "per_lesson_after": [
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "service-007 primary region is ap-south-1 (migrated after maintenance window)\nservice-007 p",
+            "Service region assignments (post-migration)\nCanonical primary region per service after the",
+            "service-009 primary region is us-east-1 (migrated after maintenance window)\nservice-009 pr"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "service-007 primary region is ap-south-1 (migrated after maintenance window)\nservice-007 p",
+            "Service region assignments (post-migration)\nCanonical primary region per service after the",
+            "service-009 primary region is us-east-1 (migrated after maintenance window)\nservice-009 pr"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "service-007 primary region is ap-south-1 (migrated after maintenance window)\nservice-007 p",
+            "Service region assignments (post-migration)\nCanonical primary region per service after the",
+            "service-009 primary region is us-east-1 (migrated after maintenance window)\nservice-009 pr"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Service region assignments (post-migration)\nCanonical primary region per service after the",
+            "service-007 primary region is ap-south-1 (migrated after maintenance window)\nservice-007 p",
+            "service-009 primary region is us-east-1 (migrated after maintenance window)\nservice-009 pr"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "service-007 primary region is ap-south-1 (migrated after maintenance window)\nservice-007 p",
+            "service-009 primary region is us-east-1 (migrated after maintenance window)\nservice-009 pr",
+            "Service region assignments (post-migration)\nCanonical primary region per service after the"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "service-007 primary region is ap-south-1 (migrated after maintenance window)\nservice-007 p",
+            "service-009 primary region is us-east-1 (migrated after maintenance window)\nservice-009 pr",
+            "Service region assignments (post-migration)\nCanonical primary region per service after the"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "service-007 primary region is ap-south-1 (migrated after maintenance window)\nservice-007 p",
+            "service-009 primary region is us-east-1 (migrated after maintenance window)\nservice-009 pr",
+            "Service region assignments (post-migration)\nCanonical primary region per service after the"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "service-007 primary region is ap-south-1 (migrated after maintenance window)\nservice-007 p",
+            "service-009 primary region is us-east-1 (migrated after maintenance window)\nservice-009 pr",
+            "Service region assignments (post-migration)\nCanonical primary region per service after the"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "service-007 primary region is ap-south-1 (migrated after maintenance window)\nservice-007 p",
+            "service-009 primary region is us-east-1 (migrated after maintenance window)\nservice-009 pr",
+            "Service region assignments (post-migration)\nCanonical primary region per service after the"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "service-009 primary region is us-east-1 (migrated after maintenance window)\nservice-009 pr",
+            "service-007 primary region is ap-south-1 (migrated after maintenance window)\nservice-007 p",
+            "Service region assignments (post-migration)\nCanonical primary region per service after the"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Service region assignments (post-migration)\nCanonical primary region per service after the",
+            "service-007 primary region is ap-south-1 (migrated after maintenance window)\nservice-007 p",
+            "service-009 primary region is us-east-1 (migrated after maintenance window)\nservice-009 pr"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Service region assignments (post-migration)\nCanonical primary region per service after the",
+            "service-007 primary region is ap-south-1 (migrated after maintenance window)\nservice-007 p",
+            "service-009 primary region is us-east-1 (migrated after maintenance window)\nservice-009 pr"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Service region assignments (post-migration)\nCanonical primary region per service after the",
+            "service-009 primary region is us-east-1 (migrated after maintenance window)\nservice-009 pr",
+            "service-007 primary region is ap-south-1 (migrated after maintenance window)\nservice-007 p"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Service region assignments (post-migration)\nCanonical primary region per service after the",
+            "service-007 primary region is ap-south-1 (migrated after maintenance window)\nservice-007 p",
+            "service-009 primary region is us-east-1 (migrated after maintenance window)\nservice-009 pr"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "service-007 primary region is ap-south-1 (migrated after maintenance window)\nservice-007 p",
+            "Service region assignments (post-migration)\nCanonical primary region per service after the",
+            "service-014 primary region is us-west-2 (migrated after maintenance window)\nservice-014 pr"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Service region assignments (post-migration)\nCanonical primary region per service after the",
+            "service-009 primary region is us-east-1 (migrated after maintenance window)\nservice-009 pr",
+            "service-014 primary region is us-west-2 (migrated after maintenance window)\nservice-014 pr"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Service region assignments (post-migration)\nCanonical primary region per service after the",
+            "service-009 primary region is us-east-1 (migrated after maintenance window)\nservice-009 pr",
+            "service-007 primary region is ap-south-1 (migrated after maintenance window)\nservice-007 p"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "service-007 primary region is ap-south-1 (migrated after maintenance window)\nservice-007 p",
+            "Service region assignments (post-migration)\nCanonical primary region per service after the",
+            "service-009 primary region is us-east-1 (migrated after maintenance window)\nservice-009 pr"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Service region assignments (post-migration)\nCanonical primary region per service after the",
+            "service-009 primary region is us-east-1 (migrated after maintenance window)\nservice-009 pr",
+            "service-014 primary region is us-west-2 (migrated after maintenance window)\nservice-014 pr"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "service-009 primary region is us-east-1 (migrated after maintenance window)\nservice-009 pr",
+            "Service region assignments (post-migration)\nCanonical primary region per service after the",
+            "service-007 primary region is ap-south-1 (migrated after maintenance window)\nservice-007 p"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Service region assignments (post-migration)\nCanonical primary region per service after the",
+            "service-009 primary region is us-east-1 (migrated after maintenance window)\nservice-009 pr",
+            "service-007 primary region is ap-south-1 (migrated after maintenance window)\nservice-007 p"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Service region assignments (post-migration)\nCanonical primary region per service after the",
+            "service-007 primary region is ap-south-1 (migrated after maintenance window)\nservice-007 p",
+            "service-009 primary region is us-east-1 (migrated after maintenance window)\nservice-009 pr"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Service region assignments (post-migration)\nCanonical primary region per service after the",
+            "service-007 primary region is ap-south-1 (migrated after maintenance window)\nservice-007 p",
+            "service-009 primary region is us-east-1 (migrated after maintenance window)\nservice-009 pr"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Service region assignments (post-migration)\nCanonical primary region per service after the",
+            "service-007 primary region is ap-south-1 (migrated after maintenance window)\nservice-007 p",
+            "service-023 primary region is us-west-2 (migrated after maintenance window)\nservice-023 pr"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Service region assignments (post-migration)\nCanonical primary region per service after the",
+            "service-007 primary region is ap-south-1 (migrated after maintenance window)\nservice-007 p",
+            "service-014 primary region is us-west-2 (migrated after maintenance window)\nservice-014 pr"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Service region assignments (post-migration)\nCanonical primary region per service after the",
+            "service-007 primary region is ap-south-1 (migrated after maintenance window)\nservice-007 p",
+            "service-009 primary region is us-east-1 (migrated after maintenance window)\nservice-009 pr"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Service region assignments (post-migration)\nCanonical primary region per service after the",
+            "service-007 primary region is ap-south-1 (migrated after maintenance window)\nservice-007 p",
+            "service-023 primary region is us-west-2 (migrated after maintenance window)\nservice-023 pr"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "service-007 primary region is ap-south-1 (migrated after maintenance window)\nservice-007 p",
+            "Service region assignments (post-migration)\nCanonical primary region per service after the",
+            "service-009 primary region is us-east-1 (migrated after maintenance window)\nservice-009 pr"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Service region assignments (post-migration)\nCanonical primary region per service after the",
+            "service-007 primary region is ap-south-1 (migrated after maintenance window)\nservice-007 p",
+            "service-023 primary region is us-west-2 (migrated after maintenance window)\nservice-023 pr"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "service-009 primary region is us-east-1 (migrated after maintenance window)\nservice-009 pr",
+            "Service region assignments (post-migration)\nCanonical primary region per service after the",
+            "service-007 primary region is ap-south-1 (migrated after maintenance window)\nservice-007 p"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Service region assignments (post-migration)\nCanonical primary region per service after the",
+            "service-007 primary region is ap-south-1 (migrated after maintenance window)\nservice-007 p",
+            "service-009 primary region is us-east-1 (migrated after maintenance window)\nservice-009 pr"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Service region assignments (post-migration)\nCanonical primary region per service after the",
+            "service-007 primary region is ap-south-1 (migrated after maintenance window)\nservice-007 p",
+            "service-009 primary region is us-east-1 (migrated after maintenance window)\nservice-009 pr"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Service region assignments (post-migration)\nCanonical primary region per service after the",
+            "service-007 primary region is ap-south-1 (migrated after maintenance window)\nservice-007 p",
+            "service-009 primary region is us-east-1 (migrated after maintenance window)\nservice-009 pr"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Service region assignments (post-migration)\nCanonical primary region per service after the",
+            "service-007 primary region is ap-south-1 (migrated after maintenance window)\nservice-007 p",
+            "service-009 primary region is us-east-1 (migrated after maintenance window)\nservice-009 pr"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Service region assignments (post-migration)\nCanonical primary region per service after the",
+            "service-007 primary region is ap-south-1 (migrated after maintenance window)\nservice-007 p",
+            "service-009 primary region is us-east-1 (migrated after maintenance window)\nservice-009 pr"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Service region assignments (post-migration)\nCanonical primary region per service after the",
+            "service-007 primary region is ap-south-1 (migrated after maintenance window)\nservice-007 p",
+            "service-009 primary region is us-east-1 (migrated after maintenance window)\nservice-009 pr"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Service region assignments (post-migration)\nCanonical primary region per service after the",
+            "service-007 primary region is ap-south-1 (migrated after maintenance window)\nservice-007 p",
+            "service-009 primary region is us-east-1 (migrated after maintenance window)\nservice-009 pr"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "service-007 primary region is ap-south-1 (migrated after maintenance window)\nservice-007 p",
+            "Service region assignments (post-migration)\nCanonical primary region per service after the",
+            "service-009 primary region is us-east-1 (migrated after maintenance window)\nservice-009 pr"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Service region assignments (post-migration)\nCanonical primary region per service after the",
+            "service-007 primary region is ap-south-1 (migrated after maintenance window)\nservice-007 p",
+            "service-009 primary region is us-east-1 (migrated after maintenance window)\nservice-009 pr"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Service region assignments (post-migration)\nCanonical primary region per service after the",
+            "service-009 primary region is us-east-1 (migrated after maintenance window)\nservice-009 pr",
+            "service-007 primary region is ap-south-1 (migrated after maintenance window)\nservice-007 p"
+          ]
+        }
+      ]
+    },
+    {
+      "arm": "two_generations",
+      "lessons": 40,
+      "dream": [
+        {
+          "status": "applied",
+          "generation": "0->1",
+          "added": 3,
+          "superseded": 0,
+          "merged": 40,
+          "archived": 0,
+          "wiki": 2,
+          "insights": 2,
+          "procedures": 1,
+          "unverified": 0,
+          "warnings": 0
+        },
+        {
+          "status": "applied",
+          "generation": "1->2",
+          "added": 4,
+          "superseded": 2,
+          "merged": 5,
+          "archived": 1,
+          "wiki": 3,
+          "insights": 2,
+          "procedures": 1,
+          "unverified": 0,
+          "warnings": 1
+        }
+      ],
+      "seconds": 481.8,
+      "before": {
+        "stale_rate": 0.35,
+        "stale_mention_rate": 0.525,
+        "correct_rate": 0.425
+      },
+      "after": {
+        "stale_rate": 0.0,
+        "stale_mention_rate": 1.0,
+        "correct_rate": 1.0
+      },
+      "memory_stats": {
+        "generation": 2,
+        "layers": {
+          "note": {
+            "active": 9,
+            "archived": 1,
+            "superseded": 5
+          },
+          "procedure": {
+            "active": 1,
+            "superseded": 1
+          },
+          "profile": {
+            "active": 1
+          },
+          "wiki": {
+            "active": 4,
+            "superseded": 1
+          }
+        },
+        "transcripts": 88,
+        "chunks": 0,
+        "dreams": 2,
+        "path": "/tmp/argo_mem_two_generations_dxzgf64y/memory.sqlite"
+      },
+      "items": [
+        "Operates a fleet of 40 services (service-000 through service-039) distributed across five AWS regions: us-east-1, us-west-2, eu-west-1, eu-central-1, ap-south-1.\n\nEvidence: \u201cUpdate for lesson 20: service-020 was migrated to us-east-1 after the maintenance window.\u201d",
+        "Only the 'migrated to <region> after the maintenance window' statement is authoritative for a service's current primary region; it supersedes any earlier value.\n\nEvidence: \u201cservice-000 was migrated to eu-west-1 after the maintenance window.\u201d",
+        "Interim 'briefly staged in <region>' lines are decoys: in 6 of 8 observed pairs the staging region differed from the final migration target, and in 2 pairs (service-010, service-035) they coincidentally matched \u2014 so the staging line is never evidence of the primary region, even when it happens to agree.\n\nEvidence: \u201cInterim status: service-010 was briefly staged in us-west-2\u201d",
+        "When to use: When transcripts report region changes for many services, especially with 'interim staging' lines preceding 'migrated to ... after the maintenance window' lines.\nSteps:\n1. Collect only the 'migrated to <region> after the maintenance window' statements; ignore all 'briefly staged in <region>' lines.\n2. Map each service-NNN to its migration target region, aggregating across every session (updates arrive in 'lesson N' batches).\n3. Rewrite the single consolidated region table rather than creating one note per service.\n4. Recompute the region distribution counts and update the 'Service region map' wiki page.\n5. Archive or supersede any prior per-service region notes so stale values cannot be read.",
+        "Fleet region distribution after the maintenance cycle: eu-central-1 (12), ap-south-1 (9), us-west-2 (7), eu-west-1 (6), us-east-1 (6) \u2014 40 services total.\n\nEvidence: \u201cUpdate for lesson 39: service-039 was migrated to us-west-2 after the maintenance window.\u201d",
+        "Region-report interpretation rules: (1) 'briefly staged in <region>' is transient noise and never a primary region \u2014 even when it coincidentally matches the final target (service-010, service-035); (2) 'migrated to <region> after the maintenance window' is authoritative and supersedes any earlier value; (3) when a batch of migrations lands, rewrite the single consolidated region table rather than appending per-service notes.",
+        "The operator runs 40 services named service-000 through service-039, spread over five AWS regions: us-east-1, us-west-2, eu-west-1, eu-central-1, ap-south-1. Region assignments change during maintenance windows; see the Service region map for current values.",
+        "Rules for interpreting region reports: (1) 'briefly staged in <region>' is transient noise, never a primary region \u2014 even when it coincidentally equals the final target; (2) 'migrated to <region> after the maintenance window' is authoritative and supersedes any earlier value; (3) when a batch of migrations lands, rewrite the single consolidated region table rather than appending per-service notes; (4) updates are spread across sessions in 'lesson N' batches, so aggregate all sessions before rewriting the map.",
+        "Canonical mapping of the 40-service fleet (service-000..service-039) to its current primary AWS region, as of the latest maintenance-window migration cycle. Every service moved this cycle, so any pre-migration region value is stale. Distribution: eu-central-1 (12), ap-south-1 (9), us-west-2 (7), eu-west-1 (6), us-east-1 (6). Per-service table: 000 eu-west-1, 001 eu-west-1, 002 ap-south-1, 003 ap-south-1, 004 eu-central-1, 005 eu-central-1, 006 us-east-1, 007 ap-south-1, 008 eu-central-1, 009 us-east-1, 010 us-west-2, 011 us-east-1, 012 eu-west-1, 013 eu-central-1, 014 us-west-2, 015 ap-south-1, 016 us-east-1, 017 eu-west-1, 018 eu-west-1, 019 eu-central-1, 020 us-east-1, 021 eu-central-1, 022 ap-south-1, 023 us-west-2, 024 eu-central-1, 025 eu-west-1, 026 us-west-2, 027 us-west-2, 028 eu-central-1, 029 ap-south-1, 030 us-east-1, 031 ap-south-1, 032 eu-central-1, 033 eu-central-1, 034 ap-south-1, 035 us-west-2, 036 eu-central-1, 037 ap-south-1, 038 eu-central-1, 039 us-west-2.",
+        "Service primary regions (current, after the maintenance-window migrations): service-000 eu-west-1; service-001 eu-west-1; service-002 ap-south-1; service-003 ap-south-1; service-004 eu-central-1; service-005 eu-central-1; service-006 us-east-1; service-007 ap-south-1; service-008 eu-central-1; service-009 us-east-1; service-010 us-west-2; service-011 us-east-1; service-012 eu-west-1; service-013 eu-central-1; service-014 us-west-2; service-015 ap-south-1; service-016 us-east-1; service-017 eu-west-1; service-018 eu-west-1; service-019 eu-central-1; service-020 us-east-1; service-021 eu-central-1; service-022 ap-south-1; service-023 us-west-2; service-024 eu-central-1; service-025 eu-west-1; service-026 us-west-2; service-027 us-west-2; service-028 eu-central-1; service-029 ap-south-1; service-030 us-east-1; service-031 ap-south-1; service-032 eu-central-1; service-033 eu-central-1; service-034 ap-south-1; service-035 us-west-2; service-036 eu-central-1; service-037 ap-south-1; service-038 eu-central-1; service-039 us-west-2.",
+        "Canonical mapping of the 40-service fleet to its current primary AWS region, as of the latest maintenance-window migration cycle. Every service moved this cycle, so any pre-migration region value is stale. Distribution: eu-central-1 (12), ap-south-1 (9), us-west-2 (7), eu-west-1 (6), us-east-1 (6). See the consolidated note for the per-service table.",
+        "Decoy-first message ordering ('interim status' before the real update) is a recurring pattern in this operator's data; a general defensive rule is to prefer the terminal/authoritative phrasing over the provisional one whenever both appear for the same entity.\n\nBasis: bench0 pairs 'Interim status: ... briefly staged in X' with a following 'migrated to Y' for services 000/005/010/015/020/025/030/035.",
+        "Per-entity fact notes do not scale: 40 single-value notes sharing one schema all had to be rewritten in a single cycle. One table note plus a topic page is cheaper to maintain and diff.\n\nBasis: All 40 prior memory items were one-region-per-service notes and all were superseded in one maintenance cycle.",
+        "Region updates arrive in per-service 'lesson N' messages batched across sessions (bench0 covers 000/005/010/.../035, bench1 covers 001/006/.../036, etc.), so a complete region map can only be built by aggregating all sessions, not from any single one.\n\nEvidence: \u201cUpdate for lesson 1: service-001 was migrated to eu-west-1 after the maintenance window.\u201d",
+        "Insight: Region updates arrive in two waves per service \u2014 a decoy 'interim staging' line followed by the real migration line. Treating the first wave as truth would corrupt the region map. Caveat: the two regions are not always different (service-010 and service-035 staged in and migrated to the same region), so 'they always differ' is not a usable heuristic; the rule is simply to ignore staging lines entirely."
+      ],
+      "active_items": 15,
+      "per_lesson_after": [
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Operates a fleet of 40 services (service-000 through service-039) distributed ac\nOperates ",
+            "Only the 'migrated to <region> after the maintenance window' statement is author\nOnly the ",
+            "Service region map\nCanonical mapping of the 40-service fleet (service-000..service-039) to"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Only the 'migrated to <region> after the maintenance window' statement is author\nOnly the ",
+            "Service region map\nCanonical mapping of the 40-service fleet (service-000..service-039) to",
+            "Service primary regions (current, after the maintenance-window migrations): serv\nService p"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Only the 'migrated to <region> after the maintenance window' statement is author\nOnly the ",
+            "Service region map\nCanonical mapping of the 40-service fleet (service-000..service-039) to",
+            "Service primary regions (current, after the maintenance-window migrations): serv\nService p"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Only the 'migrated to <region> after the maintenance window' statement is author\nOnly the ",
+            "Service region map\nCanonical mapping of the 40-service fleet (service-000..service-039) to",
+            "Service primary regions (current, after the maintenance-window migrations): serv\nService p"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Only the 'migrated to <region> after the maintenance window' statement is author\nOnly the ",
+            "Service region map\nCanonical mapping of the 40-service fleet (service-000..service-039) to",
+            "Service primary regions (current, after the maintenance-window migrations): serv\nService p"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Only the 'migrated to <region> after the maintenance window' statement is author\nOnly the ",
+            "Service region map\nCanonical mapping of the 40-service fleet (service-000..service-039) to",
+            "Service primary regions (current, after the maintenance-window migrations): serv\nService p"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Only the 'migrated to <region> after the maintenance window' statement is author\nOnly the ",
+            "Service region map\nCanonical mapping of the 40-service fleet (service-000..service-039) to",
+            "Service primary regions (current, after the maintenance-window migrations): serv\nService p"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Only the 'migrated to <region> after the maintenance window' statement is author\nOnly the ",
+            "Service region map\nCanonical mapping of the 40-service fleet (service-000..service-039) to",
+            "Service primary regions (current, after the maintenance-window migrations): serv\nService p"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Only the 'migrated to <region> after the maintenance window' statement is author\nOnly the ",
+            "Service region map\nCanonical mapping of the 40-service fleet (service-000..service-039) to",
+            "Service primary regions (current, after the maintenance-window migrations): serv\nService p"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Only the 'migrated to <region> after the maintenance window' statement is author\nOnly the ",
+            "Service region map\nCanonical mapping of the 40-service fleet (service-000..service-039) to",
+            "Service primary regions (current, after the maintenance-window migrations): serv\nService p"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Only the 'migrated to <region> after the maintenance window' statement is author\nOnly the ",
+            "Service region map\nCanonical mapping of the 40-service fleet (service-000..service-039) to",
+            "Service primary regions (current, after the maintenance-window migrations): serv\nService p"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Only the 'migrated to <region> after the maintenance window' statement is author\nOnly the ",
+            "Service region map\nCanonical mapping of the 40-service fleet (service-000..service-039) to",
+            "Service primary regions (current, after the maintenance-window migrations): serv\nService p"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Only the 'migrated to <region> after the maintenance window' statement is author\nOnly the ",
+            "Service region map\nCanonical mapping of the 40-service fleet (service-000..service-039) to",
+            "Service primary regions (current, after the maintenance-window migrations): serv\nService p"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Only the 'migrated to <region> after the maintenance window' statement is author\nOnly the ",
+            "Service region map\nCanonical mapping of the 40-service fleet (service-000..service-039) to",
+            "Service primary regions (current, after the maintenance-window migrations): serv\nService p"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Only the 'migrated to <region> after the maintenance window' statement is author\nOnly the ",
+            "Service region map\nCanonical mapping of the 40-service fleet (service-000..service-039) to",
+            "Service primary regions (current, after the maintenance-window migrations): serv\nService p"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Only the 'migrated to <region> after the maintenance window' statement is author\nOnly the ",
+            "Service region map\nCanonical mapping of the 40-service fleet (service-000..service-039) to",
+            "Service primary regions (current, after the maintenance-window migrations): serv\nService p"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Only the 'migrated to <region> after the maintenance window' statement is author\nOnly the ",
+            "Service region map\nCanonical mapping of the 40-service fleet (service-000..service-039) to",
+            "Service primary regions (current, after the maintenance-window migrations): serv\nService p"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Only the 'migrated to <region> after the maintenance window' statement is author\nOnly the ",
+            "Service region map\nCanonical mapping of the 40-service fleet (service-000..service-039) to",
+            "Service primary regions (current, after the maintenance-window migrations): serv\nService p"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Only the 'migrated to <region> after the maintenance window' statement is author\nOnly the ",
+            "Service region map\nCanonical mapping of the 40-service fleet (service-000..service-039) to",
+            "Service primary regions (current, after the maintenance-window migrations): serv\nService p"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Only the 'migrated to <region> after the maintenance window' statement is author\nOnly the ",
+            "Service region map\nCanonical mapping of the 40-service fleet (service-000..service-039) to",
+            "Service primary regions (current, after the maintenance-window migrations): serv\nService p"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Only the 'migrated to <region> after the maintenance window' statement is author\nOnly the ",
+            "Service region map\nCanonical mapping of the 40-service fleet (service-000..service-039) to",
+            "Service primary regions (current, after the maintenance-window migrations): serv\nService p"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Only the 'migrated to <region> after the maintenance window' statement is author\nOnly the ",
+            "Service primary regions (current, after the maintenance-window migrations): serv\nService p",
+            "Service region map\nCanonical mapping of the 40-service fleet (service-000..service-039) to"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Only the 'migrated to <region> after the maintenance window' statement is author\nOnly the ",
+            "Service region map\nCanonical mapping of the 40-service fleet (service-000..service-039) to",
+            "Service primary regions (current, after the maintenance-window migrations): serv\nService p"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Only the 'migrated to <region> after the maintenance window' statement is author\nOnly the ",
+            "Service region map\nCanonical mapping of the 40-service fleet (service-000..service-039) to",
+            "Service primary regions (current, after the maintenance-window migrations): serv\nService p"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Only the 'migrated to <region> after the maintenance window' statement is author\nOnly the ",
+            "Service region map\nCanonical mapping of the 40-service fleet (service-000..service-039) to",
+            "Service primary regions (current, after the maintenance-window migrations): serv\nService p"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Only the 'migrated to <region> after the maintenance window' statement is author\nOnly the ",
+            "Service primary regions (current, after the maintenance-window migrations): serv\nService p",
+            "Service region map\nCanonical mapping of the 40-service fleet (service-000..service-039) to"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Only the 'migrated to <region> after the maintenance window' statement is author\nOnly the ",
+            "Service region map\nCanonical mapping of the 40-service fleet (service-000..service-039) to",
+            "Service primary regions (current, after the maintenance-window migrations): serv\nService p"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Only the 'migrated to <region> after the maintenance window' statement is author\nOnly the ",
+            "Service region map\nCanonical mapping of the 40-service fleet (service-000..service-039) to",
+            "Service primary regions (current, after the maintenance-window migrations): serv\nService p"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Only the 'migrated to <region> after the maintenance window' statement is author\nOnly the ",
+            "Service region map\nCanonical mapping of the 40-service fleet (service-000..service-039) to",
+            "Service primary regions (current, after the maintenance-window migrations): serv\nService p"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Only the 'migrated to <region> after the maintenance window' statement is author\nOnly the ",
+            "Service region map\nCanonical mapping of the 40-service fleet (service-000..service-039) to",
+            "Service primary regions (current, after the maintenance-window migrations): serv\nService p"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Only the 'migrated to <region> after the maintenance window' statement is author\nOnly the ",
+            "Service region map\nCanonical mapping of the 40-service fleet (service-000..service-039) to",
+            "Service primary regions (current, after the maintenance-window migrations): serv\nService p"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Only the 'migrated to <region> after the maintenance window' statement is author\nOnly the ",
+            "Service region map\nCanonical mapping of the 40-service fleet (service-000..service-039) to",
+            "Service primary regions (current, after the maintenance-window migrations): serv\nService p"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Only the 'migrated to <region> after the maintenance window' statement is author\nOnly the ",
+            "Service region map\nCanonical mapping of the 40-service fleet (service-000..service-039) to",
+            "Service primary regions (current, after the maintenance-window migrations): serv\nService p"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Only the 'migrated to <region> after the maintenance window' statement is author\nOnly the ",
+            "Service region map\nCanonical mapping of the 40-service fleet (service-000..service-039) to",
+            "Service primary regions (current, after the maintenance-window migrations): serv\nService p"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Only the 'migrated to <region> after the maintenance window' statement is author\nOnly the ",
+            "Service region map\nCanonical mapping of the 40-service fleet (service-000..service-039) to",
+            "Service primary regions (current, after the maintenance-window migrations): serv\nService p"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Only the 'migrated to <region> after the maintenance window' statement is author\nOnly the ",
+            "Service region map\nCanonical mapping of the 40-service fleet (service-000..service-039) to",
+            "Service primary regions (current, after the maintenance-window migrations): serv\nService p"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Only the 'migrated to <region> after the maintenance window' statement is author\nOnly the ",
+            "Service region map\nCanonical mapping of the 40-service fleet (service-000..service-039) to",
+            "Service primary regions (current, after the maintenance-window migrations): serv\nService p"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Only the 'migrated to <region> after the maintenance window' statement is author\nOnly the ",
+            "Service region map\nCanonical mapping of the 40-service fleet (service-000..service-039) to",
+            "Service primary regions (current, after the maintenance-window migrations): serv\nService p"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Only the 'migrated to <region> after the maintenance window' statement is author\nOnly the ",
+            "Service region map\nCanonical mapping of the 40-service fleet (service-000..service-039) to",
+            "Service primary regions (current, after the maintenance-window migrations): serv\nService p"
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Only the 'migrated to <region> after the maintenance window' statement is author\nOnly the ",
+            "Service region map\nCanonical mapping of the 40-service fleet (service-000..service-039) to",
+            "Service primary regions (current, after the maintenance-window migrations): serv\nService p"
+          ]
+        }
+      ]
+    },
+    {
+      "arm": "adaptive",
+      "lessons": 40,
+      "dream": [
+        {
+          "status": "applied",
+          "generation": "0->1",
+          "added": 3,
+          "superseded": 0,
+          "merged": 40,
+          "archived": 0,
+          "wiki": 2,
+          "insights": 1,
+          "procedures": 1,
+          "unverified": 0,
+          "warnings": 0
+        },
+        {
+          "status": "applied",
+          "generation": "1->2",
+          "added": 4,
+          "superseded": 0,
+          "merged": 4,
+          "archived": 1,
+          "wiki": 2,
+          "insights": 1,
+          "procedures": 1,
+          "unverified": 0,
+          "warnings": 1
+        }
+      ],
+      "seconds": 306.0,
+      "before": {
+        "stale_rate": 0.35,
+        "stale_mention_rate": 0.525,
+        "correct_rate": 0.425
+      },
+      "after": {
+        "stale_rate": 0.0,
+        "stale_mention_rate": 1.0,
+        "correct_rate": 1.0
+      },
+      "memory_stats": {
+        "generation": 2,
+        "layers": {
+          "note": {
+            "active": 8,
+            "archived": 1,
+            "superseded": 3
+          },
+          "procedure": {
+            "active": 1,
+            "superseded": 1
+          },
+          "wiki": {
+            "active": 2,
+            "superseded": 2
+          }
+        },
+        "transcripts": 88,
+        "chunks": 0,
+        "dreams": 2,
+        "path": "/tmp/argo_mem_adaptive_ewc40_p8/memory.sqlite"
+      },
+      "items": [
+        "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-west-1; 001 eu-west-1; 002 ap-south-1; 003 ap-south-1; 004 eu-central-1; 005 eu-central-1; 006 us-east-1; 007 ap-south-1; 008 eu-central-1; 009 us-east-1; 010 us-west-2; 011 us-east-1; 012 eu-west-1; 013 eu-central-1; 014 us-west-2; 015 ap-south-1; 016 us-east-1; 017 eu-west-1; 018 eu-west-1; 019 eu-central-1; 020 us-east-1; 021 eu-central-1; 022 ap-south-1; 023 us-west-2; 024 eu-central-1; 025 eu-west-1; 026 us-west-2; 027 us-west-2; 028 eu-central-1; 029 ap-south-1; 030 us-east-1; 031 ap-south-1; 032 eu-central-1; 033 eu-central-1; 034 ap-south-1; 035 us-west-2; 036 eu-central-1; 037 ap-south-1; 038 eu-central-1; 039 us-west-2.\n\nEvidence: \u201cUpdate for lesson 39: service-039 was migrated to us-west-2 after the maintenance window.\u201d",
+        "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-west-1; 001 eu-west-1; 002 ap-south-1; 003 ap-south-1; 004 eu-central-1; 005 eu-central-1; 006 us-east-1; 007 ap-south-1; 008 eu-central-1; 009 us-east-1; 010 us-west-2; 011 us-east-1; 012 eu-west-1; 013 eu-central-1; 014 us-west-2; 015 ap-south-1; 016 us-east-1; 017 eu-west-1; 018 eu-west-1; 019 eu-central-1; 020 us-east-1; 021 eu-central-1; 022 ap-south-1; 023 us-west-2; 024 eu-central-1; 025 eu-west-1; 026 us-west-2; 027 us-west-2; 028 eu-central-1; 029 ap-south-1; 030 us-east-1; 031 ap-south-1; 032 eu-central-1; 033 eu-central-1; 034 ap-south-1; 035 us-west-2; 036 eu-central-1; 037 ap-south-1; 038 eu-central-1; 039 us-west-2.",
+        "When to use: When a message reports a service being staged or migrated to a region (e.g. 'Update for lesson N: service-NNN was migrated to <region> after the maintenance window').\nSteps:\n1. Ignore 'Interim status: ... briefly staged in <region>' lines; they are transient.\n2. Take the region from the 'migrated to <region> after the maintenance window' statement as authoritative.\n3. Update the service's entry in the single canonical region table, replacing the previous value.\n4. Do not keep the old region as a separate note; supersede it.",
+        "Region assignments for this fleet change in bulk: all 40 services were reassigned in a single maintenance window, so any pre-migration region value is stale and the region table should be replaced wholesale rather than patched per service.\n\nEvidence: \u201cservice-000 was migrated to eu-west-1 after the maintenance window.\u201d",
+        "'Interim status: <service> was briefly staged in <region>' lines describe transient staging only and must never be recorded as a service's primary region; only the later 'migrated to <region> after the maintenance window' statement is authoritative.\n\nEvidence: \u201cInterim status: service-000 was briefly staged in us-east-1\u201d",
+        "All 40 service region assignments changed during the maintenance-window migration; every pre-migration region note in generation 0 is stale and must not be relied on.\n\nEvidence: \u201cservice-000 was migrated to eu-west-1 after the maintenance window.\u201d",
+        "Region changes are announced as 'Update for lesson N: service-NNN was migrated to <region> after the maintenance window.' Sometimes preceded by a transient 'Interim status: ... briefly staged in <region>' line. Only the post-maintenance value is persisted; the staging region is noise. Pre-migration values from earlier generations are stale.",
+        "All 40 services (service-000..service-039) were migrated to new primary regions in a single maintenance window. The authoritative post-migration table is the canonical region note. Announcement format: 'Update for lesson N: service-NNN was migrated to <region> after the maintenance window.' A preceding 'Interim status: <service> was briefly staged in <region>' line is transient and must be ignored. Regions in use: us-east-1, us-west-2, eu-west-1, eu-central-1, ap-south-1. Because changes are fleet-wide, keep one table and replace it wholesale.",
+        "Service region assignments / maintenance-window migrations: region changes arrive as 'Update for lesson N: service-NNN was migrated to <region> after the maintenance window.'; an optional preceding 'Interim status: ... briefly staged in <region>' line is transient noise. All 40 services (service-000..service-039) were migrated in one window; the canonical post-migration table lives in the merged region note and pre-migration values are stale. Regions in use: us-east-1, us-west-2, eu-west-1, eu-central-1, ap-south-1.",
+        "Region assignments for this fleet churn in bulk (all 40 services changed in one maintenance window), so per-service region notes should be stored as a single table replaced wholesale rather than 40 independently aging items.\n\nBasis: Every service in bench0-bench4 received a new region in the same maintenance window, invalidating all 40 prior notes at once.",
+        "The fleet uses exactly five regions: us-east-1, us-west-2, eu-west-1, eu-central-1, ap-south-1.\n\nEvidence: \u201cUpdate for lesson 31: service-031 was migrated to ap-south-1 after the maintenance window.\u201d"
+      ],
+      "active_items": 11,
+      "per_lesson_after": [
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "'Interim status: <service> was briefly staged in <region>' lines describe transi\n'Interim "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "'Interim status: <service> was briefly staged in <region>' lines describe transi\n'Interim "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "'Interim status: <service> was briefly staged in <region>' lines describe transi\n'Interim "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "'Interim status: <service> was briefly staged in <region>' lines describe transi\n'Interim "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "'Interim status: <service> was briefly staged in <region>' lines describe transi\n'Interim "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "'Interim status: <service> was briefly staged in <region>' lines describe transi\n'Interim "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "'Interim status: <service> was briefly staged in <region>' lines describe transi\n'Interim "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "'Interim status: <service> was briefly staged in <region>' lines describe transi\n'Interim "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "'Interim status: <service> was briefly staged in <region>' lines describe transi\n'Interim "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "'Interim status: <service> was briefly staged in <region>' lines describe transi\n'Interim "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "'Interim status: <service> was briefly staged in <region>' lines describe transi\n'Interim "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "'Interim status: <service> was briefly staged in <region>' lines describe transi\n'Interim "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "'Interim status: <service> was briefly staged in <region>' lines describe transi\n'Interim "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "'Interim status: <service> was briefly staged in <region>' lines describe transi\n'Interim "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "'Interim status: <service> was briefly staged in <region>' lines describe transi\n'Interim "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "'Interim status: <service> was briefly staged in <region>' lines describe transi\n'Interim "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "'Interim status: <service> was briefly staged in <region>' lines describe transi\n'Interim "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "'Interim status: <service> was briefly staged in <region>' lines describe transi\n'Interim "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "'Interim status: <service> was briefly staged in <region>' lines describe transi\n'Interim "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "'Interim status: <service> was briefly staged in <region>' lines describe transi\n'Interim "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "'Interim status: <service> was briefly staged in <region>' lines describe transi\n'Interim "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "'Interim status: <service> was briefly staged in <region>' lines describe transi\n'Interim "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "'Interim status: <service> was briefly staged in <region>' lines describe transi\n'Interim "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "'Interim status: <service> was briefly staged in <region>' lines describe transi\n'Interim "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "'Interim status: <service> was briefly staged in <region>' lines describe transi\n'Interim "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "'Interim status: <service> was briefly staged in <region>' lines describe transi\n'Interim "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "'Interim status: <service> was briefly staged in <region>' lines describe transi\n'Interim "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "'Interim status: <service> was briefly staged in <region>' lines describe transi\n'Interim "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "'Interim status: <service> was briefly staged in <region>' lines describe transi\n'Interim "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "'Interim status: <service> was briefly staged in <region>' lines describe transi\n'Interim "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "'Interim status: <service> was briefly staged in <region>' lines describe transi\n'Interim "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "'Interim status: <service> was briefly staged in <region>' lines describe transi\n'Interim "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "'Interim status: <service> was briefly staged in <region>' lines describe transi\n'Interim "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "'Interim status: <service> was briefly staged in <region>' lines describe transi\n'Interim "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "'Interim status: <service> was briefly staged in <region>' lines describe transi\n'Interim "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "'Interim status: <service> was briefly staged in <region>' lines describe transi\n'Interim "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "'Interim status: <service> was briefly staged in <region>' lines describe transi\n'Interim "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "'Interim status: <service> was briefly staged in <region>' lines describe transi\n'Interim "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "'Interim status: <service> was briefly staged in <region>' lines describe transi\n'Interim "
+          ]
+        },
+        {
+          "stale": false,
+          "stale_mention": true,
+          "correct": true,
+          "top": [
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "Canonical post-maintenance-window primary regions for all 40 services: 000 eu-we\nCanonical",
+            "'Interim status: <service> was briefly staged in <region>' lines describe transi\n'Interim "
+          ]
+        }
+      ]
+    }
+  ],
+  "timestamp": "2026-11-27T19:15:00Z"
+}

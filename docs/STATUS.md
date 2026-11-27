@@ -1,6 +1,6 @@
 # Implementation status
 
-Snapshot: 2026-11-27. Offline suite: **188 tests passing** (`.venv/bin/python -m pytest -q`).
+Snapshot: 2026-11-27. Offline suite: **189 tests passing** (`.venv/bin/python -m pytest -q`).
 Live numbers live in [`benchmarks/README.md`](../benchmarks/README.md); rationale in
 [`DECISIONS.md`](DECISIONS.md). "Done" means implemented *and* tested; "measured" means we have a live number.
 
@@ -16,7 +16,7 @@ Live numbers live in [`benchmarks/README.md`](../benchmarks/README.md); rational
 | Multi-file repair task (`ledger`, spec-driven, 3 rules + hidden suite) | Measured | baseline 1/1 (66k tok), review 1/1 (178k tok, PASS) — no headroom |
 | Plan mode + plan persistence across sessions | Done | `tests/test_plan_mode.py` (5 tests) |
 | Retrieval: BM25 + dense + weighted RRF + cross-encoder rerank | Measured on 2 corpora | SciFact + NFCorpus |
-| Memory: dream consolidation, wiki extraction | Measured + scaled | 6-lesson + 24-lesson/5-session runs; 2 generations rule |
+| Memory: dream consolidation, wiki extraction | Measured + scaled | 6/24/40-lesson runs; at 40 one pass = 1.00 correct, 2 passes 3.7× cost → default 1 pass (`--dream-generations` opt-in) |
 | Research: evidence ledger + citation verifier | Done | `benchmarks/citation.py`, `tests/test_research.py` |
 | Deep research (exact-answer, cached pages) | Measured | `benchmarks/deep_research.py` (R4): 6/6 base, 4/4 3-hop |
 | Research coverage plan (enforced decomposition) | Measured, opt-in | `argo/research/plan.py`, `tests/test_coverage_plan.py` |

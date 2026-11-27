@@ -289,12 +289,15 @@ def serve(host: str = typer.Option("127.0.0.1", "--host"), port: int = typer.Opt
 def daemon(once: bool = typer.Option(False, "--once", help="Run one scheduling tick and exit."),
            interval: int = typer.Option(30, "--interval", help="Scheduler poll seconds."),
            dream_hours: float = typer.Option(24.0, "--dream-hours", help="Hours between dream cycles."),
+           dream_generations: int = typer.Option(1, "--dream-generations",
+                                                help="Consolidation passes per cycle (2 costs ~3x for no measured gain)."),
            workspace: Optional[str] = typer.Option(None, "--workspace"),
            model: Optional[str] = typer.Option(None, "--model")) -> None:
     """Always-on mode: triggers, goal queue, approvals, scheduled dreaming."""
     from .daemon import Daemon
     cfg = _cfg(model, None, workspace)
-    asyncio.run(Daemon(cfg, once=once, poll_seconds=interval, dream_every_hours=dream_hours).run())
+    asyncio.run(Daemon(cfg, once=once, poll_seconds=interval, dream_every_hours=dream_hours,
+                       dream_generations=dream_generations).run())
 
 
 @app.command()

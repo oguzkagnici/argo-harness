@@ -109,6 +109,25 @@ correct with 0 contradictory-stale hits. Old values remain as *mentions* (1.00),
 history. Rule: for histories with >~20 lessons/session spread, schedule **two** consolidation passes; at 6 lessons
 one pass is sufficient. Cost is one extra dream call per cycle. Single run, single model — directional, not a CI.
 
+### 3c. Memory at 40 lessons: the two-generation knee does not replicate
+
+```bash
+python benchmarks/memory_loop.py --lessons 40 --sessions 5 --arms no_dream,full,two_generations --k 3
+```
+
+| Arm | Contradictory stale | Stale mention | Corrected fact | Active items | Dream calls | Dream seconds |
+|---|---|---|---|---|---|---|
+| no_dream | 0.35 | 0.53 | 0.42 | 40 | 0 | 0 |
+| full (1 generation) | **0.00** | 1.00 | **1.00** | 33 | 1 | 129 |
+| two_generations | **0.00** | 1.00 | **1.00** | 15 | 2 | 482 |
+| adaptive (auto-2 above 20 items) | **0.00** | 1.00 | **1.00** | 11 | 2 | 306 |
+
+Finding: at 40 lessons a **single** pass reconciles everything (correct 1.00, contradictory stale 0.00), so the
+second pass costs **2.4-3.7× wall time for no recall gain** — the opposite of the 24-lesson result in §3b. The
+">20 lessons ⇒ two passes" rule is therefore **not stable** and was removed from the daemon: `dream_generations`
+defaults to **1** and `--dream-generations 2` is opt-in. The second pass does shrink the active set (33 → 15 → 11),
+which may help precision, but we have no measurement for that yet. Single seed, single model, rate-limited key.
+
 ## 4. Workflow replay (computer use)
 
 Extracted workflow `demo_login` (trace → parameterized steps → replay) is re-run against a local form page

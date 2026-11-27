@@ -7,7 +7,7 @@ backed by these checks, the benchmark suite, or cited literature.
 
 ```bash
 pytest -q
-# 188 passed
+# 189 passed
 ```
 
 | Area | Checks |
@@ -60,6 +60,7 @@ Full methodology and cached data: `benchmarks/README.md`. JSON records: `benchma
 | Router `explore` (live smoke) | read-only QA and write-intent tasks, cheap vs strong arms | read-only: **2/2 cheap turns, correct** (5,234 tok vs 5,063 strong); write-intent: **0 cheap turns** (fail-safe) |
 | NFCorpus retrieval replication | 100 queries, dense vs BM25 vs RRF+rerank | dense > BM25 and rerank gives best nDCG replicate; RRF-best-R@100 does *not* replicate |
 | Memory scale (24 lessons / 5 sessions) | 1 vs 2 dream generations | 1 generation no gain; **2 generations = 1.00 correct, 0 stale** |
+| Memory, 40-lesson scale (live) | 40 synthetic lessons / 5 sessions; arms no_dream, full, two_generations | 1 pass: correct **1.00**, stale 0.00, 33 items, 129 s; 2 passes: 1.00, 15 items, 482 s — second pass = no recall gain at 3.7× cost |
 | Repair loop (baseline) | 5 local repos, visible + hidden tests, 16-iteration cap | **5/5 resolved**, 0 tampered, 46,990 tokens / 163.0 s / 7.6 iter per task |
 | Repair loop (review) | same tasks + one mandatory `review_work` | **5/5 resolved**, +35% tokens, 3.2× wall time, no accuracy gain |
 | Repair loop, trap tasks (live) | slugify + intervals: visible tests hide repeated-space/punctuation and disjoint/touching/unsorted cases | baseline **2/2 resolved**; review **2/2** at −12% tokens but 3.0× wall (one 600 s cap) — no headroom |
