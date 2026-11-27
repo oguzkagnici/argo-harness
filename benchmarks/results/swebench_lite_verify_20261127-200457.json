@@ -1,0 +1,18 @@
+{
+  "benchmark": "swebench-lite-local-verify",
+  "predictions": "benchmarks/results/swebench_lite_preds_20261126-091137.jsonl",
+  "resolved_rate": 0.0,
+  "rows": [
+    {
+      "instance_id": "pallets__flask-4045",
+      "patch_chars": 1497,
+      "test_patch_applied": true,
+      "deps_installed": true,
+      "patch_applied": false,
+      "resolved": false,
+      "reason": "patch did not apply",
+      "log": "error: corrupt patch at /tmp/argo_swebench/patch_pallets__flask-4045.diff:32\n"
+    }
+  ],
+  "timestamp": "2026-11-27T20:04:57Z"
+}

@@ -128,3 +128,22 @@ def test_spec_python_and_pytest_pin_from_official_scripts():
 
 def test_official_spec_falls_back_gracefully():
     assert BENCH.official_spec({"repo": "nope/nope", "base_commit": "x"}) == {}
+
+
+def test_test_command_uses_official_runner(monkeypatch):
+    monkeypatch.setattr(BENCH, "official_spec",
+                        lambda inst: {"test_cmd": "./tests/runtests.py --verbosity 2 --settings=test_sqlite"})
+    inst = {"FAIL_TO_PASS": ["test_a (app.tests.Tests)", "test_b (app.tests.Tests)"],
+            "test_patch": "diff --git a/app/tests.py b/app/tests.py\n"}
+    cmd = BENCH.test_command(inst)
+    assert cmd.startswith("./tests/runtests.py --verbosity 2 --settings=test_sqlite")
+    assert "test_a (app.tests.Tests)" in cmd and "test_b (app.tests.Tests)" in cmd
+
+
+def test_test_command_falls_back_to_pytest(monkeypatch):
+    monkeypatch.setattr(BENCH, "official_spec", lambda inst: {})
+    inst = {"FAIL_TO_PASS": ["pkg/tests/test_x.py::test_one"],
+            "test_patch": "diff --git a/pkg/tests/test_x.py b/pkg/tests/test_x.py\n"}
+    cmd = BENCH.test_command(inst)
+    assert cmd.startswith("python -m pytest -q")
+    assert "pkg/tests/test_x.py::test_one" in cmd

@@ -491,6 +491,29 @@ DOCX introspection.
   Full suite: 194 passing. Live smoke on this repository: the model called `git_status` then `git_log(limit=2)`
   (no shell) and reported `main` plus the newest commit subject correctly in one turn.
 
+## 3v. Harder SWE-bench repos: Django resolves 2/2 under the official harness (2026-11-27)
+
+- **Problem.** The 6/6 SWE-bench result came from sympy/flask/xarray, all small and pytest-driven. The open question
+  was whether the loop generalizes to a large framework with a different test runner.
+- **Runner gap.** Django is run with `./tests/runtests.py --settings=test_sqlite` and unittest-style labels
+  (`"test_ascii_validator (auth_tests.test_validators.UsernameValidatorsTests)"`), not pytest node ids. The old
+  harness hard-coded a pytest command, so the agent's feedback command would have been wrong.
+- **Fixes.** (1) `test_command()` now takes the official `test_cmd` from the SWE-bench spec and appends quoted
+  FAIL_TO_PASS labels (pytest fallback kept). (2) The runner wrapper prepends the instance venv to PATH because
+  `runtests.py` uses `#!/usr/bin/env python`. (3) `install_env` no longer passes `--no-deps` when the spec has no
+  pinned packages — old Django needs its own deps (`pytz`), which `--no-deps` silently skipped. (4) New `--verify`
+  stage grades a predictions file locally with the official test command (Docker-free) for fast checks.
+- **Measured (official harness, one image at a time, `--clean True` frees ~4 GB after each run).**
+  `django__django-11099`: final after **9 iter / 101,222 tok / 194 s**, patch = canonical `\A[\w.@+-]+\Z` validator fix,
+  **resolved**. `django__django-11179`: final after **6 iter / 51,001 tok / 268 s**, one-line `delete()` initiator fix,
+  **resolved**. No test tampering.
+- **Aggregate.** **8/8 resolved across four repositories** (sympy ×3, flask ×2, xarray ×1, django ×2) with the official
+  harness and test-feedback loop. The Django runs are the cheapest per instance so far (51-101k tokens vs 229-745k on
+  sympy), i.e. the cost is dominated by how far the first edit is from the fix, not by repo size.
+- **Still not a Lite-wide rate.** 8 of 300 instances, chosen for small environments. Astropy is excluded because its
+  1.3 spec pins `numpy==1.16.0`, which cannot build on a modern toolchain; a Lite-wide number needs the official
+  container for every instance and multiple seeds.
+
 ## 4. Deliberately not done (yet)
 
 - A graded SWE-bench-Lite score (the runner and Docker path exist; only a gold-patch check has been run, because

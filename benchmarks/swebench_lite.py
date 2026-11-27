@@ -4,6 +4,7 @@ Two stages, so patch generation and grading can run separately:
 
   --generate   clone each instance's repo at its base commit, run the Argo agent on the issue text, and write
                a SWE-bench-compatible predictions JSONL (``git diff``, test-file edits reverted).
+  --verify     grade a predictions file locally with the instance's official test command in its pinned venv
   --evaluate   call ``python -m swebench.harness.run_evaluation`` with prebuilt images
                (``--namespace swebench``) for the same instance ids.
 
@@ -12,6 +13,7 @@ runs one instance at a time with images removed afterwards. Use ``--instance-ids
 
 Usage:
   python benchmarks/swebench_lite.py --generate --limit 2
+  python benchmarks/swebench_lite.py --verify --predictions benchmarks/results/swebench_lite_preds_X.jsonl
   python benchmarks/swebench_lite.py --evaluate --limit 2
 """
 from __future__ import annotations
@@ -132,13 +134,20 @@ def fail_to_pass(inst: dict) -> list[str]:
 
 
 def test_command(inst: dict) -> str:
-    """A pytest invocation restricted to the instance's FAIL_TO_PASS tests.
+    """The instance's FAIL_TO_PASS tests, run with the official repo test command.
 
-    SWE-bench stores either full node ids (``path::test``) or bare test names. Bare
-    names are resolved against the test file named in the instance's test patch, using
-    ``-k`` so the command works without guessing the exact class path.
+    Django uses ``tests/runtests.py`` labels, astropy/sympy use pytest node ids. When the
+    official spec has a ``test_cmd`` we append the F2P labels to it (the same shape the
+    harness uses); otherwise we fall back to a pytest invocation with ``-k`` selection.
     """
     nodes = fail_to_pass(inst)
+    if not nodes:
+        return ""
+    spec_cmd = (official_spec(inst) or {}).get("test_cmd") or ""
+    if spec_cmd:
+        import shlex
+        quoted = " ".join(shlex.quote(n) for n in nodes[:40])
+        return f"{spec_cmd.strip()} {quoted}"
     if not nodes:
         return ""
     if all("::" in n for n in nodes):
@@ -253,7 +262,9 @@ def install_env(ws: Path, inst: dict | None = None, timeout: float = 1200.0) -> 
         for cmd in (base,
                     [python, "-m", "pip", "install", "-q", "setuptools", "wheel", pytest_pin(spec)],
                     [python, "-m", "pip", "install", "-q", *pins] if pins else None,
-                    [python, "-m", "pip", "install", "-q", "-e", ".", "--no-deps"]):
+                    # With pinned packages, resolve deps ourselves (old checkouts pull broken latest deps).
+                    # Without pins (e.g. old Django), let the package metadata resolve its own deps.
+                    [python, "-m", "pip", "install", "-q", "-e", "."] + (["--no-deps"] if pins else [])):
             if not cmd:
                 continue
             proc = subprocess.run(cmd, cwd=ws, capture_output=True, text=True, timeout=timeout)
@@ -298,8 +309,14 @@ async def generate_one(inst: dict, args) -> dict:
             # without adding an untracked file to the prediction diff.
             runner = WORK / f"run_tests_{inst['instance_id']}.sh"
             runner.parent.mkdir(parents=True, exist_ok=True)
-            real_cmd = cmd.replace("python ", f"{venv_python} ", 1)
-            runner.write_text(f'#!/bin/bash\ncd "{ws}"\n{real_cmd}\n', encoding="utf-8")
+            bindir = Path(venv_python).parent
+            # Django's runtests.py has an `#!/usr/bin/env python` shebang, so prepend the venv
+            # to PATH; pytest-style commands are made explicit instead.
+            real_cmd = cmd
+            if real_cmd.startswith("python "):
+                real_cmd = f"{venv_python} {real_cmd[len('python '):]}"
+            runner.write_text(f'#!/bin/bash\nexport PATH="{bindir}:$PATH"\ncd "{ws}"\n{real_cmd}\n',
+                              encoding="utf-8")
             prompt = PROMPT_FEEDBACK.format(repo=inst["repo"], problem=inst["problem_statement"],
                                             test_command=f"bash {runner}")
         row["test_command"] = cmd
@@ -347,6 +364,70 @@ async def generate(args) -> int:
     return 0
 
 
+def verify(args) -> int:
+    """Grade a predictions file locally with the *official* repo test command (no Docker).
+
+    Resolve = the model patch applies cleanly and every FAIL_TO_PASS test reports success under the
+    instance's pinned venv. This is not the official container harness (PASS_TO_PASS regression is
+    only covered by the F2P run), but it uses the official test runner and test patch.
+    """
+    preds = args.predictions
+    if not preds:
+        found = sorted(RESULTS.glob("swebench_lite_preds_*.jsonl"))
+        if not found:
+            print("no predictions file", file=sys.stderr)
+            return 2
+        preds = str(found[-1])
+    wanted = [s.strip() for s in args.instance_ids.split(",") if s.strip()]
+    pred_rows = [json.loads(line) for line in Path(preds).read_text(encoding="utf-8").splitlines() if line.strip()]
+    insts = {r["instance_id"]: r for r in load_instances(wanted, 0)}
+    rows = []
+    for row in pred_rows:
+        inst = insts.get(row["instance_id"])
+        if inst is None:
+            continue
+        ws = prepare_repo(inst, WORK)
+        row_out = {"instance_id": inst["instance_id"], "patch_chars": len(row.get("model_patch") or "")}
+        row_out["test_patch_applied"] = apply_test_patch(ws, inst)
+        ok, log, venv_python = install_env(ws, inst)
+        row_out["deps_installed"] = ok
+        if not ok:
+            row_out.update({"resolved": False, "reason": "install failed", "log": log[-800:]})
+            rows.append(row_out)
+            continue
+        patch_file = WORK / f"patch_{inst['instance_id']}.diff"
+        patch_file.write_text(row.get("model_patch") or "", encoding="utf-8")
+        apply = subprocess.run(["git", "-C", str(ws), "apply", "--whitespace=nowarn", str(patch_file)],
+                               capture_output=True, text=True)
+        row_out["patch_applied"] = apply.returncode == 0
+        if apply.returncode != 0:
+            row_out.update({"resolved": False, "reason": "patch did not apply",
+                            "log": apply.stderr[-600:]})
+            rows.append(row_out)
+            continue
+        cmd = test_command(inst)
+        bindir = Path(venv_python).parent
+        env = {**os.environ, "PATH": f"{bindir}{os.pathsep}{os.environ.get('PATH', '')}"}
+        started = time.monotonic()
+        proc = subprocess.run(["bash", "-lc", cmd], cwd=str(ws), capture_output=True, text=True,
+                              env=env, timeout=args.test_timeout)
+        out = (proc.stdout + proc.stderr).strip()
+        row_out.update({"resolved": proc.returncode == 0, "returncode": proc.returncode,
+                        "seconds": round(time.monotonic() - started, 1), "output": out[-1200:]})
+        rows.append(row_out)
+        print(f"{inst['instance_id']:<24} resolved={row_out['resolved']} rc={proc.returncode} "
+              f"{row_out['seconds']:>6.0f}s", flush=True)
+    stamp = time.strftime("%Y%m%d-%H%M%S")
+    record = RESULTS / f"swebench_lite_verify_{stamp}.json"
+    record.write_text(json.dumps({"benchmark": "swebench-lite-local-verify",
+                                  "predictions": str(Path(preds).resolve().relative_to(ROOT)),
+                                  "resolved_rate": round(sum(r["resolved"] for r in rows) / len(rows), 4) if rows else 0.0,
+                                  "rows": rows,
+                                  "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}, indent=2))
+    print(f"\nverified {sum(r['resolved'] for r in rows)}/{len(rows)}; record: {record.relative_to(ROOT)}")
+    return 0
+
+
 def evaluate(args) -> int:
     ids = [s.strip() for s in args.instance_ids.split(",") if s.strip()] or DEFAULT_IDS
     preds = args.predictions
@@ -371,6 +452,8 @@ def evaluate(args) -> int:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--generate", action="store_true")
+    ap.add_argument("--verify", action="store_true",
+                    help="Grade a predictions file locally with the official test command (no Docker).")
     ap.add_argument("--evaluate", action="store_true")
     ap.add_argument("--instance-ids", default="")
     ap.add_argument("--limit", type=int, default=2)
@@ -384,6 +467,8 @@ def main() -> int:
     args = ap.parse_args()
     if args.generate:
         return asyncio.run(generate(args))
+    if args.verify:
+        return verify(args)
     if args.evaluate:
         return evaluate(args)
     ap.print_help()

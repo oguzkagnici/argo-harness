@@ -681,6 +681,35 @@ image per instance until the run ends and this box has ~8 GB free. `20590` neede
 still passed on the final patch — the test loop lets a slow run converge where the old harness gave up. n=3 is a
 small, same-repo sample; do not read it as a Lite-wide rate.
 
+### 14b. Harder repositories: Django (official harness)
+
+Two Django 3.0 instances with short problem statements were added after the sympy/flask/xarray set. Django uses
+`tests/runtests.py` labels rather than pytest node ids, so the runner now takes the **official `test_cmd` from the
+SWE-bench spec** and appends the FAIL_TO_PASS labels; the venv is put first on PATH because `runtests.py` has an
+`#!/usr/bin/env python` shebang. Two harness fixes were needed: install Django's own dependencies when the spec has
+no pinned `pip_packages` (a blind `--no-deps` left `pytz` missing), and a new `--verify` stage that grades a
+predictions file locally with the official test command (no Docker).
+
+```bash
+python benchmarks/swebench_lite.py --generate --install-deps \
+  --instance-ids django__django-11099,django__django-11179
+# then, after `docker pull swebench/sweb.eval.x86_64.django_1776_<id>:latest`, one at a time:
+python benchmarks/swebench_lite.py --evaluate --instance-ids django__django-11099 --predictions <preds.jsonl>
+```
+
+| Instance | Stop | Iter | Tokens | Patch | Tampered | Wall | Official result |
+|---|---|---|---|---|---|---|---|
+| `django__django-11099` | final | 9 | 101,222 | 1 file / 900 c | no | 194 s | **resolved** |
+| `django__django-11179` | final | 6 | 51,001 | 1 file / 613 c | no | 268 s | **resolved** |
+
+Django 11099's patch is the canonical `\A[\w.@+-]+\Z` validator fix (avoiding `re.match`'s newline allowance);
+11179's is a one-line `delete()` initiator fix. Both needed no iteration against the test suite beyond the first
+edit — the feedback loop converged in 6-9 iterations at 51-101k tokens, far below sympy-20590 (40 iter, 745k).
+
+**Graded pass rate now 8/8** across four repositories (sympy ×3, flask ×2, xarray ×1, django ×2, official harness).
+Still not a Lite-wide rate: the sample is 8 of 300, chosen for small environments, and excludes astropy (its 1.3 spec
+pins `numpy==1.16.0`, which does not build on a modern toolchain).
+
 **Headline:** with the test-feedback loop (`--install-deps`: official test patch applied + editable install + the
 exact `FAIL_TO_PASS` pytest command in the prompt) the same instance that previously produced no patch **resolves**:
 FAIL_TO_PASS 2/2, PASS_TO_PASS 72/72, patch applied cleanly (`logs/run_evaluation/argo_20261125221307`). The agent

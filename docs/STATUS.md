@@ -1,6 +1,6 @@
 # Implementation status
 
-Snapshot: 2026-11-27. Offline suite: **194 tests passing** (`.venv/bin/python -m pytest -q`).
+Snapshot: 2026-11-27. Offline suite: **196 tests passing** (`.venv/bin/python -m pytest -q`).
 Live numbers live in [`benchmarks/README.md`](../benchmarks/README.md); rationale in
 [`DECISIONS.md`](DECISIONS.md). "Done" means implemented *and* tested; "measured" means we have a live number.
 
@@ -50,7 +50,7 @@ Live numbers live in [`benchmarks/README.md`](../benchmarks/README.md); rational
 | BEIR SciFact | Measured | rerank nDCG 0.9155 |
 | BEIR NFCorpus | Measured | rerank nDCG 0.4451 (dense 0.3936, BM25 0.3486) |
 | Memory learning loop | Measured | see README §3 |
-| SWE-bench-Lite | Measured | **6/6 resolved** across sympy, flask, xarray |
+| SWE-bench-Lite | Measured | **8/8 resolved** (official harness) across sympy, flask, xarray, **django** |
 | Document QA / citation / repair / workflow replay | Measured | see README |
 | Long-horizon context (live) | Measured | 3/3 completion |
 | Observability (trace/metrics/p50/p95/--since/--cost) | Done | `tests/test_observability.py` |
@@ -58,7 +58,8 @@ Live numbers live in [`benchmarks/README.md`](../benchmarks/README.md); rational
 
 ## Still open
 
-- Add harder repos (django/astropy) and a larger sample before quoting a Lite-wide rate.
+- SWE-bench: django added (8/8 total); still 8 of 300 instances, so no Lite-wide rate. Astropy blocked by its
+  `numpy==1.16.0` spec on a modern toolchain; a bigger sample needs multi-seed runs.
 - Memory cadence/wiki ablations at 40–60 lessons (24-lesson scale test + two-generation rule done).
 - Summary-prompt A/B: 36-step rerun done — both 3/3; `identifiers` −15.6% tokens but more compactions (5 vs 3).
 - Repair loop: trap tasks (two models) and the new multi-file `ledger` task are all solved at baseline, so review/repair still show no resolution gain (review = 2.7× tokens at 1/1); needs real-repo tasks the baseline fails and multiple seeds.

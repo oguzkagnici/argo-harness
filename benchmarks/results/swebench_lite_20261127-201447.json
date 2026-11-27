@@ -1,0 +1,50 @@
+{
+  "benchmark": "swebench-lite-local",
+  "dataset": "princeton-nlp/SWE-bench_Lite",
+  "predictions": "benchmarks/results/swebench_lite_preds_20261127-201447.jsonl",
+  "rows": [
+    {
+      "instance_id": "django__django-11099",
+      "repo": "django/django",
+      "base_commit": "d26b2424437dabeeca94d7900b37d2df4410da0c",
+      "tests_protected": [
+        "tests/auth_tests/test_validators.py"
+      ],
+      "test_patch_applied": true,
+      "deps_installed": true,
+      "test_command": "./tests/runtests.py --verbosity 2 --settings=test_sqlite --parallel 1 'test_ascii_validator (auth_tests.test_validators.UsernameValidatorsTests)' 'test_unicode_validator (auth_tests.test_validators.UsernameValidatorsTests)' 'test_help_text (auth_tests.test_validators.UserAttributeSimilarityValidatorTest)'",
+      "stop_reason": "final",
+      "iterations": 9,
+      "tokens": 101222,
+      "session_id": "20261127-200653-0546d4",
+      "output": "Fix verified. Summary:\n\n## Files changed\n**`django/contrib/auth/validators.py`** \u2014 the only source change (2 lines):\n\n```diff\n class ASCIIUsernameValidator(validators.RegexValidator):\n-    regex = r'^[\\w.@+-]+$'\n+    regex = r'\\A[\\w.@+-]+\\Z'\n\n class UnicodeUsernameValidator(validators.RegexValidator):\n-    regex = r'^[\\w.@+-]+$'\n+    regex = r'\\A[\\w.@+-]+\\Z'\n```\n\n## Why this is correct\n- **Root cause:** Python's `$` matches either at the end of the string *or* immediately before a trailing newline. `RegexValidator` uses `regex.search()`, so `'joe\\n'` matched `^[\\w.@+-]+$` and passed validation.\n- **Fix:** `\\A` and `\\Z` are absolute string-start/string-end anchors in Python (`\\Z` does *not* permit a trailing newline, unlike `$`). The character class and `+` quantifier are untouched, so all ",
+      "patch_chars": 900,
+      "patch_files": 1,
+      "tampered_tests": false,
+      "patch": "diff --git a/django/contrib/auth/validators.py b/django/contrib/auth/validators.py\nindex b4878cfd45..1304f20a60 100644\n--- a/django/contrib/auth/validators.py\n+++ b/django/contrib/auth/validators.py\n@@ -7,7 +7,7 @@ from django.utils.translation import gettext_lazy as _\n \n @deconstructible\n class ASCIIUsernameValidator(validators.RegexValidator):\n-    regex = r'^[\\w.@+-]+$'\n+    regex = r'\\A[\\w.@+-]+\\Z'\n     message = _(\n         'Enter a valid username. This value may contain only English letters, '\n         'numbers, and @/./+/-/_ characters.'\n@@ -17,7 +17,7 @@ class ASCIIUsernameValidator(validators.RegexValidator):\n \n @deconstructible\n class UnicodeUsernameValidator(validators.RegexValidator):\n-    regex = r'^[\\w.@+-]+$'\n+    regex = r'\\A[\\w.@+-]+\\Z'\n     message = _(\n         'Enter a valid username. This value may contain only letters, '\n         'numbers, and @/./+/-/_ characters.'",
+      "seconds": 194.5
+    },
+    {
+      "instance_id": "django__django-11179",
+      "repo": "django/django",
+      "base_commit": "19fc6376ce67d01ca37a91ef2f55ef769f50513a",
+      "tests_protected": [
+        "tests/delete/tests.py"
+      ],
+      "test_patch_applied": true,
+      "deps_installed": true,
+      "test_command": "./tests/runtests.py --verbosity 2 --settings=test_sqlite --parallel 1 'test_fast_delete_instance_set_pk_none (delete.tests.FastDeleteTests)'",
+      "stop_reason": "final",
+      "iterations": 6,
+      "tokens": 51001,
+      "session_id": "20261127-201050-8c44fb",
+      "output": "The fix is complete and verified.\n\n**File changed:** `django/db/models/deletion.py` (one line added)\n\n**Root cause:** `Collector.delete()` has a fast-path optimization for a single instance with no dependencies. That branch issues a raw `delete_batch()` and returns immediately, bypassing the general cleanup loop at the end of the method that sets `pk = None` on all collected instances. So fast-deleted objects kept their old PK.\n\n**Fix:** After the fast-path delete, set the instance's PK attribute to `None`:\n\n```python\nif self.can_fast_delete(instance):\n    with transaction.mark_for_rollback_on_error():\n        count = sql.DeleteQuery(model).delete_batch([instance.pk], self.using)\n    setattr(instance, model._meta.pk.attname, None)\n    return count, {model._meta.label: count}\n```\n\nUsing `mo",
+      "patch_chars": 613,
+      "patch_files": 1,
+      "tampered_tests": false,
+      "patch": "diff --git a/django/db/models/deletion.py b/django/db/models/deletion.py\nindex 92fe4affb9..3a462f1c4c 100644\n--- a/django/db/models/deletion.py\n+++ b/django/db/models/deletion.py\n@@ -277,6 +277,7 @@ class Collector:\n             if self.can_fast_delete(instance):\n                 with transaction.mark_for_rollback_on_error():\n                     count = sql.DeleteQuery(model).delete_batch([instance.pk], self.using)\n+                setattr(instance, model._meta.pk.attname, None)\n                 return count, {model._meta.label: count}\n \n         with transaction.atomic(using=self.using, savepoint=False):",
+      "seconds": 268.2
+    }
+  ],
+  "timestamp": "2026-11-27T20:14:47Z"
+}

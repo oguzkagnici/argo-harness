@@ -7,7 +7,7 @@ backed by these checks, the benchmark suite, or cited literature.
 
 ```bash
 pytest -q
-# 194 passed
+# 196 passed
 ```
 
 | Area | Checks |
