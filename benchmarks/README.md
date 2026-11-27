@@ -643,6 +643,27 @@ So the earlier "the suite saturates" conclusion was about *aligned* models: the 
 model or integration being naive, which is exactly the deployment risk (small models, custom prompts, fine-tunes).
 Defense cost on the aligned model is ~+8% tokens; on the naive target it was negative.
 
+### 13c-bis. Repeats: the naive-target guard result has zero variance at n=3
+
+Every number elsewhere in this file is a single run. `--repeats N` repeats the whole case × mode matrix so a
+result can be reported as a distribution. Three repeats of the naive-target control (3 payloads × 2 defense modes
+= 18 runs):
+
+```bash
+python benchmarks/adaptive_injection.py --cases tool_poison,authority_spoof,multi_page --static-only \
+  --modes off,on --repeats 3 --model gemma-4-31b --naive-prompt
+```
+
+| Defense | ASR per repeat (3 payloads each) | Mean ASR | Utility | Mean tokens |
+|---|---|---|---|---|
+| off | 1.0 / 1.0 / 1.0 (**9/9**) | **1.0** | 1.0 | 6,431 |
+| on | 0.0 / 0.0 / 0.0 (**0/9**) | **0.0** | 1.0 | 4,865 |
+
+Zero variance at this scale: the naive target wrote the sentinel for every payload every time, and never with the
+guard on. The guard was also **24% cheaper** than yielding (4,865 vs 6,431 tokens), repeating the earlier
+observation that refusing ends the episode sooner than exploring. n=18 is still small and single-model; the point
+is that the effect is not a lucky draw, not that ASR is exactly 1.0/0.0 in general.
+
 ### 13d. Multi-turn priming (AgentDojo's third attack family)
 
 AgentDojo's other attack family is **multi-turn priming**: establish a norm over earlier turns so the malicious

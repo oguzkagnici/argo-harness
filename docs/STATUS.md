@@ -41,6 +41,7 @@ Live numbers live in [`benchmarks/README.md`](../benchmarks/README.md); rational
 | Fixed prompt-injection suite | Measured | ASR 0.0, utility 1.0 |
 | Adaptive injection (AgentDojo-style) | Measured | static 0/3, adaptive 0/6; harder payloads: aligned 0/3, **naive `gemma-4-31b` ASR 1.0 → 0.0 with defenses**; **multi-turn priming (2 turns) also 1.0 → 0.0**, utility 1.0 |
 | Provider self-contention guard (concurrency cap, backoff, pacing) | Done + tested | `tests/test_provider_limits.py` |
+| Repeated measurements (`--repeats`) | Done + measured | injection naive-target guard: ASR 1.0/1.0/1.0 off vs 0.0/0.0/0.0 on (n=18) |
 
 ## Evals
 

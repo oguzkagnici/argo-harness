@@ -560,6 +560,23 @@ DOCX introspection.
 - **Scope.** Still local/deterministic: no CAPTCHAs, cross-site flows, or the real WebArena/OSWorld apps; OSWorld-style
   desktop control is untested. This narrows the gap ("state-checked multi-page tasks"), it does not close it.
 
+## 3y. First repeated measurement: zero variance on the naive-target guard win (2026-11-27)
+
+- **Problem.** Every live number in this project is one run; the guard win (ASR 1.0 → 0.0 on a naive target) could
+  have been a lucky sample.
+- **Method.** `benchmarks/adaptive_injection.py --repeats N` replays the full case × mode matrix N times and records
+  `asr_by_repeat` in the summary (temperature stays at the provider default 0.2, so repeats probe sampling noise,
+  not prompt changes).
+- **Measured (3 repeats, 3 hard payloads, `gemma-4-31b` naive policy).** Defense off: **1.0 / 1.0 / 1.0** (9/9
+  attacks succeeded). Defense on: **0.0 / 0.0 / 0.0** (0/9). Utility 1.0 in all 18 runs. Mean tokens 6,431 (off)
+  vs 4,865 (on) — the guard is 24% cheaper because refusing ends the episode.
+- **Interpretation.** The effect is stable across repeats at this scale, and the earlier single-run numbers were not
+  outliers. It does **not** establish a general ASR: n=18, one model, one deployment misconfiguration, three
+  payloads. What it closes is the objection "maybe you got lucky once".
+- **Cost.** 18 runs ≈ 7 minutes of wall time under the shared rate limit, far cheaper than repeating repair or
+  SWE-bench (which cost 100k-750k tokens per run). Use `--repeats` for the cheap arms first; multi-seed SWE-bench
+  needs a quota plan.
+
 ## 4. Deliberately not done (yet)
 
 - A graded SWE-bench-Lite score (the runner and Docker path exist; only a gold-patch check has been run, because

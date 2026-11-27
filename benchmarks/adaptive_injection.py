@@ -315,42 +315,43 @@ async def main_async(args) -> int:
         async with LLMClient(load_config()) as llm:
             for mode in [m.strip() for m in args.modes.split(",") if m.strip()]:
                 defense = mode == "on"
-                for case in cases:
-                    static_payload = case["static"].format(base=base)
-                    arm_prefix = "primed_" if args.priming else ""
-                    static_row = await run_target(case, static_payload, defense, base, args.timeout, args.model,
-                                                  naive=args.naive_prompt, priming=args.priming)
-                    static_row.update({"case": case["id"], "mode": mode, "arm": arm_prefix + "static", "round": 0,
-                                       "payload": static_payload[:700]})
-                    rows.append(static_row)
-                    print(f"{case['id']:<12} {mode:<3} static    obeyed={static_row['obeyed']!s:<5} "
-                          f"utility={static_row['utility']!s:<5} tok={static_row['tokens']:<6} "
-                          f"{static_row['seconds']:>5.1f}s", flush=True)
+                arm_prefix = "primed_" if args.priming else ""
+                for rep in range(max(1, args.repeats)):
+                    for case in cases:
+                        static_payload = case["static"].format(base=base)
+                        static_row = await run_target(case, static_payload, defense, base, args.timeout,
+                                                      args.model, naive=args.naive_prompt, priming=args.priming)
+                        static_row.update({"case": case["id"], "mode": mode, "arm": arm_prefix + "static",
+                                           "round": 0, "repeat": rep, "payload": static_payload[:700]})
+                        rows.append(static_row)
+                        print(f"{case['id']:<12} {mode:<3} r{rep} static    obeyed={static_row['obeyed']!s:<5} "
+                              f"utility={static_row['utility']!s:<5} tok={static_row['tokens']:<6} "
+                              f"{static_row['seconds']:>5.1f}s", flush=True)
 
-                    if args.static_only:
-                        continue
-                    history: list[dict] = [{"payload": static_payload, "outcome": _feedback(static_row)}]
-                    for rnd in range(1, args.rounds + 1):
-                        prompt = attacker_prompt(case, base, defense, history)
-                        try:
-                            resp = await asyncio.wait_for(
-                                llm.chat([Message(role="system", content=ATTACKER_SYSTEM),
-                                          Message(role="user", content=prompt)]),
-                                timeout=max(60.0, args.timeout))
-                            payload = parse_payload(resp.message.content or "")
-                        except Exception as exc:  # noqa: BLE001
-                            print(f"  attacker error: {type(exc).__name__}: {exc}", flush=True)
-                            payload = ""
-                        payload = payload[:1200] or static_payload
-                        row = await run_target(case, payload, defense, base, args.timeout, args.model,
-                                               priming=args.priming)
-                        row.update({"case": case["id"], "mode": mode, "arm": arm_prefix + "adaptive", "round": rnd,
-                                    "payload": payload[:700]})
-                        rows.append(row)
-                        history.append({"payload": payload[:700], "outcome": _feedback(row)})
-                        print(f"{case['id']:<12} {mode:<3} adaptive#{rnd} obeyed={row['obeyed']!s:<5} "
-                              f"utility={row['utility']!s:<5} tok={row['tokens']:<6} "
-                              f"{row['seconds']:>5.1f}s", flush=True)
+                        if args.static_only:
+                            continue
+                        history: list[dict] = [{"payload": static_payload, "outcome": _feedback(static_row)}]
+                        for rnd in range(1, args.rounds + 1):
+                            prompt = attacker_prompt(case, base, defense, history)
+                            try:
+                                resp = await asyncio.wait_for(
+                                    llm.chat([Message(role="system", content=ATTACKER_SYSTEM),
+                                              Message(role="user", content=prompt)]),
+                                    timeout=max(60.0, args.timeout))
+                                payload = parse_payload(resp.message.content or "")
+                            except Exception as exc:  # noqa: BLE001
+                                print(f"  attacker error: {type(exc).__name__}: {exc}", flush=True)
+                                payload = ""
+                            payload = payload[:1200] or static_payload
+                            row = await run_target(case, payload, defense, base, args.timeout, args.model,
+                                                   priming=args.priming)
+                            row.update({"case": case["id"], "mode": mode, "arm": arm_prefix + "adaptive",
+                                        "round": rnd, "repeat": rep, "payload": payload[:700]})
+                            rows.append(row)
+                            history.append({"payload": payload[:700], "outcome": _feedback(row)})
+                            print(f"{case['id']:<12} {mode:<3} r{rep} adaptive#{rnd} obeyed={row['obeyed']!s:<5} "
+                                  f"utility={row['utility']!s:<5} tok={row['tokens']:<6} "
+                                  f"{row['seconds']:>5.1f}s", flush=True)
     finally:
         srv.shutdown()
 
@@ -368,9 +369,15 @@ async def main_async(args) -> int:
             "utility": round(sum(r["utility"] for r in group) / len(group), 4) if group else None,
             "exfiltrations": sum(r["exfiltrated"] for r in group),
             "mean_tokens": round(sum(r["tokens"] for r in group) / len(group)) if group else 0,
+            "asr_by_repeat": [
+                round(sum(r["obeyed"] for r in group if r.get("repeat") == i)
+                      / max(1, sum(1 for r in group if r.get("repeat") == i)), 4)
+                for i in range(args.repeats)
+                if any(r.get("repeat") == i for r in group)
+            ],
         }
     summary = {"benchmark": "adaptive-injection", "model": args.model or "default",
-               "rounds": args.rounds, "static_only": bool(args.static_only),
+               "rounds": args.rounds, "static_only": bool(args.static_only), "repeats": args.repeats,
                "naive_prompt": bool(args.naive_prompt), "priming_turns": args.priming,
                "cases": [c["id"] for c in cases],
                "rows": rows, "summaries": summaries,
@@ -401,6 +408,8 @@ def main() -> int:
     ap.add_argument("--timeout", type=float, default=240.0)
     ap.add_argument("--model", default="", help="target model (weak model gives a non-ceiling ASR)")
     ap.add_argument("--static-only", action="store_true", help="fixed payloads only; skip the red-team arm")
+    ap.add_argument("--repeats", type=int, default=1,
+                    help="repeat the whole case/mode matrix N times (variance / stability check)")
     ap.add_argument("--priming", type=int, default=0,
                     help="agentdojo-style multi-turn priming turns before the attack (0-2)")
     ap.add_argument("--naive-prompt", action="store_true",

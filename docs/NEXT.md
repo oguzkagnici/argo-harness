@@ -181,6 +181,8 @@ server's read tools out of the approval path (`{"search": true}`); covered by `t
   may fit other workloads; the three regression tests pin the behaviour we care about.
 - **`_last_usage` calibration** means compaction math trusts the provider's last prompt count; a provider that
   reports prompt tokens excluding cached content could shift thresholds.
-- **Benchmarks are single-model, single-run** (deepseek-v4.1-flash). No confidence intervals anywhere.
+- **Benchmarks are single-model** (deepseek-v4.1-flash) and mostly single-run. First repeated arm added:
+  `adaptive_injection --repeats 3` → zero variance (9/9 vs 0/9). Cheap arms can be repeated now; repair/SWE-bench
+  seeds still need a quota plan.
 - **Rate limit is the practical bottleneck** for every remaining live item; batching live runs overnight is the
   cheapest way forward.
