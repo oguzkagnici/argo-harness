@@ -123,7 +123,7 @@ browser startup (~27 s).
 
 ## 5. Repair loop (SWE-bench-Lite-style, local)
 
-Not official SWE-bench. Five tiny Python repositories each contain a genuine failing visible test suite and
+Not official SWE-bench. Eight tiny Python repositories each contain a genuine failing visible test suite and
 hidden edge-case tests. The agent must diagnose the root cause, edit source only, and pass the visible suite;
 resolution is judged with the original visible tests plus hidden tests in a fresh subprocess. Test files are
 restored before evaluation, and any producer edit under `tests/` is reported as tampering and fails resolution.
@@ -204,6 +204,36 @@ Honest conclusion: on this suite, neither `review_work` nor the worktree repair 
 hidden-test resolution. A future measurement needs harder tasks (multi-file specs, real repos) where the baseline
 actually fails, and it should grade the worktree repair loop (`spawn … review_changes=true repair_attempts=2`)
 rather than a single `review_work` call.
+
+### 5d. Multi-file spec task (`ledger`): the first task with two files to fix
+
+The traps above are single-file. `ledger` is a three-file repo (`app/store.py`, `app/pricing.py`, `tests/`) with a
+`SPEC.md` the agent must follow: validate `qty < 0`, discount **only when total qty > 10** (exactly 10 is full
+price), and never reuse a quote across `add_item` (the buggy `store.version()` is a constant, so the quote cache
+never invalidates). The visible suite exercises only a 2-unit and a 12-unit order, so a fix can pass it while
+missing the boundary, validation, or cache rule; the hidden suite tests all three.
+
+```bash
+python benchmarks/repair.py --self-check --tasks ledger          # 8/8 tasks valid overall
+python benchmarks/repair.py --tasks ledger --modes baseline,review --timeout 1800
+```
+
+| Mode | Resolved | Completed | Tokens | Wall | Iterations | Review |
+|---|---|---|---|---|---|---|
+| baseline | **1/1** | 0/1 (900 s cap, graded as-is) | 66,078 | 900 s | 8 | – |
+| review | **1/1** | 1/1 | 178,421 | 1,676 s | 16 | 1 call, PASS |
+
+The baseline derived all three rules from `SPEC.md` (its summary names the constant `_VERSION` cache key as the root
+cause) and passed the hidden suite, so there is still **no resolution headroom**: review costs **2.7× tokens and
+1.9× wall** for the same 1/1. The review call itself worked (independent session, 6 iterations, 41.8k tokens,
+verdict PASS with two non-blocking nits). Two operational facts: (1) under the shared rate-limited key, one
+baseline run hit the 900 s cap *after* having produced a correct fix, and the reviewer cannot execute the suite
+(by design), so its verdict is a code reading; (2) `fix_files` was added for multi-file reference fixes, and
+`tests/test_repair_tasks.py` now validates task definitions offline.
+
+Conclusion so far: for small repos with an explicit spec, strong and weak models both generalize, so review/repair
+is **insurance, not accuracy**. Closing the question needs real-repo tasks (SWE-bench instances the baseline fails)
+rather than more synthetic traps.
 
 A merged authoritative record can be rebuilt without re-running:
 

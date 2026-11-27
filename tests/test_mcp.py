@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from argo.config import MCPServerConfig, load_config
+from argo.config import MCPServerConfig, _mcp_servers, load_config
 from argo.core.agent import Agent
 from argo.core.types import LLMResponse, Message, Usage
 from argo.tools.mcp import MCPClient
@@ -90,3 +90,16 @@ async def test_agent_registry_exposes_mcp_tools(tmp_path):
         rendered = await agent.registry.execute("mcp__echo__get_prompt",
                                                 {"name": "greet", "arguments": {"name": "Argo"}})
         assert not rendered.is_error and "Argo" in rendered.content
+
+
+@pytest.mark.asyncio
+async def test_per_tool_read_only_override(tmp_path):
+    cfg = load_config({"workspace": str(tmp_path), "data_dir": str(tmp_path / ".argo")})
+    cfg.mcp_servers = _mcp_servers([{"name": "echo", "command": sys.executable, "args": [str(FIXTURE)],
+                                     "read_only": False, "read_only_tools": {"reverse": True, "add": False}}])
+    assert cfg.mcp_servers[0].read_only_tools == {"reverse": True, "add": False}
+    assert _mcp_servers([{"name": "x"}]) == []
+    async with Agent(cfg, llm=FakeLLM(), max_iterations=1) as agent:
+        await agent.run("say done")
+        assert agent.registry.tools["mcp__echo__reverse"].read_only
+        assert not agent.registry.tools["mcp__echo__add"].read_only

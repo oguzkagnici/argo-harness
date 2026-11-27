@@ -117,9 +117,12 @@ name = "filesystem"
 command = "npx"
 args = ["-y", "@modelcontextprotocol/server-filesystem", "/data"]
 read_only = true
+# or keep the server mutating but exempt specific tools:
+# read_only_tools = { search = true, write = false }
 ```
 
-`argo doctor` connects configured servers and reports tool counts.
+`read_only_tools` overrides the server default per tool (unknown tools stay mutating). `argo doctor` connects
+configured servers and reports tool counts.
 
 If no config exists, Argo inherits `model`, `base_url`, and `env_key` from Codex's config, so the same
 provider/key works out of the box.
@@ -240,7 +243,7 @@ Codex, DeepSeek Harness, OpenHands, Instinct, Hermes, and Anthropic's always-on 
 ## Tests
 
 ```bash
-pytest -q            # 185 unit/integration tests, no network required
+pytest -q            # 188 unit/integration tests, no network required
 argo doctor          # live provider check
 ```
 

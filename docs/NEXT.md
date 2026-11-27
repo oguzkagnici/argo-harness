@@ -4,7 +4,7 @@ Ordered by (a) what is currently *unproven or broken*, (b) how much evidence exi
 (c) cost in rate limit/quota on this shared machine. Every item lists the success criterion so it can be closed with
 a measurement, not an opinion.
 
-Current state: 185 offline tests pass. Live evidence exists for retrieval, memory, repair, documents, citation,
+Current state: 188 offline tests pass. Live evidence exists for retrieval, memory, repair, documents, citation,
 injection (fixed + partial adaptive), context (synthetic + live), observability, worktree review, and the SWE-bench
 Docker path (gold patch 1/1).
 
@@ -103,7 +103,10 @@ Test: `test_review_failure_triggers_in_place_repair_and_recheck`.
 **Still open:** the trap-task measurement (slugify/intervals) showed baseline generalization 2/2, so review and
 repair had no headroom. The weaker model (`gemma-4-31b`) also resolved 2/2, so both small-task traps are exhausted.
 The worktree arm is now runnable end to end (`adopt=true` merges the reviewed branch; `--modes wtrepair`): it resolved
-`intervals` 1/1 at +45% tokens / 2.5× wall. What is still missing is a task where the baseline actually fails.
+`intervals` 1/1 at +45% tokens / 2.5× wall. A multi-file spec task (`ledger`, three rules, hidden boundary/validation/
+cache tests) was added and validated (`--self-check` 8/8): baseline **1/1** (66k tok, 8 iter) and review **1/1**
+(178k tok, 16 iter, one PASS review) — still no headroom. **Next:** harder SWE-bench-Lite instances that the baseline
+fails, plus 3 seeds per arm.
 
 ---
 
@@ -141,9 +144,10 @@ is the export format. OTel export is done, and the served live view is done (`/t
 **Pass:** a live server exposing a resource is readable from the agent; a mutating MCP tool triggers the approval
 queue.
 **Status:** done. Resources + prompts (read_resource / get_prompt tools), `transport="http"|"sse"` via the SDK's
-`streamable_http_client`/`sse_client`, per-server `read_only` approval policy. Tests: stdio resource+prompt read,
+`streamable_http_client`/`sse_client`, per-server `read_only` plus per-tool `read_only_tools` overrides. Tests: stdio resource+prompt read,
 agent registry tools, real uvicorn HTTP server.
-Mutating MCP tools still go through approvals (`read_only=False` default).
+Mutating MCP tools still go through approvals (`read_only=False` default). Per-tool overrides keep a mutating
+server's read tools out of the approval path (`{"search": true}`); covered by `test_per_tool_read_only_override`.
 
 ---
 

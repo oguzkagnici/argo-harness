@@ -101,6 +101,9 @@ class MCPServerConfig:
     transport: str = "stdio"     # "stdio" | "http" (streamable HTTP) | "sse"
     url: str = ""
     read_only: bool = False      # unknown side effects -> treat as mutating (approval applies)
+    # Per-tool override of ``read_only`` keyed by the server's own tool name
+    # (e.g. {"search": true, "delete": false}); unlisted tools use ``read_only``.
+    read_only_tools: dict[str, bool] = field(default_factory=dict)
     timeout: float = 120.0
 
 
@@ -184,6 +187,24 @@ MODEL_CONTEXT_HINTS = {
 }
 
 
+def _mcp_servers(raw_servers: list[Any]) -> list[MCPServerConfig]:
+    return [
+        MCPServerConfig(
+            name=str(raw.get("name") or f"server{idx}"),
+            command=str(raw.get("command") or ""),
+            args=[str(a) for a in raw.get("args", [])],
+            env={str(k): str(v) for k, v in (raw.get("env") or {}).items()},
+            cwd=raw.get("cwd"),
+            transport=str(raw.get("transport") or "stdio"),
+            url=str(raw.get("url") or ""),
+            read_only=bool(raw.get("read_only", False)),
+            read_only_tools={str(k): bool(v) for k, v in (raw.get("read_only_tools") or {}).items()},
+            timeout=float(raw.get("timeout", 120.0)),
+        )
+        for idx, raw in enumerate(raw_servers) if raw.get("command") or raw.get("url")
+    ]
+
+
 def load_config(overrides: dict[str, Any] | None = None) -> ArgoConfig:
     overrides = overrides or {}
     user = _read_toml(Path.home() / ".argo" / "config.toml")
@@ -243,20 +264,7 @@ def load_config(overrides: dict[str, Any] | None = None) -> ArgoConfig:
     security_raw = user.get("security", {})
     security = SecurityConfig(**{k: v for k, v in security_raw.items() if k in SecurityConfig.__dataclass_fields__})
 
-    mcp_servers = [
-        MCPServerConfig(
-            name=str(raw.get("name") or f"server{idx}"),
-            command=str(raw.get("command") or ""),
-            args=[str(a) for a in raw.get("args", [])],
-            env={str(k): str(v) for k, v in (raw.get("env") or {}).items()},
-            cwd=raw.get("cwd"),
-            transport=str(raw.get("transport") or "stdio"),
-            url=str(raw.get("url") or ""),
-            read_only=bool(raw.get("read_only", False)),
-            timeout=float(raw.get("timeout", 120.0)),
-        )
-        for idx, raw in enumerate(user.get("mcp", []) or []) if raw.get("command") or raw.get("url")
-    ]
+    mcp_servers = _mcp_servers(user.get("mcp") or [])
 
     workspace = Path(overrides.get("workspace") or user.get("workspace") or Path.cwd()).resolve()
     data_dir = Path(overrides.get("data_dir") or _env("ARGO_HOME") or user.get("data_dir")

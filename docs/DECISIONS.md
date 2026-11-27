@@ -429,6 +429,31 @@ DOCX introspection.
   same resolution on a task the baseline already solves — consistent with §3q: the value is insurance for hard
   tasks, not throughput.
 
+## 3s. First multi-file repair task: still no headroom for review (2026-11-27)
+
+- **Problem.** §3q/§3r could not measure whether review/repair helps, because every task was solved by the baseline.
+  The missing ingredient was a task whose *visible* suite passes for an incomplete fix.
+- **Task design (`ledger`).** Three files. `SPEC.md` states: `add_item` rejects `qty < 0`; `quote()` applies 10%
+  off the **whole order only when total qty > 10**; a quote must never be reused after `add_item`; `reset()` clears
+  both. The visible suite uses 2 and 12 units only. The seeded bug is that `store.version()` is a constant, so the
+  price cache never invalidates — which also masks the entirely missing discount. A fix that only adds the discount
+  passes visible tests and fails hidden ones (exactly 10, 11 units, whole-order discount, negative qty, stale cache).
+- **Benchmark plumbing.** Added `fix_files` (multi-file reference fix) and per-task progress lines; the offline
+  `--self-check` is back to **8/8 valid**, and `tests/test_repair_tasks.py` checks definitions (unique ids, visible
+  tests present, reference fix only touches files the task creates) without provider calls.
+- **Measured (deepseek-v4.1-flash, 1,800 s cap, same key as this session).** baseline **1/1 resolved**, 66,078 tok,
+  900 s, 8 iterations (the cap fired *after* the correct fix, graded as-is). review **1/1 resolved**, 178,421 tok,
+  1,676 s, 16 iterations, one review call: **PASS** (independent session, 6 iterations, 41.8k tok, two non-blocking
+  nits). The baseline's own summary identified the constant `_VERSION` as the root cause and implemented all three
+  rules.
+- **Decision.** Do not adopt review for routine fixes. Treat the reviewer as insurance for high-stakes edits and as
+  a *check* (it is read-only and cannot run tests, so its verdict is a code reading). More synthetic traps are not
+  the way to find headroom; the next honest measurement is real repositories where the baseline actually fails
+  (harder SWE-bench-Lite instances), plus multiple seeds to separate signal from rate-limit noise.
+- **Also in this pass.** MCP per-tool approval policy: `read_only_tools = { tool = bool }` on a server overrides
+  the server-level `read_only` for individual tools (unlisted tools stay mutating), so a mutating server's search
+  tools skip the approval path. `tests/test_mcp.py::test_per_tool_read_only_override`.
+
 ## 4. Deliberately not done (yet)
 
 - A graded SWE-bench-Lite score (the runner and Docker path exist; only a gold-patch check has been run, because

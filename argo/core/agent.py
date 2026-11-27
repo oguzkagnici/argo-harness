@@ -296,6 +296,7 @@ class Agent:
         assert self.mcp is not None
         timeouts = {s.name: getattr(s, "timeout", 120.0) for s in self.cfg.mcp_servers}
         read_only = {s.name: getattr(s, "read_only", False) for s in self.cfg.mcp_servers}
+        tool_policy = {s.name: dict(getattr(s, "read_only_tools", {}) or {}) for s in self.cfg.mcp_servers}
         for info in self.mcp.tools:
             client = self.mcp
 
@@ -303,13 +304,14 @@ class Agent:
                 ctx.emit("mcp_call", server=_info.server, tool=_info.name)
                 return await client.call(_info.server, _info.name, kwargs)
 
+            ro = bool(tool_policy.get(info.server, {}).get(info.name, read_only.get(info.server, False)))
             reg.register(Tool(
                 name=info.exposed_name,
                 description=(info.description or f"MCP tool {info.name} from {info.server}")[:1024],
                 parameters=info.input_schema,
                 handler=handler,
-                read_only=bool(read_only.get(info.server, False)),
-                parallel_safe=bool(read_only.get(info.server, False)),
+                read_only=ro,
+                parallel_safe=ro,
                 timeout=float(timeouts.get(info.server, 120.0)),
                 category="mcp",
             ))

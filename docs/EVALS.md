@@ -7,7 +7,7 @@ backed by these checks, the benchmark suite, or cited literature.
 
 ```bash
 pytest -q
-# 112 passed
+# 188 passed
 ```
 
 | Area | Checks |
@@ -64,6 +64,7 @@ Full methodology and cached data: `benchmarks/README.md`. JSON records: `benchma
 | Repair loop (review) | same tasks + one mandatory `review_work` | **5/5 resolved**, +35% tokens, 3.2× wall time, no accuracy gain |
 | Repair loop, trap tasks (live) | slugify + intervals: visible tests hide repeated-space/punctuation and disjoint/touching/unsorted cases | baseline **2/2 resolved**; review **2/2** at −12% tokens but 3.0× wall (one 600 s cap) — no headroom |
 | Repair loop, traps + weak model (live) | same two traps on `gemma-4-31b` | baseline **2/2**, review **2/2**; weak model costs +53% tokens / +1.7× iters — traps don't trap either model |
+| Repair loop, multi-file spec (live) | `ledger`: 3 files, `SPEC.md` rules (qty>10 discount boundary, negative-qty validation, cache invalidation); visible suite hides all three | baseline **1/1** (66,078 tok / 900 s / 8 iter), review **1/1** (178,421 tok / 1,676 s / 16 iter, 1 PASS review) — no headroom, 2.7× tokens |
 | Worktree repair arm (live) | `spawn(isolate, review_changes, repair_attempts=2, adopt)` on `intervals` | **resolved 1/1**, review PASS, branch merged; 86,019 tok / 412 s vs baseline 59,213 / 164 s |
 | Prompt injection, harder payloads (live) | audit-hook / authority-spoof / two-document attacks, 2 target models | aligned models **0/3** even with a naive policy; `gemma-4-31b` + naive policy **ASR 1.0 → 0.0** with defenses, utility 1.0 |
 | Prompt injection, weak target (live) | `qwen3.8-flash-next` target, 3 cases × static/adaptive × defense off/on | **ASR 0.0 both modes**, utility 1.0, 0 exfiltrations; defenses +8% tokens — attack set saturates, not the model |

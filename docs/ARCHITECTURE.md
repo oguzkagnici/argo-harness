@@ -200,7 +200,8 @@ included in prompts, memory, or transcripts.
 **MCP (`argo/tools/mcp.py`).** Configured servers are launched over stdio with the official Python SDK, initialized
 once per top-level agent, and their tools are registered as `mcp__<server>__<tool>`. Schemas come straight from
 the server (`input_schema`), so the model sees real parameters; tools are treated as mutating unless the server is
-declared `read_only`, which keeps them out of parallel batches and subject to approvals. A server that fails to
+declared `read_only` (or listed in its `read_only_tools` map), which keeps them out of parallel batches and
+subject to approvals. A server that fails to
 start is recorded and skipped rather than failing the run. Subagents do not start their own MCP servers; the
 integration is deliberately top-level only until per-subagent scoping is designed.
 
