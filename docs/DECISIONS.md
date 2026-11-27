@@ -488,7 +488,8 @@ DOCX introspection.
 - **Evidence.** Five tests against real temporary repositories (`tests/test_git_tools.py`): status/diff/log/show/
   branches, staged vs unstaged diff, commit with `add_all`, commit with explicit paths (second file left dirty),
   empty message / empty index refusal, non-repo error, option-like revision rejection, and read-only/mutating flags.
-  Full suite: 194 passing.
+  Full suite: 194 passing. Live smoke on this repository: the model called `git_status` then `git_log(limit=2)`
+  (no shell) and reported `main` plus the newest commit subject correctly in one turn.
 
 ## 4. Deliberately not done (yet)
 
