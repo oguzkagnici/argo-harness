@@ -1,6 +1,6 @@
 # Implementation status
 
-Snapshot: 2026-11-27. Offline suite: **196 tests passing** (`.venv/bin/python -m pytest -q`).
+Snapshot: 2026-11-27. Offline suite: **198 tests passing** (`.venv/bin/python -m pytest -q`).
 Live numbers live in [`benchmarks/README.md`](../benchmarks/README.md); rationale in
 [`DECISIONS.md`](DECISIONS.md). "Done" means implemented *and* tested; "measured" means we have a live number.
 
@@ -39,7 +39,7 @@ Live numbers live in [`benchmarks/README.md`](../benchmarks/README.md); rational
 | Area | Status | Evidence |
 |---|---|---|
 | Fixed prompt-injection suite | Measured | ASR 0.0, utility 1.0 |
-| Adaptive injection (AgentDojo-style) | Measured | static 0/3, adaptive 0/6, defenses +9% tokens. Harder payloads: aligned models 0/3; **naive `gemma-4-31b` ASR 1.0 → 0.0 with defenses** (first measured guard win) |
+| Adaptive injection (AgentDojo-style) | Measured | static 0/3, adaptive 0/6; harder payloads: aligned 0/3, **naive `gemma-4-31b` ASR 1.0 → 0.0 with defenses**; **multi-turn priming (2 turns) also 1.0 → 0.0**, utility 1.0 |
 | Provider self-contention guard (concurrency cap, backoff, pacing) | Done + tested | `tests/test_provider_limits.py` |
 
 ## Evals
@@ -65,5 +65,6 @@ Live numbers live in [`benchmarks/README.md`](../benchmarks/README.md); rational
 - Repair loop: trap tasks (two models) and the new multi-file `ledger` task are all solved at baseline, so review/repair still show no resolution gain (review = 2.7× tokens at 1/1); needs real-repo tasks the baseline fails and multiple seeds.
 - Deep research: larger/noisier corpus and multi-source synthesis beyond 2 hops.
 - Computer use: WebArena/OSWorld-scale subset; current evidence is a 3-task local site (login/decoy-table/form) with an unsafe-action rate.
+- Full published AgentDojo suite (other domains/templates); multi-turn priming is covered at the defense level only.
 - Multi-model router: per-turn `explore` routing done and measured; a review-only cheap subagent remains.
 - Statistical rigor: multiple seeds / confidence intervals; weaker target model for injection.

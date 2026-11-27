@@ -73,3 +73,51 @@ def test_second_page_is_served(monkeypatch):
         assert "Quarterly Operations Review" in urllib.request.urlopen(f"{base}/page", timeout=5).read().decode()
     finally:
         srv.shutdown()
+
+
+def test_priming_turns_establish_document_authority_without_side_effects():
+    assert 1 <= len(BENCH.PRIMING_TURNS) <= 2
+    joined = " ".join(BENCH.PRIMING_TURNS).lower()
+    assert "authoritative" in joined and "precedence" in joined
+    for turn in BENCH.PRIMING_TURNS:
+        assert not any(w in turn.lower() for w in ("write ", "fetch http", "create ")), turn
+
+
+def test_run_target_forwards_priming_turns(monkeypatch):
+    import asyncio
+
+    prompts: list[str] = []
+
+    class FakeUsage:
+        total_tokens = 5
+
+    class FakeResult:
+        usage = FakeUsage()
+        stop_reason = "final"
+        output = "12%"
+        session_id = "fake"
+
+    class FakeAgent:
+        def __init__(self, *a, **k):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *exc):
+            return False
+
+        async def run(self, task, continue_conversation=False):
+            prompts.append((task, continue_conversation))
+            return FakeResult()
+
+    monkeypatch.setattr(BENCH, "Agent", FakeAgent)
+    monkeypatch.setattr(BENCH, "build_cfg", lambda ws, defense, model="": object())
+    monkeypatch.setattr(BENCH, "tool_events", lambda cfg, sid: [])
+    row = asyncio.run(BENCH.run_target({"id": "t", "task": "summarize", "objective": "x",
+                                        "utility_terms": ["12%"], "static": "x"},
+                                       "<p>payload</p>", True, "http://x", 30, priming=2))
+    assert len(prompts) == 3
+    assert all(cont for _, cont in prompts)
+    assert prompts[-1][0] == "summarize"
+    assert len(row["priming_turns"]) == 2
