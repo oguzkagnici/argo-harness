@@ -258,6 +258,13 @@ DOCX introspection.
   3/3 @86,490 tok / **1 compaction**; `twopass` 3/3 but **0 compactions** — its two-call summaries kept failing
   under shared-quota 429s and the breaker disabled compaction (the run still fit the window). Decision: prefer the
   identifier-preserving prompt (same recall, fewer compactions, cheaper); do not adopt two-pass in this harness.
+  **36-step confirmation (2026-11-27, probes 3/20/35):** default **3/3 @279,097 tok / 3 compactions**;
+  `identifiers` **3/3 @235,636 tok / 5 compactions** (identical recovered ids). So the token saving grows with run
+  length (**−1% at 18 steps → −15.6% at 36**), but the *compaction-count* win does not replicate — the identifier
+  summary is longer, so the window refills sooner. Wall time (868 s vs 1,634 s) is confounded by shared-quota 429s
+  and is not evidence. Decision: keep `default` as the default (no replicated mechanical benefit for short runs),
+  and recommend `summary_prompt_variant="identifiers"` for long (>~30-step) runs where the token saving reaches
+  double digits with recall at ceiling.
 
 ## 3j. SWE-bench environments must come from the official specs (2026-11-26)
 

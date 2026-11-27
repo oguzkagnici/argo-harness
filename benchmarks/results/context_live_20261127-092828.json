@@ -1,0 +1,59 @@
+{
+  "benchmark": "context-live-token-chain",
+  "steps": 36,
+  "probes": [
+    3,
+    20,
+    35
+  ],
+  "window": 12000,
+  "rows": [
+    {
+      "mode": "autocompact",
+      "steps_fetched": 35,
+      "stop": "final",
+      "iterations": 37,
+      "tokens": 279097,
+      "compactions": 3,
+      "resets": 0,
+      "correct": 3,
+      "probes": 3,
+      "expected": {
+        "3": "T03-613ad6",
+        "20": "T20-6162fa",
+        "35": "T35-2a99a5"
+      },
+      "found": {
+        "3": "T03-613ad6",
+        "20": "T20-6162fa",
+        "35": "T35-2a99a5"
+      },
+      "answer": "STEP 3: T03-613ad6\nSTEP 20: T20-6162fa\nSTEP 35: T35-2a99a5",
+      "seconds": 868.4
+    },
+    {
+      "mode": "prompt_ids",
+      "steps_fetched": 35,
+      "stop": "final",
+      "iterations": 37,
+      "tokens": 235636,
+      "compactions": 5,
+      "resets": 0,
+      "correct": 3,
+      "probes": 3,
+      "expected": {
+        "3": "T03-613ad6",
+        "20": "T20-6162fa",
+        "35": "T35-2a99a5"
+      },
+      "found": {
+        "3": "T03-613ad6",
+        "20": "T20-6162fa",
+        "35": "T35-2a99a5"
+      },
+      "answer": "STEP 3: T03-613ad6\nSTEP 20: T20-6162fa\nSTEP 35: T35-2a99a5",
+      "seconds": 1634.3
+    }
+  ],
+  "timestamp": "2026-11-27T09:28:28Z"
+}

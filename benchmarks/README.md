@@ -444,6 +444,21 @@ Findings, in the order the runs exposed them:
    preserved verbatim. The ledger now also extracts identifiers (prefixed ids, UUIDs, commit hashes, emails) —
    unit-tested; the live rerun is pending because it competes with the agent for provider rate limit.
 
+**Summary-prompt A/B (36 steps, probes 3/20/35, 12k window)** — default structured summary vs the
+identifier-preserving variant:
+
+| Mode | Recall | Tokens | Compactions | Resets | Record |
+|---|---|---|---|---|---|
+| `autocompact` (default prompt) | 3/3 | 279,097 | 3 | 0 | `context_live_20261127-092828.json` |
+| `prompt_ids` (identifiers) | 3/3 | **235,636** | 5 | 0 | same file |
+| `autocompact` (18 steps, earlier) | 3/3 | 87,320 | 2 | 0 | `context_live_20261125-234714.json` |
+| `prompt_ids` (18 steps, earlier) | 3/3 | 86,490 | **1** | 0 | same file |
+
+Recall is at ceiling in all four arms and every recovered id matched exactly. `identifiers` saves **1% of tokens at
+18 steps and 15.6% at 36** — the benefit grows with run length. It does **not** reduce compaction count at 36 steps
+(5 vs 3): keeping identifiers verbatim makes each summary longer, so the window refills sooner. Wall time is not
+comparable here (shared provider quota). Recommendation: default prompt for short runs, `identifiers` for long ones.
+
 The honest summary: compaction as originally implemented was **worse than no compaction** in this setting (0/3 vs
 3/3). Four mechanism bugs were found and fixed in sequence — guard scope, hysteresis, identifier capture in the
 ledger, reset gating/handoff — and the final run reaches **3/3 with 3 compactions, 0 resets, and ~4% fewer tokens**

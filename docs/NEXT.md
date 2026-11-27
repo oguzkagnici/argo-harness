@@ -91,8 +91,9 @@ no-dream; 2 gen = 1.00 correct, 0 stale). Cadence and wiki-on/off at scale remai
 **Pass:** the winning prompt reduces compactions or raises recall at equal tokens.
 **Status:** `summary_prompt_variant=default|identifiers|twopass` + `context_live --modes prompt_ids,prompt_twopass --probes`.
 Measured at 18 steps: `identifiers` ties recall (3/3) with 1 vs 2 compactions and fewer tokens; `twopass` is not
-viable (two calls per compaction fail under rate limits). `identifiers` is the candidate default; a 36-step rerun
-would confirm.
+viable (two calls per compaction fail under rate limits). **36-step rerun done:** both 3/3 with identical ids;
+`identifiers` −15.6% tokens but 5 vs 3 compactions, so the compaction-count win does not replicate. Rule:
+default prompt for short runs, `identifiers` when runs exceed ~30 steps.
 
 ### 8. ~~Auto-fix loop for reviewed diffs~~ — done
 **Why:** `review_changes=true` now returns FAIL with file:line defects but the parent has to act manually.

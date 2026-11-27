@@ -71,6 +71,7 @@ Full methodology and cached data: `benchmarks/README.md`. JSON records: `benchma
 | Memory ablations | 6 lessons × 5 arms | no-dream **1.00 stale / 0.00 correct**; full **0.00 / 1.00**; no-wiki stale mentions 0.67 vs 0.50; two generations = same recall, 2.2× time |
 | Retrieval ablations | SciFact, one factor at a time | rerank 20 0.9190 > 50 0.9161 > 10 0.8919; k=10 0.8649 > k=60 0.8460; dense-heavy 0.8660 > BM25-heavy 0.8100; query instruction 0.8392 |
 | Context policies | synthetic 60-step / 29.6k-token transcript, 12 planted facts | full 29,639 tok 12/12 · microcompact 24,023 tok 12/12 · **autocompact 7,502 tok 12/12** · reset 1,225 tok 1/12 |
+| Summary-prompt A/B (live, 36 steps) | default vs `identifiers` compaction prompt, 12k window | both **3/3** with identical ids; `identifiers` 235,636 vs 279,097 tok (−15.6%), 5 vs 3 compactions |
 | Fact-ledger ablation | same transcript, ledger disabled | **5/12 → 12/12** recall for +768 tokens |
 
 Interpretation:
