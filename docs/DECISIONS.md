@@ -471,6 +471,25 @@ DOCX introspection.
 - **Process note.** This is the first feature in this project that was implemented, measured, and then **rolled
   back** on evidence. The test suite pins the new default (`dream_generations == 1`, `0 → 1`).
 
+## 3u. Structured git tools instead of free-form shell (2026-11-27)
+
+- **Gap.** The harness could already run `git` through `bash`/`run_code`, and its worktree machinery uses git
+  plumbing directly, but there was no typed interface: no status/diff/log/show/branches, and no structured way to
+  commit. Everything required the model to compose shell strings.
+- **Design.** `argo/tools/git.py` registers five read-only, parallel-safe tools (status, diff, log, show, branches)
+  and one mutating tool, `git_commit(message, add_all|paths)`. Read tools are cheap to call and never need approval;
+  the commit is approval-gated by the normal `read_only=False` policy. Guards: paths/revisions go after `--` and are
+  rejected if they start with `-` (option injection), empty messages and empty index are refused with a clear message,
+  and the result returns the short SHA plus any paths left uncommitted.
+- **Deliberately absent.** `push`, `pull`, `fetch`, `rebase`, `reset --hard`, `commit --amend`. Remote writes and
+  history rewriting are the highest-blast-radius operations in a coding agent; leaving them to explicit user actions
+  (or a separate tool with its own policy) is the same split Claude Code's git workflow makes (commit only, never
+  push). This is also why `publish_delta.py` in this repo publishes over the API rather than pushing from the agent.
+- **Evidence.** Five tests against real temporary repositories (`tests/test_git_tools.py`): status/diff/log/show/
+  branches, staged vs unstaged diff, commit with `add_all`, commit with explicit paths (second file left dirty),
+  empty message / empty index refusal, non-repo error, option-like revision rejection, and read-only/mutating flags.
+  Full suite: 194 passing.
+
 ## 4. Deliberately not done (yet)
 
 - A graded SWE-bench-Lite score (the runner and Docker path exist; only a gold-patch check has been run, because

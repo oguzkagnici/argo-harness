@@ -22,8 +22,8 @@ from typing import Any, Awaitable, Callable
 from ..config import ArgoConfig
 from ..llm.client import LLMClient, LLMError, StreamDelta
 from ..memory.store import MemoryStore
-from ..tools import (computer, docs, files, memory_tools, plan as plan_tool, research as research_tools,
-                     shell, skills, web)
+from ..tools import (computer, docs, files, git as git_tools, memory_tools, plan as plan_tool,
+                     research as research_tools, shell, skills, web)
 from ..tools.base import Tool, ToolContext, ToolRegistry
 from ..tools.base import _redact
 from ..workflows import tools as workflow_tools
@@ -223,7 +223,7 @@ class Agent:
         assert self.tool_ctx is not None
         reg = ToolRegistry(self.tool_ctx, allow=self.allow_tools)
         for module in (files, shell, web, docs, memory_tools, plan_tool, skills, workflow_tools, computer,
-                       research_tools):
+                       research_tools, git_tools):
             module.register(reg)
         if self.depth < 2 and (self.allow_tools is None or "spawn_subagent" in self.allow_tools):
             self._register_subagent(reg)

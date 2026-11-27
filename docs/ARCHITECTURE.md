@@ -197,6 +197,13 @@ guidance (classifier/approval for risky actions, credential proxying outside the
 **Secrets.** Events redact key-like strings; tool arguments are truncated before logging. API keys are never
 included in prompts, memory, or transcripts.
 
+**Git (`argo/tools/git.py`).** A typed surface for the coding workflow: `git_status`, `git_diff` (worktree/staged,
+path or `--stat`), `git_log`, `git_show`, `git_branches` are read-only and parallel-safe; `git_commit` is mutating
+and therefore approval-gated. Paths and revisions are passed after `--` and rejected when they start with `-`,
+and there is deliberately no `push`/`pull`/`fetch`, `rebase`, `reset --hard`, or `--amend`: remote operations and
+history rewriting stay outside the agent (Claude Code's git workflow makes the same split). Worktree isolation
+(`argo/core/worktree.py`) keeps using git plumbing directly so it never depends on the model's tool loop.
+
 **MCP (`argo/tools/mcp.py`).** Configured servers are launched over stdio with the official Python SDK, initialized
 once per top-level agent, and their tools are registered as `mcp__<server>__<tool>`. Schemas come straight from
 the server (`input_schema`), so the model sees real parameters; tools are treated as mutating unless the server is

@@ -26,6 +26,7 @@ argo run "Research anthropic agent memory, write report.docx, and build a 6-slid
 |---|---|
 | Web research | `web_search` (DuckDuckGo/Tavily/Brave/SearxNG) + `fetch_url` (HTML→markdown, PDF, JSON), `wikipedia_search`, `arxiv_search` |
 | Files & code | `read/write/edit/apply_patch`, `glob/grep`, `run_code` (Python/Node/bash), `bash` |
+| Git | `git_status/diff/log/show/branches` (read-only) and approval-gated `git_commit`; no remote or history-rewriting operations |
 | Documents | `create_document` → DOCX, PPTX, XLSX, PDF, MD, HTML, CSV from one structured spec; `read_document` verifies |
 | Browser automation | `computer` (Playwright): screenshots for vision models + compact DOM, selectors/text/coords, persistent auth state |
 | Long-term memory | SQLite, layered (`transcript → note → wiki → profile → procedure`), generational and reversible |
@@ -243,7 +244,7 @@ Codex, DeepSeek Harness, OpenHands, Instinct, Hermes, and Anthropic's always-on 
 ## Tests
 
 ```bash
-pytest -q            # 189 unit/integration tests, no network required
+pytest -q            # 194 unit/integration tests, no network required
 argo doctor          # live provider check
 ```
 
@@ -287,7 +288,7 @@ argo/
   core/                agent loop, context manager, sessions, prompts, events, tokens
   llm/client.py        chat/stream/tools/embeddings/rerank, retries
   memory/              store.py, dream.py, retrieval.py
-  tools/               base, files, shell, web, docs, memory, plan, skills, computer
+  tools/               base, files, git, shell, web, docs, memory, plan, skills, computer
   workflows/           core (schema/runner), synth (trace→workflow), tools
 benchmarks/            HumanEval, BEIR SciFact, memory loop, workflow replay
 skills/                built-in progressive-disclosure skills

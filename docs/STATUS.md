@@ -1,6 +1,6 @@
 # Implementation status
 
-Snapshot: 2026-11-27. Offline suite: **189 tests passing** (`.venv/bin/python -m pytest -q`).
+Snapshot: 2026-11-27. Offline suite: **194 tests passing** (`.venv/bin/python -m pytest -q`).
 Live numbers live in [`benchmarks/README.md`](../benchmarks/README.md); rationale in
 [`DECISIONS.md`](DECISIONS.md). "Done" means implemented *and* tested; "measured" means we have a live number.
 
@@ -9,6 +9,7 @@ Live numbers live in [`benchmarks/README.md`](../benchmarks/README.md); rational
 | Area | Status | Evidence |
 |---|---|---|
 | ReAct control loop + typed tools + code execution | Done | HumanEval 20/20 pass@1 |
+| Git tools (status/diff/log/show/branches + approval-gated commit) | Done | `tests/test_git_tools.py` (5, real temp repos) |
 | OpenAI-compatible endpoints, BYOK, chat + responses wire APIs | Done | `tests/test_responses_api.py`, provider parity runs |
 | Context: microcompact → structured compaction → reset + handoff + fact ledger | Measured | live 36-step: autocompact 3/3 @275,722 tok, 0 resets |
 | Loop guard (no-progress) incl. novel shell output | Done + measured | `tests/test_agent_loop.py`, `tests/test_loop_shell_progress.py`, SWE-bench |

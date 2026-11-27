@@ -7,11 +7,12 @@ backed by these checks, the benchmark suite, or cited literature.
 
 ```bash
 pytest -q
-# 189 passed
+# 194 passed
 ```
 
 | Area | Checks |
 |---|---|
+| Git tools | real temp repos: status/diff (worktree+staged)/log/show/branches, commit add_all + explicit paths, refusal paths | 5 tests, no network |
 | Loop guard | duplicate read-only calls blocked, no-progress nudge at 4/7 + stop at 10, progress reset, call-order preservation, external-info tools reset the counter, repeated external fetch still stops |
 | Retrieval | tokenization, heading-aware chunking, BM25 ranking, RRF fusion, cosine, recency decay |
 | Memory | add/retrieve, exact dedupe, generation isolation, transcripts, link graph |
