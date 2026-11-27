@@ -4,7 +4,7 @@ Ordered by (a) what is currently *unproven or broken*, (b) how much evidence exi
 (c) cost in rate limit/quota on this shared machine. Every item lists the success criterion so it can be closed with
 a measurement, not an opinion.
 
-Current state: 203 offline tests pass. Live evidence exists for retrieval, memory, repair, documents, citation,
+Current state: 213 offline tests pass. Live evidence exists for retrieval, memory, repair, documents, citation,
 injection (fixed + partial adaptive), context (synthetic + live), observability, worktree review, and the SWE-bench
 Docker path (gold patch 1/1).
 
@@ -182,12 +182,12 @@ server's read tools out of the approval path (`{"search": true}`); covered by `t
 Benchmarks above answer "does the mechanism work"; these are capabilities the harness itself still lacks. Ordered by
 (user value × evidence) / effort, each with a closure test.
 
-### F1. Review-only cheap subagent (`--router review`)
+### F1. Review-only cheap subagent (`--router review`)   ← next
 The router sends read-only *exploration* turns to the cheap model but every subagent inherits the strong one. A
 reviewer with a fixed rubric is a read-only task, so it should be routable. **Closure:** same verdicts as the strong
 reviewer on the saved repair patches, at lower cost; if verdicts diverge, keep it opt-in and document the divergence.
 
-### F2. Per-subagent MCP scoping
+### ~~F2. Per-subagent MCP scoping~~ — done (DECISIONS §3aa, `tests/test_mcp_scoping.py`)
 MCP is deliberately top-level only (`_register_mcp` runs at depth 0). A subagent working on an untrusted document
 can currently not call MCP at all — safe but limiting; the alternative (inherit everything) is unsafe. **Closure:**
 `spawn_subagent(mcp_servers=[...])` registers only the named servers, with a test proving an unlisted server's tool
@@ -230,7 +230,7 @@ alerts exported with the OTel payload; a synthetic failing run must raise one.
 The daemon outbox writes to disk. **Closure:** webhook + SMTP sink with retries and dead-letter, tested against a
 local HTTP server (no network assumptions).
 
-### F11. Approvals in `argo serve`
+### ~~F11. Approvals in `argo serve`~~ — done (DECISIONS §3aa, `tests/test_server_approvals.py`)
 Approvals exist in the CLI and the daemon queue; a served session has no way to approve. **Closure:** `GET /approvals`
 and `POST /approvals/<id>` with the same key protection as `/trace`, plus a test that a mutating tool blocks until the
 approval arrives.
@@ -239,8 +239,8 @@ approval arrives.
 Prefix stability is designed for caching but never measured. **Closure:** per-session cache-hit ratio in `argo metrics`
 and a regression test that a warm session reuses the same tool/system prefix.
 
-**Suggested order:** F11 and F2 (small, offline-testable, close real safety/UX gaps), then F1 and F12 (cheap routing
-and cost wins), then F3/F4 (the computer-use automation story), then F5/F6 (production hardening), F7–F10 as
+**Done:** F11 (served approvals) and F2 (per-subagent MCP scoping). **Suggested order now:** F1 and F12 (cheap
+routing and cost wins), then F3/F4 (the computer-use automation story), then F5/F6 (production hardening), F7–F10 as
 scheduled follow-ups.
 
 ## Known defects / open questions

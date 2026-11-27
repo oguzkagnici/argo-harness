@@ -1,6 +1,6 @@
 # Implementation status
 
-Snapshot: 2026-11-27. Offline suite: **203 tests passing** (`.venv/bin/python -m pytest -q`).
+Snapshot: 2026-11-27. Offline suite: **213 tests passing** (`.venv/bin/python -m pytest -q`).
 Live numbers live in [`benchmarks/README.md`](../benchmarks/README.md); rationale in
 [`DECISIONS.md`](DECISIONS.md). "Done" means implemented *and* tested; "measured" means we have a live number.
 
@@ -56,6 +56,8 @@ Live numbers live in [`benchmarks/README.md`](../benchmarks/README.md); rational
 | Long-horizon context (live) | Measured | 3/3 completion |
 | Observability (trace/metrics/p50/p95/--since/--cost) | Done | `tests/test_observability.py` |
 | Served live trace view (`/trace`, `/v1/sessions`) | Done + tested | `tests/test_server_trace.py` |
+| Served approvals (`--approvals off|dangerous|all`, `GET/POST /v1/approvals`) | Done + tested | `tests/test_server_approvals.py` (5) |
+| Per-subagent MCP scoping (`spawn_subagent(mcp_servers=[...])`) | Done + tested | `tests/test_mcp_scoping.py` (5) |
 
 ## Still open
 

@@ -7,12 +7,14 @@ backed by these checks, the benchmark suite, or cited literature.
 
 ```bash
 pytest -q
-# 203 passed
+# 213 passed
 ```
 
 | Area | Checks |
 |---|---|
 | Git tools | real temp repos: status/diff (worktree+staged)/log/show/branches, commit add_all + explicit paths, refusal paths | 5 tests, no network |
+| Served approvals | destructive tool blocks until `POST /v1/approvals/<id>`, denial/timeout deny, policy levels, key guard | 5 tests, no model |
+| MCP subagent scoping | child starts only named servers, no MCP by default, unknown names rejected | 5 tests, real MCP fixture |
 | Loop guard | duplicate read-only calls blocked, no-progress nudge at 4/7 + stop at 10, progress reset, call-order preservation, external-info tools reset the counter, repeated external fetch still stops |
 | Retrieval | tokenization, heading-aware chunking, BM25 ranking, RRF fusion, cosine, recency decay |
 | Memory | add/retrieve, exact dedupe, generation isolation, transcripts, link graph |

@@ -275,13 +275,18 @@ async def _chat(cfg, resume: str | None, show_reasoning: bool, stream: bool, yol
 @app.command()
 def serve(host: str = typer.Option("127.0.0.1", "--host"), port: int = typer.Option(8000, "--port"),
           model: Optional[str] = typer.Option(None, "--model"), workspace: Optional[str] = typer.Option(None, "--workspace"),
-          api_key: Optional[str] = typer.Option(None, "--api-key", help="Require this bearer token from clients.")) -> None:
+          api_key: Optional[str] = typer.Option(None, "--api-key", help="Require this bearer token from clients."),
+          approvals: str = typer.Option("dangerous", "--approvals",
+                                        help="Gate mutating tools in served runs: off | dangerous | all."),
+          approval_timeout: float = typer.Option(300.0, "--approval-timeout",
+                                                 help="Seconds to wait for an approval decision before denying.")) -> None:
     """Serve an OpenAI-compatible API plus native agent endpoints."""
     import uvicorn
     from .server import create_app
     cfg = _cfg(model, None, workspace)
-    application = create_app(cfg, require_key=api_key)
-    console.print(f"[bold]Argo server[/] → http://{host}:{port}  (model: {cfg.provider.model})")
+    application = create_app(cfg, require_key=api_key, approvals=approvals, approval_timeout=approval_timeout)
+    console.print(f"[bold]Argo server[/] → http://{host}:{port}  (model: {cfg.provider.model}, "
+                  f"approvals: {approvals})")
     uvicorn.run(application, host=host, port=port, log_level="info")
 
 

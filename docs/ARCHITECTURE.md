@@ -204,13 +204,20 @@ and there is deliberately no `push`/`pull`/`fetch`, `rebase`, `reset --hard`, or
 history rewriting stay outside the agent (Claude Code's git workflow makes the same split). Worktree isolation
 (`argo/core/worktree.py`) keeps using git plumbing directly so it never depends on the model's tool loop.
 
+**Served approvals (`argo/server.py`).** Served runs get an approval gate: `danger_check` runs on every mutating
+tool, and flagged calls create an in-memory approval record whose `asyncio.Future` the tool loop awaits. `GET/POST
+/v1/approvals` list and decide both served and daemon-queue records (key-protected like `/trace`), and an undecided
+request is denied at the timeout. `--approvals off|dangerous|all` picks the policy; the daemon's queue path is
+unchanged.
+
 **MCP (`argo/tools/mcp.py`).** Configured servers are launched over stdio with the official Python SDK, initialized
 once per top-level agent, and their tools are registered as `mcp__<server>__<tool>`. Schemas come straight from
 the server (`input_schema`), so the model sees real parameters; tools are treated as mutating unless the server is
 declared `read_only` (or listed in its `read_only_tools` map), which keeps them out of parallel batches and
 subject to approvals. A server that fails to
 start is recorded and skipped rather than failing the run. Subagents do not start their own MCP servers; the
-integration is deliberately top-level only until per-subagent scoping is designed.
+integration starts at the top level by default; a parent can hand a child a named subset with
+`spawn_subagent(mcp_servers=["fs"])`, and unknown names are rejected before the child starts.
 
 ---
 

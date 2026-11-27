@@ -164,6 +164,22 @@ Any OpenAI SDK works: point `base_url` at `http://127.0.0.1:8000/v1`. The respon
 object with session id, iterations, files, compactions/resets, and token usage. Streaming uses standard SSE
 chunks. Native `POST /v1/agent` streams structured events. Optional `--api-key` enforces a bearer token.
 
+### Approvals for served runs
+
+`argo serve --approvals dangerous` (default) gates actions the danger scanner flags — destructive shell/SQL,
+privilege escalation, force push — inside `/v1/chat/completions` and `/v1/agent`. A gated call **blocks** until a
+decision arrives:
+
+```bash
+curl -s http://127.0.0.1:8000/v1/approvals                    # pending: [{id, tool, args, reason, source}]
+curl -s -X POST http://127.0.0.1:8000/v1/approvals/<id> \
+     -H 'Content-Type: application/json' -d '{"approve": true}'
+```
+
+`--approvals all` gates every mutating tool; `off` restores the old ungated behaviour (trusted local socket only).
+Undecided requests are denied after `--approval-timeout` (default 300 s). The daemon's queue approvals share the
+same endpoints (`source: "daemon"` vs `"serve"`).
+
 The same server exposes a live trace view: `GET /trace` lists recent sessions (stop reason, iterations, tokens,
 tool calls/errors) and `GET /trace/<session>` shows the timeline, auto-refreshing every few seconds. JSON
 equivalents are `GET /v1/sessions` and `GET /v1/sessions/<id>`; with `--api-key`, append `?key=…` for the HTML
@@ -244,7 +260,7 @@ Codex, DeepSeek Harness, OpenHands, Instinct, Hermes, and Anthropic's always-on 
 ## Tests
 
 ```bash
-pytest -q            # 203 unit/integration tests, no network required
+pytest -q            # 213 unit/integration tests, no network required
 argo doctor          # live provider check
 ```
 

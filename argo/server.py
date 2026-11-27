@@ -119,10 +119,51 @@ def _render_session(summary: dict[str, Any], lines: list[str], cfg: Any) -> str:
             f"<p><a href='/trace'>&larr; all sessions</a></p>{head}"
             f"<h1>timeline</h1><pre>{_esc(chr(10).join(lines))}</pre></body></html>")
 
-def create_app(cfg: ArgoConfig, require_key: str | None = None) -> FastAPI:
+def create_app(cfg: ArgoConfig, require_key: str | None = None, approvals: str = "dangerous",
+               approval_timeout: float = 300.0) -> FastAPI:
+    """Build the HTTP app.
+
+    ``approvals`` controls mutating tools in *served* runs:
+      off        — never gate (previous behaviour; fine for a trusted local socket)
+      dangerous  — gate only actions ``danger_check`` flags (destructive shell/SQL, force push, ...)
+      all        — gate every mutating tool
+    A gated call blocks until a decision arrives through ``POST /v1/approvals/<id>`` or the timeout
+    expires (denied on timeout), so a served session cannot silently perform a destructive action.
+    """
+    from .daemon import danger_check
+
     app = FastAPI(title="Argo Harness", version="0.1.0")
     queue = GoalQueue(Path(cfg.data_dir) / "daemon.sqlite")
     semaphore = asyncio.Semaphore(2)
+    pending: dict[str, dict[str, Any]] = {}
+
+    def _approval_gate():
+        if approvals == "off":
+            return None
+
+        async def gate(tool: Any, arguments: dict[str, Any], reason: str) -> bool:
+            danger = danger_check(tool.name, arguments)
+            if approvals != "all" and danger is None:
+                return True
+            aid = f"ap-{uuid.uuid4().hex[:10]}"
+            fut: asyncio.Future = asyncio.get_running_loop().create_future()
+            record = {"id": aid, "source": "serve", "tool": tool.name,
+                      "args": {k: str(v)[:300] for k, v in (arguments or {}).items()},
+                      "reason": danger or reason, "status": "pending", "created_at": time.time()}
+            pending[aid] = {"record": record, "future": fut}
+            try:
+                return bool(await asyncio.wait_for(fut, timeout=approval_timeout))
+            except asyncio.TimeoutError:
+                record["status"] = "timeout"
+                return False
+            finally:
+                pending.pop(aid, None)
+
+        return gate
+
+    gate = _approval_gate()
+    app.state.approval_gate = gate
+    app.state.pending_approvals = pending
 
     def authorize(request: Request) -> None:
         if not require_key:
@@ -159,7 +200,7 @@ def create_app(cfg: ArgoConfig, require_key: str | None = None) -> FastAPI:
         created = int(time.time())
 
         async def run_agent(on_delta=None) -> Any:
-            agent = Agent(cfg, on_delta=on_delta,
+            agent = Agent(cfg, on_delta=on_delta, approvals=gate,
                           max_iterations=body.get("max_iterations") or cfg.max_iterations)
             try:
                 async with agent:
@@ -245,7 +286,7 @@ def create_app(cfg: ArgoConfig, require_key: str | None = None) -> FastAPI:
 
         if not stream:
             async with semaphore:
-                async with Agent(cfg) as agent:
+                async with Agent(cfg, approvals=gate) as agent:
                     sess = Session.load(cfg, session_id, agent.memory) if session_id else None
                     result = await agent.run(task, session=sess)
             return {"output": result.output, "session_id": result.session_id,
@@ -254,7 +295,8 @@ def create_app(cfg: ArgoConfig, require_key: str | None = None) -> FastAPI:
 
         async def sse() -> AsyncIterator[str]:
             q: asyncio.Queue = asyncio.Queue()
-            agent = Agent(cfg, on_delta=lambda d: q.put(("delta", d)) if d.text else _noop())
+            agent = Agent(cfg, approvals=gate,
+                          on_delta=lambda d: q.put(("delta", d)) if d.text else _noop())
 
             def listener(ev) -> None:
                 if on_event:
@@ -446,16 +488,24 @@ def create_app(cfg: ArgoConfig, require_key: str | None = None) -> FastAPI:
         return {"goals": queue.list_goals(limit)}
 
     @app.get("/v1/approvals")
-    async def approvals(request: Request) -> dict[str, Any]:
+    async def approvals_list(request: Request) -> dict[str, Any]:
         authorize(request)
-        return {"approvals": queue.pending_approvals()}
+        served = [p["record"] for p in pending.values()]
+        return {"approvals": served + queue.pending_approvals()}
 
     @app.post("/v1/approvals/{approval_id}")
     async def decide(approval_id: str, request: Request) -> dict[str, Any]:
         authorize(request)
         body = await request.json()
-        queue.decide(approval_id, bool(body.get("approve", False)))
-        return {"ok": True, "approval_id": approval_id}
+        approve = bool(body.get("approve", False))
+        entry = pending.get(approval_id)
+        if entry is not None:
+            entry["record"]["status"] = "approved" if approve else "denied"
+            if not entry["future"].done():
+                entry["future"].set_result(approve)
+            return {"ok": True, "approval_id": approval_id, "source": "serve", "approved": approve}
+        queue.decide(approval_id, approve)
+        return {"ok": True, "approval_id": approval_id, "source": "daemon", "approved": approve}
 
     @app.post("/v1/triggers")
     async def add_trigger(request: Request) -> dict[str, Any]:

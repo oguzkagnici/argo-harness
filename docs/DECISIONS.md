@@ -601,6 +601,27 @@ DOCX introspection.
   environment-invalid, one no-patch timeout). The sample is deliberately small-env; it is evidence of mechanism
   generalization across runners (pytest node ids, Django `runtests.py`, unittest labels), not a Lite-wide rate.
 
+## 3aa. Served approvals and per-subagent MCP scoping (2026-11-27)
+
+**F11 — approvals in `argo serve`.** Approval existed for the daemon queue and the interactive CLI, but a served run
+constructed `Agent(cfg)` with no callback: a destructive tool in `/v1/chat/completions` either ran or was stopped by
+the danger scanner inside the tool, never *asked*. Now `create_app(..., approvals="dangerous")` builds an async gate
+that (a) runs the same `danger_check` as the daemon, (b) registers a pending record with an `asyncio.Future`, (c)
+awaits it with `--approval-timeout`, and (d) denies on timeout. `GET /v1/approvals` returns served + daemon records
+(`source` distinguishes them) and `POST /v1/approvals/<id>` resolves either kind; both use the existing key guard.
+**Tests:** the gate blocks (the tool task is not done while pending), approval resolves it `True`, denial resolves it
+`False`, timeout denies, `dangerous` lets benign writes through while `all` gates them, `off` passes `None`, unknown
+ids fall back to the daemon queue, and a stubbed agent proves the served run receives the gate.
+
+**F2 — per-subagent MCP scoping.** MCP was top-level only (`depth == 0`), so a subagent could not use MCP at all —
+safe but limiting, while inheriting every server would be unsafe (a child reading untrusted text could call a
+mutating MCP tool). `spawn_subagent(mcp_servers=["alpha"])` now starts only the named servers for the child;
+omitting the parameter keeps the old "no MCP in subagents" behaviour, and unknown names fail fast with the configured
+list. Mutating MCP tools still go through the parent's approval callback. **Tests:** a depth-1 agent with
+`mcp_servers=["alpha"]` exposes `mcp__alpha__*` but not `mcp__beta__*`; a depth-1 agent without the parameter gets no
+MCP tools; a top-level agent still gets every server; `spawn_subagent` rejects unknown names and emits
+`subagent_mcp_scope` for the audit trail.
+
 ## 4. Deliberately not done (yet)
 
 Kept current — items are removed when they land.
@@ -614,8 +635,8 @@ Kept current — items are removed when they land.
   pagination, POST and state grading; OSWorld-style GUI control is untested.
 - **Live 40–60-step context run.** 36 steps is measured; longer runs and answer-probe-aware compaction are open.
 - **Full-corpus BEIR/MTEB** and rerank-depth ablations (two corpora sampled so far).
-- **Distributed daemon leases** (single-host leases are done), **per-subagent MCP scoping** (MCP is top-level only),
-  and a **review-only cheap subagent** policy in the router.
+- **Distributed daemon leases** (single-host leases are done) and a **review-only cheap subagent** policy in the
+  router.
 - **Multi-seed repair/SWE arms.** Only cheap arms are repeated (`adaptive_injection --repeats`); repair and SWE-bench
   seeds need a quota plan.
 

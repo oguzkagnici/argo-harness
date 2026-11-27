@@ -123,7 +123,8 @@ class Agent:
     def __init__(self, cfg: ArgoConfig, llm: LLMClient | None = None, memory: MemoryStore | None = None,
                  events: EventBus | None = None, approvals: ApprovalFn | None = None,
                  max_iterations: int | None = None, depth: int = 0, on_delta: DeltaHandler | None = None,
-                 allow_tools: set[str] | None = None, extra: dict[str, Any] | None = None):
+                 allow_tools: set[str] | None = None, extra: dict[str, Any] | None = None,
+                 mcp_servers: list[str] | None = None):
         self.cfg = cfg
         self._llm = llm
         self.router = ModelRouter(
@@ -142,6 +143,7 @@ class Agent:
         self.depth = depth
         self.on_delta = on_delta
         self.allow_tools = allow_tools
+        self.mcp_servers = mcp_servers   # None = every configured server (top-level default); [] = none
         self.extra = dict(extra or {})
         self.budget = Budget(cfg)
         self.run_limits = {
@@ -199,9 +201,13 @@ class Agent:
         if self._llm is None:
             self._llm = LLMClient(self.cfg)
             await self._llm.__aenter__()
-        if self.mcp is None and getattr(self.cfg, "mcp_servers", None) and self.depth == 0:
+        wanted_servers = getattr(self.cfg, "mcp_servers", None) or []
+        allowed = (wanted_servers if self.mcp_servers is None else
+                   [srv for srv in wanted_servers if srv.name in self.mcp_servers])
+        # Subagents get no MCP by default; a parent must name the servers the child may use.
+        if self.mcp is None and allowed and (self.depth == 0 or self.mcp_servers is not None):
             from ..tools.mcp import MCPClient
-            self.mcp = await MCPClient(self.cfg.mcp_servers).connect()
+            self.mcp = await MCPClient(allowed).connect()
             self.events.emit("mcp_connected", servers=len(self.mcp.sessions),
                              tools=len(self.mcp.tools), errors=self.mcp.errors)
         if self.memory is None:
@@ -365,8 +371,18 @@ class Agent:
         async def spawn(ctx: ToolContext, task: str, allowed_tools: list[str] | None = None,
                         max_iterations: int = 18, isolate: bool = False,
                         keep_worktree: bool = True, review_changes: bool = False,
-                        repair_attempts: int = 0, adopt: bool = False) -> ToolResult:
+                        repair_attempts: int = 0, adopt: bool = False,
+                        mcp_servers: list[str] | None = None) -> ToolResult:
             import copy
+
+            configured = [s.name for s in (getattr(self.cfg, "mcp_servers", None) or [])]
+            if mcp_servers is not None:
+                unknown = [n for n in mcp_servers if n not in configured]
+                if unknown:
+                    return ToolResult(
+                        f"Unknown MCP server(s): {', '.join(unknown)}. Configured: {', '.join(configured) or 'none'}.",
+                        is_error=True)
+                self.events.emit("subagent_mcp_scope", servers=list(mcp_servers))
 
             child_cfg = self.cfg
             worktree: Path | None = None
@@ -389,7 +405,8 @@ class Agent:
                 child = Agent(child_cfg, llm=self._llm, memory=self.memory, events=self.events,
                               approvals=self.approvals, max_iterations=min(max_iterations, 40),
                               depth=self.depth + 1,
-                              allow_tools=set(allowed_tools) if allowed_tools else None)
+                              allow_tools=set(allowed_tools) if allowed_tools else None,
+                              mcp_servers=list(mcp_servers) if mcp_servers is not None else None)
                 child.session = Session.create(self.cfg, self.memory,
                                                session_id=f"{self.session.id if self.session else 's'}-sub-"
                                                           f"{uuid.uuid4().hex[:4]}")
@@ -487,6 +504,9 @@ class Agent:
                 "task": {"type": "string", "description": "Self-contained brief with goal, constraints, and expected output."},
                 "allowed_tools": {"type": "array", "items": {"type": "string"},
                                   "description": "Optional allowlist, e.g. ['web_search','fetch_url','write_file']."},
+                "mcp_servers": {"type": "array", "items": {"type": "string"},
+                                "description": "MCP servers the child may start (by configured name). Omit for none; "
+                                               "mutating MCP tools still require approval."},
                 "max_iterations": {"type": "integer", "default": 18},
                 "isolate": {"type": "boolean",
                             "description": "Run in a fresh git worktree + branch so the parent tree is untouched."},
