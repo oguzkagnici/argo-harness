@@ -175,6 +175,74 @@ server's read tools out of the approval path (`{"search": true}`); covered by `t
 
 ---
 
+---
+
+## Feature roadmap (not benchmarks)
+
+Benchmarks above answer "does the mechanism work"; these are capabilities the harness itself still lacks. Ordered by
+(user value × evidence) / effort, each with a closure test.
+
+### F1. Review-only cheap subagent (`--router review`)
+The router sends read-only *exploration* turns to the cheap model but every subagent inherits the strong one. A
+reviewer with a fixed rubric is a read-only task, so it should be routable. **Closure:** same verdicts as the strong
+reviewer on the saved repair patches, at lower cost; if verdicts diverge, keep it opt-in and document the divergence.
+
+### F2. Per-subagent MCP scoping
+MCP is deliberately top-level only (`_register_mcp` runs at depth 0). A subagent working on an untrusted document
+can currently not call MCP at all — safe but limiting; the alternative (inherit everything) is unsafe. **Closure:**
+`spawn_subagent(mcp_servers=[...])` registers only the named servers, with a test proving an unlisted server's tool
+is absent and an approval still gates mutating calls.
+
+### F3. Desktop control (OSWorld-shaped)
+The browser tool covers web tasks; OSWorld needs screen/click/type on an X display. **Closure:** a `desktop` tool
+(screenshot + click/type/key) under approval, plus 3 deterministic tasks on Xvfb scored on final screen state, with
+an unsafe-action counter like the web subset.
+
+### F4. Workflow extraction from live computer-use traces
+`argo workflow synthesize` already turns *tool* traces into a workflow + SKILL.md. Browser traces (selectors, form
+fills, navigation) are not captured in that shape, which is exactly the "automate a complex computer-use flow" ask.
+**Closure:** synthesize from a `computer_use` session, replay it with drift, and score with the existing replay
+harness (plain vs self-healing selectors).
+
+### F5. Sandboxed code execution
+`run_code`/`bash` run as the host user; writes outside the workspace are policy-checked but the process is not
+isolated and has the host network. **Closure:** an opt-in namespace/container runner (bubblewrap or docker) with a
+network allowlist, plus tests showing (a) host paths are unreachable, (b) allowed commands behave identically.
+
+### F6. Server auth + per-key quotas
+`argo serve` has a shared key and no per-client budgets. The budget module already counts tokens/wall/tool calls.
+**Closure:** bearer tokens per client mapped to a budget, 429 on exhaustion, tests plus a curl transcript.
+
+### F7. Memory cadence scheduler
+The daemon dreams on a timer (`--dream-hours`) and `--dream-generations` is manual. Evidence says one pass is enough
+even at 40 lessons, so cadence should be driven by *new material* (sessions/lessons since last dream), not only time.
+**Closure:** skip when nothing new; offline test plus a 40-lesson run showing equal recall at lower cost.
+
+### F8. Answer-probe-aware compaction
+Summaries keep losing exact values; the fact ledger patches around it. **Closure:** re-inject the user's question
+verbatim into the compacted block, A/B on the 36/48-step live run (recall + tokens), keep only if it wins.
+
+### F9. Observability alerts
+`argo metrics` reports p50/p95, tool error rate and cost, but nothing watches them. **Closure:** threshold/rate-of-change
+alerts exported with the OTel payload; a synthetic failing run must raise one.
+
+### F10. Outbox delivery channels
+The daemon outbox writes to disk. **Closure:** webhook + SMTP sink with retries and dead-letter, tested against a
+local HTTP server (no network assumptions).
+
+### F11. Approvals in `argo serve`
+Approvals exist in the CLI and the daemon queue; a served session has no way to approve. **Closure:** `GET /approvals`
+and `POST /approvals/<id>` with the same key protection as `/trace`, plus a test that a mutating tool blocks until the
+approval arrives.
+
+### F12. Prompt-cache telemetry
+Prefix stability is designed for caching but never measured. **Closure:** per-session cache-hit ratio in `argo metrics`
+and a regression test that a warm session reuses the same tool/system prefix.
+
+**Suggested order:** F11 and F2 (small, offline-testable, close real safety/UX gaps), then F1 and F12 (cheap routing
+and cost wins), then F3/F4 (the computer-use automation story), then F5/F6 (production hardening), F7–F10 as
+scheduled follow-ups.
+
 ## Known defects / open questions
 
 - **Live compaction is still unproven** until item 1 is rerun; the synthetic benchmark's 12/12 did not transfer.

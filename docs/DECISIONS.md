@@ -603,14 +603,21 @@ DOCX introspection.
 
 ## 4. Deliberately not done (yet)
 
-- A graded SWE-bench-Lite score (the runner and Docker path exist; only a gold-patch check has been run, because
-  each image pull plus test run consumes the same rate-limited machine).
-- Full-corpus BEIR / MTEB evaluation and rerank-depth ablations.
-- Distributed daemon leases and MCP **resources/prompts** (tools only today).
-- WebArena/OSWorld-scale computer use; current evidence is a deterministic local form and workflow replay.
-- Multi-model variance and confidence intervals; all numbers are one model, one run per task.
-- Adaptive prompt injection (AgentDojo proper) and a live 40–60-step context run; current safety and context
-  evidence comes from a local fixed suite and a synthetic transcript.
+Kept current — items are removed when they land.
+
+- **Lite-wide SWE-bench rate.** 12 of 300 instances attempted (10/11 gradable resolved, official harness); the sample
+  is chosen for small environments. Astropy is blocked by its `numpy==1.16.0` spec on a modern toolchain; a wider
+  rate needs many more instances plus multi-seed runs.
+- **Full published AgentDojo suite** (other domains/templates, adaptive attackers over multiple turns). Multi-turn
+  priming and harder payloads are covered locally; the full suite is not.
+- **Real WebArena/OSWorld deployments and desktop control.** The local WebArena-shaped subset covers sessions,
+  pagination, POST and state grading; OSWorld-style GUI control is untested.
+- **Live 40–60-step context run.** 36 steps is measured; longer runs and answer-probe-aware compaction are open.
+- **Full-corpus BEIR/MTEB** and rerank-depth ablations (two corpora sampled so far).
+- **Distributed daemon leases** (single-host leases are done), **per-subagent MCP scoping** (MCP is top-level only),
+  and a **review-only cheap subagent** policy in the router.
+- **Multi-seed repair/SWE arms.** Only cheap arms are repeated (`adaptive_injection --repeats`); repair and SWE-bench
+  seeds need a quota plan.
 
 ## 5. Reference implementation review
 
